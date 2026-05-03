@@ -11,7 +11,10 @@ type Application struct {
 func CreateAppliaction() *Application {
 	env := NewEnv()
 	config := Config{
-		Address: env.ServerAddress,
+		Address:      env.ServerAddress,
+		WriteTimeout: env.WriteTimeout,
+		ReadTimeout:  env.ReadTimeout,
+		IdleTimeout:  env.IdleTimeout,
 	}
 
 	return &Application{
@@ -20,5 +23,12 @@ func CreateAppliaction() *Application {
 }
 
 func (app *Application) Run(mux http.Handler) error {
-	return http.ListenAndServe(app.config.Address, mux)
+	server := http.Server{
+		Handler:      mux,
+		Addr:         app.config.Address,
+		WriteTimeout: app.config.WriteTimeout,
+		ReadTimeout:  app.config.ReadTimeout,
+		IdleTimeout:  app.config.IdleTimeout,
+	}
+	return server.ListenAndServe()
 }
