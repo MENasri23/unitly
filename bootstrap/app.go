@@ -5,30 +5,28 @@ import (
 )
 
 type Application struct {
-	config Config
+	config *config
 }
 
 func CreateAppliaction() *Application {
 	env := NewEnv()
-	config := Config{
-		Address:      env.ServerAddress,
-		WriteTimeout: env.WriteTimeout,
-		ReadTimeout:  env.ReadTimeout,
-		IdleTimeout:  env.IdleTimeout,
-	}
+	cfg := newConfig(env)
 
 	return &Application{
-		config: config,
+		config: cfg,
 	}
 }
 
 func (app *Application) Run(mux http.Handler) error {
+	cfg := app.config
 	server := http.Server{
-		Handler:      mux,
-		Addr:         app.config.Address,
-		WriteTimeout: app.config.WriteTimeout,
-		ReadTimeout:  app.config.ReadTimeout,
-		IdleTimeout:  app.config.IdleTimeout,
+		Handler:           mux,
+		Addr:              cfg.Address,
+		ReadHeaderTimeout: cfg.ReadHeaderTimeout,
+		WriteTimeout:      cfg.WriteTimeout,
+		ReadTimeout:       cfg.ReadTimeout,
+		IdleTimeout:       cfg.IdleTimeout,
 	}
+
 	return server.ListenAndServe()
 }

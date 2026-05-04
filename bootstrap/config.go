@@ -2,9 +2,20 @@ package bootstrap
 
 import "time"
 
-type Config struct {
-	Address      string
-	WriteTimeout time.Duration
-	ReadTimeout  time.Duration
-	IdleTimeout  time.Duration
+type config struct {
+	Address           string
+	WriteTimeout      time.Duration
+	ReadTimeout       time.Duration
+	ReadHeaderTimeout time.Duration
+	IdleTimeout       time.Duration
+}
+
+func newConfig(env *Env) *config {
+	return &config{
+		Address:           env.ServerAddress,
+		WriteTimeout:      env.WriteTimeout,
+		ReadTimeout:       env.ReadTimeout,
+		ReadHeaderTimeout: env.ReadHeaderTimeout,
+		IdleTimeout:       env.IdleTimeout,
+	}
 }
