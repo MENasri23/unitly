@@ -11,7 +11,7 @@ type txManager struct {
 	db *sql.DB
 }
 
-func NewTxManager(db *sql.DB) domain.TxManager {
+func NewSqlTxManager(db *sql.DB) domain.TxManager {
 	return &txManager{db: db}
 }
 
