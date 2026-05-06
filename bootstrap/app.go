@@ -17,6 +17,10 @@ func CreateAppliaction() *Application {
 	}
 }
 
+func (app *Application) GetDatabaseURL() string {
+	return app.config.db.GetURL()
+}
+
 func (app *Application) Run(mux http.Handler) error {
 	cfg := app.config
 	server := http.Server{

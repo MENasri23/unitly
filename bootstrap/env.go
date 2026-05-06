@@ -7,8 +7,15 @@ import (
 	"github.com/spf13/viper"
 )
 
+type AppEnv string
+
+const (
+	Development AppEnv = "development"
+	Production  AppEnv = "production"
+)
+
 type Env struct {
-	AppEnv            string        `mapstructure:"APP_ENV"`
+	AppEnv            AppEnv        `mapstructure:"APP_ENV"`
 	ServerAddress     string        `mapstructure:"SERVER_ADDRESS"`
 	WriteTimeout      time.Duration `mapstructure:"WRITE_TIMEOUT"`
 	ReadTimeout       time.Duration `mapstructure:"READ_TIMEOUT"`
