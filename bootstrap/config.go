@@ -39,7 +39,7 @@ type dbConfig struct {
 
 func newDbConfig(env *Env) *dbConfig {
 	args := Args{}
-	if env.AppEnv == "development" {
+	if env.AppEnv == Development {
 		args["sslmode"] = "disable"
 	}
 
