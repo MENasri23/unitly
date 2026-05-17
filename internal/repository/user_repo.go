@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"unitly/internal/db"
 	"unitly/internal/domain"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -23,7 +24,8 @@ func (u *userRepository) Create(ctx context.Context, user *domain.User) error {
 	RETURNING id, created_at
 	`
 
-	return u.db.QueryRow(
+	querier := u.getQuerier(ctx)
+	return querier.QueryRow(
 		ctx,
 		query,
 		user.Phone,
@@ -33,4 +35,12 @@ func (u *userRepository) Create(ctx context.Context, user *domain.User) error {
 		&user.ID,
 		&user.CreatedAt,
 	)
+}
+
+func (u *userRepository) getQuerier(ctx context.Context) db.Querier {
+	if tx := db.GetTxOrNil(ctx); tx != nil {
+		return tx
+	}
+
+	return u.db
 }
