@@ -13,7 +13,7 @@ import (
 func main() {
 	app := bootstrap.CreateAppliaction()
 	dbAddr := app.GetDatabaseURL()
-	db, err := db.New(
+	db, err := db.NewPostgresDB(
 		dbAddr,
 		25,
 		10,

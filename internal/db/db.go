@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func New(
+func NewPostgresDB(
 	addr string,
 	maxConns int32,
 	minConns int32,
