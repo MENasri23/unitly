@@ -2,24 +2,27 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"unitly/internal/domain"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Implement the Transaction Manager
 type txManager struct {
-	db *sql.DB
+	db *pgxpool.Pool
 }
 
-func NewSqlTxManager(db *sql.DB) domain.TxManager {
+func NewSqlTxManager(db *pgxpool.Pool) domain.TxManager {
 	return &txManager{db: db}
 }
 
 func (m *txManager) Do(ctx context.Context, fn func(ctx context.Context) error) error {
-	tx, err := m.db.BeginTx(ctx, nil)
+	tx, err := m.db.Begin(ctx)
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback(ctx)
 
 	// Inject the transaction into the context
 	txCtx := context.WithValue(ctx, txKey, tx)
@@ -27,15 +30,14 @@ func (m *txManager) Do(ctx context.Context, fn func(ctx context.Context) error) 
 	// Run the use case with the new context
 	err = fn(txCtx)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 
-	return tx.Commit()
+	return tx.Commit(ctx)
 }
 
-func GetTxOrNil(ctx context.Context) *sql.Tx {
-	return ctx.Value(txKey).(*sql.Tx)
+func GetTxOrNil(ctx context.Context) pgx.Tx {
+	return ctx.Value(txKey).(pgx.Tx)
 }
 
 type contextKey string
