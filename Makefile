@@ -6,7 +6,7 @@ export
 DB_URL=postgres://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
 
 # Migration directory
-MIGRATIONS_DIR=./internal/db/migrations
+MIGRATIONS_DIR=./migrations
 
 # Number of migrations for down/steps
 STEPS?=1
