@@ -13,5 +13,26 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/db_init.sql:/docker-entrypoint-initdb.d/db_init.sql
 
+  redis:
+    image: redis:8.6.3-alpine
+    container_name: my-redis
+    restart: unless-stopped
+    command: >
+      --aclfile /usr/local/etc/redis/users.acl
+      --appendonly yes  
+      --maxmemory 512mb  
+      --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+       - redis_data:/data
+       - ./users.acl:/usr/local/etc/redis/users.acl:ro
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--user", "${REDIS_USER}", "--pass", "${REDIS_PASS}", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:
+  redis_data:
