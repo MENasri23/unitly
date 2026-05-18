@@ -37,7 +37,8 @@ func (m *txManager) Do(ctx context.Context, fn func(ctx context.Context) error) 
 }
 
 func GetTxOrNil(ctx context.Context) pgx.Tx {
-	return ctx.Value(txKey).(pgx.Tx)
+	tx, _ := ctx.Value(txKey).(pgx.Tx)
+	return tx
 }
 
 type contextKey string
