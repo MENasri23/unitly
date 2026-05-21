@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"fmt"
 	"strings"
 	"time"
 )
@@ -12,6 +13,7 @@ type config struct {
 	ReadHeaderTimeout time.Duration
 	IdleTimeout       time.Duration
 	db                *dbConfig
+	cache             *cacheConfig
 }
 
 func newConfig(env *Env) *config {
@@ -22,6 +24,7 @@ func newConfig(env *Env) *config {
 		ReadHeaderTimeout: env.ReadHeaderTimeout,
 		IdleTimeout:       env.IdleTimeout,
 		db:                newDbConfig(env),
+		cache:             NewCacheConfig(env),
 	}
 }
 
@@ -98,4 +101,24 @@ func (c *dbConfig) GetURL() string {
 	}
 
 	return sb.String()
+}
+
+type cacheConfig struct {
+	Host     string
+	Username string
+	Password string
+	Port     string
+}
+
+func (c *cacheConfig) GetAddress() string {
+	return fmt.Sprintf("%s:%s", c.Host, c.Port)
+}
+
+func NewCacheConfig(env *Env) *cacheConfig {
+	return &cacheConfig{
+		Host:     env.RedisHost,
+		Port:     env.RedisPort,
+		Username: env.RedisUser,
+		Password: env.RedisPass,
+	}
 }
