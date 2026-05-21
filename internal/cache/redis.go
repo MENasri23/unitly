@@ -8,7 +8,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type Redis struct {
+type Cache struct {
 	Client *redis.Client
 }
 
@@ -23,8 +23,8 @@ type Config struct {
 	WriteTimeout time.Duration
 }
 
-func DefaultRedis(addr, username, password string, db int) (*Redis, error) {
-	return NewRedis(&Config{
+func Default(addr, username, password string, db int) (*Cache, error) {
+	return NewCache(&Config{
 		Addr:         addr,
 		Username:     username,
 		Password:     password,
@@ -36,7 +36,7 @@ func DefaultRedis(addr, username, password string, db int) (*Redis, error) {
 	})
 }
 
-func NewRedis(cfg *Config) (*Redis, error) {
+func NewCache(cfg *Config) (*Cache, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:         cfg.Addr,
 		Username:     cfg.Username,
@@ -55,7 +55,11 @@ func NewRedis(cfg *Config) (*Redis, error) {
 		return nil, err
 	}
 
-	fmt.Println("Redis connected successfully.")
+	fmt.Println("Cache client connected successfully.")
 
-	return &Redis{rdb}, nil
+	return &Cache{rdb}, nil
+}
+
+func (c *Cache) Close() error {
+	return c.Client.Close()
 }
