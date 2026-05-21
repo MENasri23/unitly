@@ -24,7 +24,7 @@ func newConfig(env *Env) *config {
 		ReadHeaderTimeout: env.ReadHeaderTimeout,
 		IdleTimeout:       env.IdleTimeout,
 		db:                newDbConfig(env),
-		cache:             NewCacheConfig(env),
+		cache:             newCacheConfig(env),
 	}
 }
 
@@ -114,7 +114,7 @@ func (c *cacheConfig) GetAddress() string {
 	return fmt.Sprintf("%s:%s", c.Host, c.Port)
 }
 
-func NewCacheConfig(env *Env) *cacheConfig {
+func newCacheConfig(env *Env) *cacheConfig {
 	return &cacheConfig{
 		Host:     env.RedisHost,
 		Port:     env.RedisPort,
