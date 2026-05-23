@@ -13,7 +13,7 @@ type User struct {
 	Phone          string
 	FirstName      string
 	LastName       string
-	HashedPassword string
+	HashedPassword *string
 	CreatedAt      time.Time
 }
 

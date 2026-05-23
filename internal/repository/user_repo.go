@@ -20,7 +20,7 @@ func NewUserRepository(db *pgxpool.Pool) domain.UserRepository {
 
 func (u *userRepository) Create(ctx context.Context, user *domain.User) error {
 	query := `
-	INSERT INTO users (phone, public_id, password_hash) VALUES ($1, $2, $3) 
+	INSERT INTO users (phone, public_id) VALUES ($1, $2) 
 	RETURNING id, created_at
 	`
 
@@ -30,7 +30,6 @@ func (u *userRepository) Create(ctx context.Context, user *domain.User) error {
 		query,
 		user.Phone,
 		user.GUID,
-		user.HashedPassword,
 	).Scan(
 		&user.ID,
 		&user.CreatedAt,
