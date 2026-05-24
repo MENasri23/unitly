@@ -30,7 +30,7 @@ func TestGenerateOTP_ValidLengths(t *testing.T) {
 }
 
 func TestGenerateOTP_InvalidLengths(t *testing.T) {
-	tests := []int{0, -1, 19, 100}
+	tests := []int{0, -1}
 
 	for _, length := range tests {
 		t.Run("invalid_"+strconv.FormatInt(int64(length), 10), func(t *testing.T) {
@@ -44,25 +44,5 @@ func TestGenerateOTP_InvalidLengths(t *testing.T) {
 				t.Errorf("expected ErrInvalidLength, got %v", err)
 			}
 		})
-	}
-}
-
-func TestPow10(t *testing.T) {
-	tests := []struct {
-		input    int
-		expected int64
-	}{
-		{1, 10},
-		{2, 100},
-		{3, 1000},
-		{6, 1000000},
-		{18, 1000000000000000000},
-	}
-
-	for _, tt := range tests {
-		got := pow10(tt.input)
-		if got != tt.expected {
-			t.Errorf("pow10(%d) = %d, want %d", tt.input, got, tt.expected)
-		}
 	}
 }

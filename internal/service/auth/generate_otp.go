@@ -3,8 +3,6 @@ package authsvc
 import (
 	"crypto/rand"
 	"errors"
-	"math/big"
-	"strconv"
 )
 
 var maxOTPLength = 18
@@ -12,28 +10,44 @@ var maxOTPLength = 18
 var ErrInvalidLength = errors.New("invalid otp length")
 
 func generateOTP(length int) (string, error) {
-	if length <= 0 || length > maxOTPLength {
+	if length <= 0 {
 		return "", ErrInvalidLength
 	}
 
-	max := pow10(length)
-	min := max / 10
+	out := make([]byte, length)
+	buf := make([]byte, 1)
 
-	n, err := rand.Int(rand.Reader, big.NewInt(max-min))
-	if err != nil {
-		return "", err
+	// First digit: 1-9
+	for {
+		if _, err := rand.Read(buf); err != nil {
+			return "", err
+		}
+
+		// 252 divisible by 9 to avoid module bias
+		if buf[0] >= 252 {
+			continue
+		}
+
+		out[0] = (buf[0] % 9) + '1'
+		break
 	}
 
-	val := n.Int64() + min
+	// Remaining digits: 0-9
+	for i := 1; i < length; i++ {
+		for {
+			if _, err := rand.Read(buf); err != nil {
+				return "", err
+			}
 
-	return strconv.FormatInt(val, 10), nil
-}
+			// 250 divisible by 10 to avoid module bias
+			if buf[0] >= 250 {
+				continue
+			}
 
-func pow10(n int) int64 {
-	v := int64(1)
-	for range n {
-		v *= 10
+			out[i] = (buf[0] % 10) + '0'
+			break
+		}
 	}
 
-	return v
+	return string(out), nil
 }
