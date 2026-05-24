@@ -11,8 +11,8 @@ type User struct {
 	ID             int64
 	GUID           uuid.UUID
 	Phone          string
-	FirstName      string
-	LastName       string
+	FirstName      *string
+	LastName       *string
 	HashedPassword *string
 	CreatedAt      time.Time
 }
