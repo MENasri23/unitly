@@ -11,7 +11,7 @@ var maxOTPLength = 18
 
 var ErrInvalidLength = errors.New("invalid otp length")
 
-func GenerateOTP(length int) (string, error) {
+func generateOTP(length int) (string, error) {
 	if length <= 0 || length > maxOTPLength {
 		return "", ErrInvalidLength
 	}
