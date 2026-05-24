@@ -18,6 +18,14 @@ func NewUserRepository(db *pgxpool.Pool) domain.UserRepository {
 	}
 }
 
+func (u *userRepository) getQuerier(ctx context.Context) db.Querier {
+	if tx := db.GetTxOrNil(ctx); tx != nil {
+		return tx
+	}
+
+	return u.db
+}
+
 func (u *userRepository) Create(ctx context.Context, user *domain.User) error {
 	query := `
 	INSERT INTO users (phone, public_id) VALUES ($1, $2) 
@@ -34,12 +42,4 @@ func (u *userRepository) Create(ctx context.Context, user *domain.User) error {
 		&user.ID,
 		&user.CreatedAt,
 	)
-}
-
-func (u *userRepository) getQuerier(ctx context.Context) db.Querier {
-	if tx := db.GetTxOrNil(ctx); tx != nil {
-		return tx
-	}
-
-	return u.db
 }
