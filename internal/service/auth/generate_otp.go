@@ -31,7 +31,7 @@ func GenerateOTP(length int) (string, error) {
 
 func pow10(n int) int64 {
 	v := int64(1)
-	for i := 0; i < n; i++ {
+	for range n {
 		v *= 10
 	}
 
