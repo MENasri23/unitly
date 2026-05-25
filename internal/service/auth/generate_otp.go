@@ -15,13 +15,13 @@ func generateOTP(length int) (string, error) {
 	out := make([]byte, length)
 
 	// First digit: 1-9
-	if err := rand.GenerateCode(out, 0, 1, 9); err != nil {
+	if err := rand.GenerateCodeRange(out, 0, 1, 9); err != nil {
 		return "", err
 	}
 	out[0] = out[0] + '1'
 
 	// Remaining digits: 0-9
-	if err := rand.GenerateCode(out, 1, length, 10); err != nil {
+	if err := rand.GenerateCodeRange(out, 1, length, 10); err != nil {
 		return "", nil
 	}
 

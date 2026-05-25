@@ -10,7 +10,14 @@ var (
 	ErrInvalidMax   = errors.New("max must be between 1 and 255")
 )
 
-// GenerateCode fills a portion of the provided byte slice with cryptographically
+func GenerateCode(
+	codes []byte,
+	max int,
+) error {
+	return GenerateCodeRange(codes, 0, len(codes), max)
+}
+
+// GenerateCodeRange fills a portion of the provided byte slice with cryptographically
 // secure random values in the range [0, max).
 //
 // The function writes into out[start:end] and ensures:
@@ -35,14 +42,14 @@ var (
 // Example usage:
 //
 //	out := make([]byte, 10)
-//	err := GenerateCode(out, 0, len(out), 10) // values in [0..9]
-func GenerateCode(
-	out []byte,
+//	err := GenerateCodeRange(out, 0, len(out), 10) // values in [0..9]
+func GenerateCodeRange(
+	codes []byte,
 	start int,
 	end int,
 	max int,
 ) error {
-	if start < 0 || end < start || end > len(out) {
+	if start < 0 || end < start || end > len(codes) {
 		return ErrInvalidRange
 	}
 
@@ -64,7 +71,7 @@ func GenerateCode(
 				continue
 			}
 
-			out[i] = buf[0] % maxByte
+			codes[i] = buf[0] % maxByte
 			break
 		}
 	}

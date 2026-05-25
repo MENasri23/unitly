@@ -8,7 +8,7 @@ import (
 func TestGenerateCode_ValidRange(t *testing.T) {
 	out := make([]byte, 10)
 
-	err := GenerateCode(out, 2, 8, 10)
+	err := GenerateCodeRange(out, 2, 8, 10)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -27,7 +27,7 @@ func TestGenerateCode_ValidRange(t *testing.T) {
 func TestGenerateCode_FullRange(t *testing.T) {
 	out := make([]byte, 100)
 
-	err := GenerateCode(out, 0, len(out), 5)
+	err := GenerateCodeRange(out, 0, len(out), 5)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -43,7 +43,7 @@ func TestGenerateCode_FullRange(t *testing.T) {
 func TestGenerateCode_InvalidStart(t *testing.T) {
 	out := make([]byte, 10)
 
-	err := GenerateCode(out, -1, 5, 10)
+	err := GenerateCodeRange(out, -1, 5, 10)
 	if err != ErrInvalidRange {
 		t.Fatal("expected error for negative start")
 	}
@@ -53,7 +53,7 @@ func TestGenerateCode_InvalidStart(t *testing.T) {
 func TestGenerateCode_InvalidEnd(t *testing.T) {
 	out := make([]byte, 10)
 
-	err := GenerateCode(out, 0, 11, 10)
+	err := GenerateCodeRange(out, 0, 11, 10)
 	if err != ErrInvalidRange {
 		t.Fatal("expected error for end out of bounds")
 	}
@@ -63,7 +63,7 @@ func TestGenerateCode_InvalidEnd(t *testing.T) {
 func TestGenerateCode_EndLessThanStart(t *testing.T) {
 	out := make([]byte, 10)
 
-	err := GenerateCode(out, 5, 2, 10)
+	err := GenerateCodeRange(out, 5, 2, 10)
 	if err != ErrInvalidRange {
 		t.Fatal("expected error when end < start")
 	}
@@ -76,7 +76,7 @@ func TestGenerateCode_InvalidMax(t *testing.T) {
 	tests := []int{0, -1, 256}
 
 	for _, max := range tests {
-		err := GenerateCode(out, 0, 5, max)
+		err := GenerateCodeRange(out, 0, 5, max)
 		if err != ErrInvalidMax {
 			t.Errorf("expected error for max=%d", max)
 		}
@@ -87,7 +87,7 @@ func TestGenerateCode_InvalidMax(t *testing.T) {
 func TestGenerateCode_BoundsOnly(t *testing.T) {
 	out := make([]byte, 1000)
 
-	err := GenerateCode(out, 0, len(out), 42)
+	err := GenerateCodeRange(out, 0, len(out), 42)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
