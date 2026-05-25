@@ -44,7 +44,7 @@ func TestGenerateCode_InvalidStart(t *testing.T) {
 	out := make([]byte, 10)
 
 	err := GenerateCode(out, -1, 5, 10)
-	if err == nil {
+	if err != ErrInvalidRange {
 		t.Fatal("expected error for negative start")
 	}
 }
@@ -54,7 +54,7 @@ func TestGenerateCode_InvalidEnd(t *testing.T) {
 	out := make([]byte, 10)
 
 	err := GenerateCode(out, 0, 11, 10)
-	if err == nil {
+	if err != ErrInvalidRange {
 		t.Fatal("expected error for end out of bounds")
 	}
 }
@@ -64,7 +64,7 @@ func TestGenerateCode_EndLessThanStart(t *testing.T) {
 	out := make([]byte, 10)
 
 	err := GenerateCode(out, 5, 2, 10)
-	if err == nil {
+	if err != ErrInvalidRange {
 		t.Fatal("expected error when end < start")
 	}
 }
@@ -77,7 +77,7 @@ func TestGenerateCode_InvalidMax(t *testing.T) {
 
 	for _, max := range tests {
 		err := GenerateCode(out, 0, 5, max)
-		if err == nil {
+		if err != ErrInvalidMax {
 			t.Errorf("expected error for max=%d", max)
 		}
 	}

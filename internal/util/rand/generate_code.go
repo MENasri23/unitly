@@ -3,7 +3,11 @@ package rand
 import (
 	"crypto/rand"
 	"errors"
-	"fmt"
+)
+
+var (
+	ErrInvalidRange = errors.New("invalid range")
+	ErrInvalidMax   = errors.New("max must be between 1 and 255")
 )
 
 // GenerateCode fills a portion of the provided byte slice with cryptographically
@@ -39,21 +43,16 @@ func GenerateCode(
 	max int,
 ) error {
 	if start < 0 || end < start || end > len(out) {
-		return fmt.Errorf(
-			"invalid range: start=%d end=%d len=%d",
-			start,
-			end,
-			len(out),
-		)
+		return ErrInvalidRange
 	}
 
 	if max < 1 || max > 255 {
-		return errors.New("max must be between 1 and 255")
+		return ErrInvalidMax
 	}
 
 	reject := byte(255 - (255 % max))
-	buf := make([]byte, 1)
 	maxByte := byte(max)
+	buf := make([]byte, 1)
 
 	for i := start; i < end; i++ {
 		for {
