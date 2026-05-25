@@ -59,20 +59,24 @@ func GenerateCodeRange(
 
 	reject := byte(255 - (255 % max))
 	maxByte := byte(max)
-	buf := make([]byte, 1)
+	buf := make([]byte, end-start)
 
-	for i := start; i < end; i++ {
-		for {
-			if _, err := rand.Read(buf); err != nil {
-				return err
-			}
+	for i := start; i < end; {
+		if _, err := rand.Read(buf); err != nil {
+			return err
+		}
 
-			if buf[0] >= reject {
+		for _, b := range buf {
+			if b >= reject {
 				continue
 			}
 
-			codes[i] = buf[0] % maxByte
-			break
+			codes[i] = b % maxByte
+			i++
+
+			if i == end {
+				break
+			}
 		}
 	}
 

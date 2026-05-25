@@ -27,13 +27,13 @@ func TestGenerateCode_ValidRange(t *testing.T) {
 func TestGenerateCode_FullRange(t *testing.T) {
 	out := make([]byte, 100)
 
-	err := GenerateCodeRange(out, 0, len(out), 5)
+	err := GenerateCodeRange(out, 0, len(out), 255)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
 	for i, v := range out {
-		if v >= 5 {
+		if v >= 255 {
 			t.Errorf("invalid value at %d: %d", i, v)
 		}
 	}
@@ -87,7 +87,7 @@ func TestGenerateCode_InvalidMax(t *testing.T) {
 func TestGenerateCode_BoundsOnly(t *testing.T) {
 	out := make([]byte, 1000)
 
-	err := GenerateCodeRange(out, 0, len(out), 42)
+	err := GenerateCode(out, 42)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
