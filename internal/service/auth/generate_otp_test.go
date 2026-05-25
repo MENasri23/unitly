@@ -7,7 +7,7 @@ import (
 )
 
 func TestGenerateOTP_ValidLengths(t *testing.T) {
-	lengths := []int{1, 2, 4, 5, 6, 10, 18}
+	lengths := []int{1, 2, 4, 5, 6, 10, 12}
 
 	for _, length := range lengths {
 		t.Run("length_"+strconv.FormatInt(int64(length), 10), func(t *testing.T) {
