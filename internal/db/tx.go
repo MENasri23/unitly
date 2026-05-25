@@ -13,7 +13,7 @@ type txManager struct {
 	db *pgxpool.Pool
 }
 
-func NewSqlTxManager(db *pgxpool.Pool) domain.TxManager {
+func NewSqlTxManager(db *pgxpool.Pool) domain.UnitOfWork {
 	return &txManager{db: db}
 }
 
