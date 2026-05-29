@@ -70,13 +70,21 @@ func (u *userRepository) GetByID(ctx context.Context, userID int64) (*domain.Use
 	)
 
 	if err != nil {
-		switch {
-		case errors.Is(err, pgx.ErrNoRows):
-			return nil, domain.ErrNotFound
-		default:
-			return nil, err
-		}
+		return nil, mapDBError(err)
 	}
 
 	return &user, nil
+}
+
+func mapDBError(err error) error {
+	if (err == nil) {
+		return nil
+	}
+
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return domain.ErrNotFound
+	default:
+		return err
+	}
 }
