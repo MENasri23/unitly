@@ -91,3 +91,8 @@ func (c *Cache) Delete(ctx context.Context, key string) (bool, error) {
 	delCount, err := c.Client.Del(ctx, key).Result()
 	return delCount == 1, err
 }
+
+func (c *Cache) DeleteAll(ctx context.Context, keys ...string) (int64, error) {
+	delCount, err := c.Client.Del(ctx, keys...).Result()
+	return delCount, err
+}
