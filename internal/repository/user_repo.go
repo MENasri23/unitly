@@ -15,6 +15,10 @@ type userRepository struct {
 }
 
 func NewUserRepository(db *pgxpool.Pool) domain.UserRepository {
+	if db == nil {
+		panic("db cannot be nil")
+	}
+
 	return &userRepository{
 		db: db,
 	}
@@ -76,8 +80,22 @@ func (u *userRepository) GetByID(ctx context.Context, userID int64) (*domain.Use
 	return &user, nil
 }
 
+func (u *userRepository) GetUserIDByPhone(ctx context.Context, phone string) (int64, error) {
+	query := "SELECT id from users WHERE phone = $1"
+
+	querier := u.getQuerier(ctx)
+
+	var userID int64
+	err := querier.QueryRow(ctx, query, phone).Scan(&userID)
+	if err != nil {
+		return -1, mapDBError(err)
+	}
+
+	return userID, nil
+}
+
 func mapDBError(err error) error {
-	if (err == nil) {
+	if err == nil {
 		return nil
 	}
 
