@@ -115,6 +115,7 @@ func (s *JWTService) ValidateToken(_ context.Context, tokenString string) (domai
 		Audience:  claims.RegisteredClaims.Audience,
 		ID:        claims.RegisteredClaims.ID,
 		IssuedAt:  issuedAt,
+		ExpiresAt: expiresAt,
 		Expiry:    expiresAt.Sub(issuedAt),
 		NotBefore: notBefore,
 	}, nil
