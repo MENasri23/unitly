@@ -11,9 +11,10 @@ import (
 const issuer = "unitly"
 
 type JWTService struct {
-	secret []byte
-	expiry time.Duration
-	issuer string
+	secret  []byte
+	expiry  time.Duration
+	issuer  string
+	options []jwt.ParserOption
 }
 
 type customClaims struct {
@@ -23,19 +24,15 @@ type customClaims struct {
 
 func NewJWTService(secret []byte, expiry time.Duration) *JWTService {
 	return &JWTService{
-		secret: secret,
-		expiry: expiry,
-		issuer: issuer,
+		secret:  secret,
+		expiry:  expiry,
+		issuer:  issuer,
+		options: jwtOptions(),
 	}
 }
 
 func (s *JWTService) GenerateToken(_ context.Context, claims domain.TokenClaims) (string, error) {
 	now := time.Now()
-
-	issuer := claims.Issuer
-	if issuer == "" {
-		issuer = s.issuer
-	}
 
 	expiresAt := claims.ExpiresAt
 	if expiresAt.IsZero() {
@@ -46,6 +43,7 @@ func (s *JWTService) GenerateToken(_ context.Context, claims domain.TokenClaims)
 		}
 	}
 
+	issuer := s.issuer
 	issuedAt := claims.IssuedAt
 	if issuedAt.IsZero() {
 		issuedAt = now
@@ -81,12 +79,12 @@ func (s *JWTService) GenerateToken(_ context.Context, claims domain.TokenClaims)
 func (s *JWTService) ValidateToken(_ context.Context, tokenString string) (domain.TokenClaims, error) {
 	claims := &customClaims{}
 
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, domain.ErrInvalidToken
-		}
-		return s.secret, nil
-	})
+	token, err := jwt.ParseWithClaims(
+		tokenString,
+		claims,
+		s.parseKey,
+		s.options...,
+	)
 
 	if err != nil {
 		return domain.TokenClaims{}, domain.ErrInvalidToken
@@ -119,4 +117,21 @@ func (s *JWTService) ValidateToken(_ context.Context, tokenString string) (domai
 		Expiry:    expiresAt.Sub(issuedAt),
 		NotBefore: notBefore,
 	}, nil
+}
+
+func (s *JWTService) parseKey(token *jwt.Token) (any, error) {
+	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+		return nil, domain.ErrInvalidToken
+	}
+	return s.secret, nil
+}
+
+func jwtOptions(issuer string) []jwt.ParserOption {
+	return []jwt.ParserOption{
+		jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Name}),
+		jwt.WithExpirationRequired(),
+		jwt.WithNotBeforeRequired(),
+		jwt.WithIssuedAt(),
+		jwt.WithIssuer(issuer),
+	}
 }
