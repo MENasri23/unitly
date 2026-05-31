@@ -3,11 +3,11 @@ package auth
 import (
 	"context"
 	"errors"
-	"regexp"
 	"time"
 	"unitly/internal/cache"
 	"unitly/internal/domain"
 	"unitly/internal/service/sms"
+	"unitly/internal/util/validate"
 
 	"github.com/google/uuid"
 )
@@ -20,7 +20,6 @@ var (
 
 var (
 	authPurpose = domain.OTPPurpose("register-login")
-	phoneRegex  = regexp.MustCompile(`^\+[1-9]\d{1,14}$`)
 )
 
 type AuthService struct {
@@ -142,7 +141,7 @@ func (s *AuthService) verifyOTP(
 }
 
 func (s *AuthService) isValidPhone(phone string) bool {
-	return phoneRegex.MatchString(phone)
+	return validate.IsValidPhone(phone)
 }
 
 func isNotFound(err error) bool {
