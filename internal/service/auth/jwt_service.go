@@ -27,7 +27,7 @@ func NewJWTService(secret []byte, expiry time.Duration) *JWTService {
 		secret:  secret,
 		expiry:  expiry,
 		issuer:  issuer,
-		options: jwtOptions(),
+		options: jwtOptions(issuer),
 	}
 }
 
