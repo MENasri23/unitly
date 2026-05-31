@@ -81,7 +81,7 @@ func (s *JWTService) GenerateToken(_ context.Context, claims domain.TokenClaims)
 func (s *JWTService) ValidateToken(_ context.Context, tokenString string) (domain.TokenClaims, error) {
 	claims := &customClaims{}
 
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, domain.ErrInvalidToken
 		}
