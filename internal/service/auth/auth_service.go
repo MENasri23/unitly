@@ -24,14 +24,14 @@ var (
 type AuthService struct {
 	otpRepo      domain.OTPRepository
 	userRepo     domain.UserRepository
-	smssvc       domain.SMSService
+	smssvc       domain.SmsService
 	tokenService domain.TokenService
 }
 
 func NewAuthService(
 	otpRepo domain.OTPRepository,
 	userRepo domain.UserRepository,
-	smssvc domain.SMSService,
+	smssvc domain.SmsService,
 	cache cache.Cache,
 	jwtSec string,
 ) *AuthService {
