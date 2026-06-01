@@ -6,7 +6,6 @@ import (
 	"time"
 	"unitly/internal/cache"
 	"unitly/internal/domain"
-	"unitly/internal/service/sms"
 	"unitly/internal/util/validate"
 
 	"github.com/google/uuid"
@@ -25,14 +24,14 @@ var (
 type AuthService struct {
 	otpRepo      domain.OTPRepository
 	userRepo     domain.UserRepository
-	smssvc       sms.SMSService
+	smssvc       domain.SMSService
 	tokenService domain.TokenService
 }
 
 func NewAuthService(
 	otpRepo domain.OTPRepository,
 	userRepo domain.UserRepository,
-	smssvc sms.SMSService,
+	smssvc domain.SMSService,
 	cache cache.Cache,
 	jwtSec string,
 ) *AuthService {
