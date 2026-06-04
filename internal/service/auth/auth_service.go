@@ -11,7 +11,10 @@ import (
 	"github.com/google/uuid"
 )
 
-const jwtExpiry = 15 * time.Minute
+const (
+	jwtExpiry      = 15 * time.Minute
+	sendOtpTimeout = 10 * time.Second
+)
 
 var (
 	ErrInvalidPhone = errors.New("invalid phone number")
@@ -92,9 +95,21 @@ func (s *AuthService) requestOTP(
 		return "", err
 	}
 
-	s.smssvc.SendOTP(phone, otp)
+	s.sendOtpAsync(ctx, phone, otp)
 
 	return token, nil
+}
+
+func (s *AuthService) sendOtpAsync(
+	ctx context.Context,
+	phone string,
+	otp string,
+) {
+	go func() {
+		bgCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), sendOtpTimeout)
+		defer cancel()
+		s.smssvc.SendOTP(bgCtx, phone, otp)
+	}()
 }
 
 func (s *AuthService) verifyOTP(

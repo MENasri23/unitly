@@ -1,5 +1,7 @@
 package domain
 
+import "context"
+
 type SmsService interface {
-	SendOTP(phone string, code string) error
+	SendOTP(ctx context.Context, phone string, code string) error
 }
