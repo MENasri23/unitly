@@ -15,22 +15,34 @@ const (
 )
 
 type Env struct {
-	AppEnv            AppEnv        `mapstructure:"APP_ENV"`
+	AppEnv AppEnv `mapstructure:"APP_ENV"`
+
 	ServerAddress     string        `mapstructure:"SERVER_ADDRESS"`
 	WriteTimeout      time.Duration `mapstructure:"WRITE_TIMEOUT"`
 	ReadTimeout       time.Duration `mapstructure:"READ_TIMEOUT"`
 	ReadHeaderTimeout time.Duration `mapstructure:"READ_HEADER_TIMEOUT"`
 	IdleTimeout       time.Duration `mapstructure:"IDLE_TIMEOUT"`
 	ContextTimeout    time.Duration `mapstructure:"CONTEXT_TIMEOUT"`
-	DBHost            string        `mapstructure:"DB_HOST"`
-	DBPort            string        `mapstructure:"DB_PORT"`
-	DBUser            string        `mapstructure:"DB_USER"`
-	DBPass            string        `mapstructure:"DB_PASS"`
-	DBName            string        `mapstructure:"DB_NAME"`
-	RedisHost         string        `mapstructure:"REDIS_HOST"`
-	RedisPort         string        `mapstructure:"REDIS_PORT"`
-	RedisUser         string        `mapstructure:"REDIS_USER"`
-	RedisPass         string        `mapstructure:"REDIS_PASS"`
+
+	DBHost string `mapstructure:"DB_HOST"`
+	DBPort string `mapstructure:"DB_PORT"`
+	DBUser string `mapstructure:"DB_USER"`
+	DBPass string `mapstructure:"DB_PASS"`
+	DBName string `mapstructure:"DB_NAME"`
+
+	RedisHost string `mapstructure:"REDIS_HOST"`
+	RedisPort string `mapstructure:"REDIS_PORT"`
+	RedisUser string `mapstructure:"REDIS_USER"`
+	RedisPass string `mapstructure:"REDIS_PASS"`
+
+	AccessTokenSecret string        `mapstructure:"ACCESS_TOKEN_SECRET"`
+	AccessTokenExpiry time.Duration `mapstructure:"ACCESS_TOKEN_EXPIRY"`
+
+	OtpSecret     string `mapstructure:"OTP_SECRET"`
+	OtpTemplateID string `mapstructure:"OTP_TEMPLATE_ID"`
+
+	SmsUsername string `mapstructure:"SMS_USER"`
+	SmsApiKey   string `mapstructure:"SMS_API_KEY"`
 }
 
 func NewEnv() *Env {

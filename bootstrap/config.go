@@ -14,6 +14,8 @@ type config struct {
 	IdleTimeout       time.Duration
 	db                *dbConfig
 	cache             *cacheConfig
+	token             *tokenConfig
+	otp               *otpConfig
 }
 
 func newConfig(env *Env) *config {
@@ -25,6 +27,8 @@ func newConfig(env *Env) *config {
 		IdleTimeout:       env.IdleTimeout,
 		db:                newDbConfig(env),
 		cache:             newCacheConfig(env),
+		token:             newTokenConfig(env),
+		otp:               newOtpConfig(env, newSmsConfig(env)),
 	}
 }
 
@@ -120,5 +124,43 @@ func newCacheConfig(env *Env) *cacheConfig {
 		Port:     env.RedisPort,
 		Username: env.RedisUser,
 		Password: env.RedisPass,
+	}
+}
+
+type tokenConfig struct {
+	accessTokenSecret string
+	accessTokenExpiry time.Duration
+}
+
+func newTokenConfig(env *Env) *tokenConfig {
+	return &tokenConfig{
+		accessTokenSecret: env.AccessTokenSecret,
+		accessTokenExpiry: env.AccessTokenExpiry,
+	}
+}
+
+type smsConfig struct {
+	Username string
+	ApiKey   string
+}
+
+func newSmsConfig(env *Env) *smsConfig {
+	return &smsConfig{
+		Username: env.SmsUsername,
+		ApiKey:   env.SmsApiKey,
+	}
+}
+
+type otpConfig struct {
+	Secret    string
+	TempID    string
+	SmsConfig *smsConfig
+}
+
+func newOtpConfig(env *Env, smsCfg *smsConfig) *otpConfig {
+	return &otpConfig{
+		Secret:    env.OtpSecret,
+		TempID:    env.OtpTemplateID,
+		SmsConfig: smsCfg,
 	}
 }

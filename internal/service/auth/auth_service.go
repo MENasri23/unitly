@@ -11,7 +11,6 @@ import (
 )
 
 const (
-	jwtExpiry      = 15 * time.Minute
 	sendOtpTimeout = 10 * time.Second
 )
 
@@ -30,9 +29,10 @@ func NewAuthService(
 	otpRepo domain.OTPRepository,
 	userRepo domain.UserRepository,
 	smssvc domain.SmsService,
-	jwtSec string,
+	accessTokenSecret string,
+	accessTokenExpiry time.Duration,
 ) *AuthService {
-	tokenService := NewJWTService([]byte(jwtSec), jwtExpiry)
+	tokenService := NewJWTService([]byte(accessTokenSecret), accessTokenExpiry)
 	return &AuthService{
 		otpRepo:      otpRepo,
 		userRepo:     userRepo,
@@ -182,10 +182,6 @@ func (s *AuthService) createUser(ctx context.Context, phone string) (*domain.Use
 }
 
 func (s *AuthService) generateToken(ctx context.Context, userID int64) (string, error) {
-	claims := domain.TokenClaims{
-		UserID: userID,
-		Expiry: jwtExpiry,
-	}
-
+	claims := domain.TokenClaims{UserID: userID}
 	return s.tokenService.GenerateToken(ctx, claims)
 }

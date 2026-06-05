@@ -4,15 +4,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
-	"strconv"
 	"time"
 	"unitly/internal/domain"
 )
 
 const (
 	timeout  = 15 * time.Second
-	apiKey   = ""
 	baseUrl  = "https://rest.payamak-panel.com/api/SendSMS/"
 	otpPatID = 468714
 )
@@ -30,18 +30,18 @@ type patternRequest struct {
 }
 
 type meliPayamakService struct {
-	client       *http.Client
-	username     string
-	apiKey       string
-	otpPatternID int64
+	client    *http.Client
+	username  string
+	apiKey    string
+	otpTempID string
 }
 
-func NewMeliPayamakService(username string) domain.SmsService {
+func NewMeliPayamakService(username, apiKey, otpTempID string) domain.SmsService {
 	return &meliPayamakService{
-		client:       newHTTPClient(),
-		username:     username,
-		apiKey:       apiKey,
-		otpPatternID: otpPatID,
+		client:    newHTTPClient(),
+		username:  username,
+		apiKey:    apiKey,
+		otpTempID: otpTempID,
 	}
 }
 
@@ -55,7 +55,7 @@ func (s *meliPayamakService) SendOTP(ctx context.Context, phone string, code str
 		Password:  s.apiKey,
 		To:        phone,
 		Text:      code,
-		PatternID: strconv.FormatInt(s.otpPatternID, 10),
+		PatternID: s.otpTempID,
 	}
 
 	res, err := makeRequest(ctx, s.client, data, otpOp)
@@ -63,6 +63,12 @@ func (s *meliPayamakService) SendOTP(ctx context.Context, phone string, code str
 		return err
 	}
 	defer res.Body.Close()
+
+	response, err := io.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+	fmt.Println("value from melipayamak: ", string(response))
 
 	return nil
 }

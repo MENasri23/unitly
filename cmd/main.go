@@ -33,18 +33,20 @@ func main() {
 	}
 	defer cache.Close()
 
-	jwtSecret := "high secure jwt secret key"
-	hmacSecret := "high secure hmac secret key"
-
 	userRepository := repository.NewUserRepository(db)
-	otpRepository := otprepo.NewOtpRepository(cache, hmacSecret)
+	otpRepository := otprepo.NewOtpRepository(cache, app.GetOtpSecret())
 
-	smsService := sms.NewMeliPayamakService("9186191404")
+	smsService := sms.NewMeliPayamakService(
+		app.GetSmsUsername(),
+		app.GetSmsApiKey(),
+		app.GetOtpTemplateID(),
+	)
 	authService := auth.NewAuthService(
 		otpRepository,
 		userRepository,
 		smsService,
-		jwtSecret,
+		app.GetTokenSecret(),
+		app.GetTokenExpiry(),
 	)
 	accountController := controller.NewAccountController(authService)
 

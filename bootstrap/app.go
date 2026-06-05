@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"net/http"
+	"time"
 )
 
 type Application struct {
@@ -31,6 +32,30 @@ func (app *Application) GetCacheUsername() string {
 
 func (app *Application) GetCachePassword() string {
 	return app.config.cache.Password
+}
+
+func (app *Application) GetTokenSecret() string {
+	return app.config.token.accessTokenSecret
+}
+
+func (app *Application) GetTokenExpiry() time.Duration {
+	return app.config.token.accessTokenExpiry
+}
+
+func (app *Application) GetSmsUsername() string {
+	return app.config.otp.SmsConfig.Username
+}
+
+func (app *Application) GetSmsApiKey() string {
+	return app.config.otp.SmsConfig.ApiKey
+}
+
+func (app *Application) GetOtpSecret() string {
+	return app.config.otp.Secret
+}
+
+func (app *Application) GetOtpTemplateID() string {
+	return app.config.otp.TempID
 }
 
 func (app *Application) Run(mux http.Handler) error {
