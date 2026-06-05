@@ -1,4 +1,4 @@
-package repository
+package otprepo
 
 import (
 	"context"
@@ -24,6 +24,13 @@ var (
 type otpRepository struct {
 	cache      *cache.Cache
 	hmacSecret []byte
+}
+
+func NewOtpRepository(cache *cache.Cache, secret string) domain.OTPRepository {
+	return &otpRepository{
+		cache:      cache,
+		hmacSecret: []byte(secret),
+	}
 }
 
 func (o *otpRepository) IsBlocked(ctx context.Context, phone string, purpose domain.OTPPurpose) (bool, error) {
