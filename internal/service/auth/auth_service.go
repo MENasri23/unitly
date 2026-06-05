@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	sendOtpTimeout = 10 * time.Second
+	sendOtpTimeout = 15 * time.Second
 )
 
 var (
