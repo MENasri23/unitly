@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"time"
-	"unitly/internal/cache"
 	"unitly/internal/domain"
 	"unitly/internal/util/validate"
 
@@ -14,10 +13,6 @@ import (
 const (
 	jwtExpiry      = 15 * time.Minute
 	sendOtpTimeout = 10 * time.Second
-)
-
-var (
-	ErrInvalidPhone = errors.New("invalid phone number")
 )
 
 var (
@@ -35,7 +30,6 @@ func NewAuthService(
 	otpRepo domain.OTPRepository,
 	userRepo domain.UserRepository,
 	smssvc domain.SmsService,
-	cache cache.Cache,
 	jwtSec string,
 ) *AuthService {
 	tokenService := NewJWTService([]byte(jwtSec), jwtExpiry)
@@ -68,7 +62,7 @@ func (s *AuthService) requestOTP(
 	purpose domain.OTPPurpose,
 ) (string, error) {
 	if !s.isValidPhone(phone) {
-		return "", ErrInvalidPhone
+		return "", domain.ErrInvalidPhone
 	}
 
 	ratelimited, err := s.otpRepo.IsRateLimited(ctx, phone, purpose)

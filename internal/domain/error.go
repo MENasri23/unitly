@@ -7,4 +7,5 @@ var (
 	ErrRateLimit       = errors.New("too many request")
 	ErrInvalidToken    = errors.New("invalid or expired token")
 	ErrTooManyAttempts = errors.New("too many failed attempts, please try again later")
+	ErrInvalidPhone    = errors.New("invalid phone number")
 )
