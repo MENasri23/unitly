@@ -12,9 +12,8 @@ import (
 )
 
 const (
-	timeout  = 15 * time.Second
-	baseUrl  = "https://rest.payamak-panel.com/api/SendSMS/"
-	otpPatID = 468714
+	timeout = 15 * time.Second
+	baseUrl = "https://rest.payamak-panel.com/api/SendSMS/"
 )
 
 const (
