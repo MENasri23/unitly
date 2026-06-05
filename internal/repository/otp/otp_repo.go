@@ -59,8 +59,8 @@ func (o *otpRepository) Create(ctx context.Context, phone string, purpose domain
 	hashedOTP := o.hashOTP(otp)
 
 	pipe := o.cache.Client.TxPipeline()
+	pipe.Set(ctx, phoneKey(token, purpose), phone, otpExpiry)
 	pipe.Set(ctx, otpCodeKey(phone, purpose), hashedOTP, otpExpiry)
-	pipe.Set(ctx, phoneKey(token, purpose), token, otpExpiry)
 	pipe.Set(ctx, attemptsKey(phone, purpose), 0, otpExpiry)
 
 	if _, err := pipe.Exec(ctx); err != nil {
