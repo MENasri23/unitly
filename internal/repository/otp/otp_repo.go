@@ -92,11 +92,8 @@ func (o *otpRepository) Verify(ctx context.Context, r *domain.VerifyOTPReq) erro
 		}
 
 		if attempts >= maxAttempts {
-			pipe := o.cache.Client.TxPipeline()
-			pipe.Set(ctx, blkKey, 1, blockExpiry)
-			pipe.Del(ctx, otpKey, tokKey)
-			if _, err = pipe.Exec(ctx); err != nil {
-				log.Printf("failed to block phone number: %v", err)
+			if _, err = o.block(ctx, blkKey); err != nil {
+				log.Printf("failed to block user after max OTP attempts: %v", err)
 			}
 
 			return domain.ErrTooManyAttempts
@@ -123,6 +120,10 @@ func (o *otpRepository) hashOTP(otp string) string {
 	h := hmac.New(sha256.New, o.hmacSecret)
 	h.Write([]byte(otp))
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+func (o *otpRepository) block(ctx context.Context, key string) (bool, error) {
+	return o.cache.SetIfNotExist(ctx, key, 1, blockExpiry)
 }
 
 func blockKey(phone string, purpose domain.OTPPurpose) string {
