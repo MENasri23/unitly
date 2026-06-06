@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"time"
 	"unitly/internal/cache"
 	"unitly/internal/domain"
@@ -54,6 +55,7 @@ func (o *otpRepository) Create(ctx context.Context, phone string, purpose domain
 	pipe.Set(ctx, attemptsKey(phone, purpose), 0, otpExpiry)
 
 	if _, err := pipe.Exec(ctx); err != nil {
+		log.Printf("failed to store OTP in cache: %v", err)
 		return "", "", err
 	}
 
@@ -93,7 +95,9 @@ func (o *otpRepository) Verify(ctx context.Context, r *domain.VerifyOTPReq) erro
 			pipe := o.cache.Client.TxPipeline()
 			pipe.Set(ctx, blkKey, 1, blockExpiry)
 			pipe.Del(ctx, otpKey, tokKey)
-			pipe.Exec(ctx)
+			if _, err = pipe.Exec(ctx); err != nil {
+				log.Printf("failed to block phone number: %v", err)
+			}
 
 			return domain.ErrTooManyAttempts
 		}
