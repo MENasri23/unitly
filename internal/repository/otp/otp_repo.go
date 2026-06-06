@@ -64,7 +64,7 @@ func (o *otpRepository) Create(ctx context.Context, phone string, purpose domain
 
 func (o *otpRepository) GetPhoneByToken(ctx context.Context, token string, purpose domain.OTPPurpose) (string, error) {
 	key := phoneKey(token, purpose)
-	phone, err := o.cache.Client.Get(ctx, key).Result()
+	phone, err := o.cache.Get(ctx, key)
 	if err != nil {
 		return "", err
 	}
