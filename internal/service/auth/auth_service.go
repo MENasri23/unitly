@@ -85,7 +85,7 @@ func (s *AuthService) requestOTP(
 
 	otp, token, err := s.otpRepo.Create(ctx, phone, purpose)
 	if err != nil {
-		s.DeleteRateLimit(ctx, phone, purpose)
+		s.resetRatelimit(ctx, phone, purpose)
 		return "", err
 	}
 
@@ -107,7 +107,7 @@ func (s *AuthService) checkRatelimit(ctx context.Context, phone string, purpose 
 	return nil
 }
 
-func (s *AuthService) DeleteRateLimit(ctx context.Context, phone string, purpose domain.OTPPurpose) {
+func (s *AuthService) resetRatelimit(ctx context.Context, phone string, purpose domain.OTPPurpose) {
 	s.otpRateLimiter.Reset(ctx, ratelimitKey(phone, purpose))
 }
 
