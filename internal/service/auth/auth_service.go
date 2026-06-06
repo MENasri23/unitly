@@ -79,7 +79,7 @@ func (s *AuthService) requestOTP(
 		return "", domain.ErrTooManyAttempts
 	}
 
-	if err := s.checkRatelimit(ctx, phone, purpose); err != nil {
+	if err = s.checkRatelimit(ctx, phone, purpose); err != nil {
 		return "", err
 	}
 
