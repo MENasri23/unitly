@@ -33,9 +33,14 @@ func main() {
 	}
 	defer cache.Close()
 
+	// repositories
 	userRepository := repository.NewUserRepository(db)
 	otpRepository := otprepo.NewOtpRepository(cache, app.GetOtpSecret())
 
+	// rate limiters
+	otpRateLimiter := otprepo.NewOtpRateLimiter(cache, app.GetOtpRateLimit())
+
+	// services
 	smsService := sms.NewMeliPayamakService(
 		app.GetSmsUsername(),
 		app.GetSmsApiKey(),
@@ -45,9 +50,12 @@ func main() {
 		otpRepository,
 		userRepository,
 		smsService,
+		otpRateLimiter,
 		app.GetTokenSecret(),
 		app.GetTokenExpiry(),
 	)
+
+	// controllers
 	accountController := controller.NewAccountController(authService)
 
 	r := chi.NewRouter()

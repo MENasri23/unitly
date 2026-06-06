@@ -40,7 +40,8 @@ type Env struct {
 
 	OtpSecret     string `mapstructure:"OTP_SECRET"`
 	OtpTemplateID string `mapstructure:"OTP_TEMPLATE_ID"`
-
+	OtpRateLimit  time.Duration `mapstructure:"OTP_RATE_LIMIT"`
+	
 	SmsUsername string `mapstructure:"SMS_USER"`
 	SmsApiKey   string `mapstructure:"SMS_API_KEY"`
 }

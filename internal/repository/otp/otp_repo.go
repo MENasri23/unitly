@@ -14,11 +14,10 @@ import (
 )
 
 var (
-	rateLimitExpiry       = 1 * time.Minute
-	otpExpiry             = 3 * time.Minute
-	blockExpiry           = 10 * time.Minute
-	otpLength             = 6
-	maxAttempts     int64 = 3
+	otpExpiry         = 3 * time.Minute
+	blockExpiry       = 10 * time.Minute
+	otpLength         = 6
+	maxAttempts int64 = 3
 )
 
 type otpRepository struct {
@@ -35,15 +34,6 @@ func NewOtpRepository(cache *cache.Cache, secret string) domain.OTPRepository {
 
 func (o *otpRepository) IsBlocked(ctx context.Context, phone string, purpose domain.OTPPurpose) (bool, error) {
 	return o.cache.ExistsKey(ctx, blockKey(phone, purpose))
-}
-
-func (o *otpRepository) IsRateLimited(ctx context.Context, phone string, purpose domain.OTPPurpose) (bool, error) {
-	set, err := o.cache.SetIfNotExist(ctx, ratelimitKey(phone, purpose), 1, rateLimitExpiry)
-	return !set, err
-}
-
-func (o *otpRepository) DeleteRateLimit(ctx context.Context, phone string, purpose domain.OTPPurpose) {
-	o.cache.Delete(ctx, ratelimitKey(phone, purpose))
 }
 
 func (o *otpRepository) Create(ctx context.Context, phone string, purpose domain.OTPPurpose) (string, string, error) {
@@ -133,10 +123,6 @@ func (o *otpRepository) hashOTP(otp string) string {
 
 func blockKey(phone string, purpose domain.OTPPurpose) string {
 	return fmt.Sprintf("auth:%s:otp:block:%s", purpose, phone)
-}
-
-func ratelimitKey(phone string, purpose domain.OTPPurpose) string {
-	return fmt.Sprintf("auth:%s:otp:ratelimit:%s", purpose, phone)
 }
 
 func otpCodeKey(phone string, purpose domain.OTPPurpose) string {

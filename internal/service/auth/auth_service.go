@@ -3,6 +3,8 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
+	"log"
 	"time"
 	"unitly/internal/domain"
 	"unitly/internal/util/validate"
@@ -19,25 +21,28 @@ var (
 )
 
 type AuthService struct {
-	otpRepo      domain.OTPRepository
-	userRepo     domain.UserRepository
-	smssvc       domain.SmsService
-	tokenService domain.TokenService
+	otpRepo        domain.OTPRepository
+	userRepo       domain.UserRepository
+	smssvc         domain.SmsService
+	tokenService   domain.TokenService
+	otpRateLimiter domain.RateLimiter
 }
 
 func NewAuthService(
 	otpRepo domain.OTPRepository,
 	userRepo domain.UserRepository,
 	smssvc domain.SmsService,
+	otpRateLimiter domain.RateLimiter,
 	accessTokenSecret string,
 	accessTokenExpiry time.Duration,
 ) *AuthService {
 	tokenService := NewJWTService([]byte(accessTokenSecret), accessTokenExpiry)
 	return &AuthService{
-		otpRepo:      otpRepo,
-		userRepo:     userRepo,
-		smssvc:       smssvc,
-		tokenService: tokenService,
+		otpRepo:        otpRepo,
+		userRepo:       userRepo,
+		smssvc:         smssvc,
+		tokenService:   tokenService,
+		otpRateLimiter: otpRateLimiter,
 	}
 }
 
@@ -65,13 +70,8 @@ func (s *AuthService) requestOTP(
 		return "", domain.ErrInvalidPhone
 	}
 
-	ratelimited, err := s.otpRepo.IsRateLimited(ctx, phone, purpose)
-	if err != nil {
+	if err := s.checkRatelimit(ctx, phone, purpose); err != nil {
 		return "", err
-	}
-
-	if ratelimited {
-		return "", domain.ErrRateLimit
 	}
 
 	blocked, err := s.otpRepo.IsBlocked(ctx, phone, purpose)
@@ -85,13 +85,30 @@ func (s *AuthService) requestOTP(
 
 	otp, token, err := s.otpRepo.Create(ctx, phone, purpose)
 	if err != nil {
-		s.otpRepo.DeleteRateLimit(ctx, phone, purpose)
+		s.DeleteRateLimit(ctx, phone, purpose)
 		return "", err
 	}
 
 	s.sendOtpAsync(ctx, phone, otp)
 
 	return token, nil
+}
+
+func (s *AuthService) checkRatelimit(ctx context.Context, phone string, purpose domain.OTPPurpose) error {
+	ratelimitAllowed, err := s.otpRateLimiter.Allow(ctx, ratelimitKey(phone, purpose))
+	if err != nil {
+		return err
+	}
+
+	if !ratelimitAllowed {
+		return domain.ErrRateLimit
+	}
+
+	return nil
+}
+
+func (s *AuthService) DeleteRateLimit(ctx context.Context, phone string, purpose domain.OTPPurpose) {
+	s.otpRateLimiter.Reset(ctx, ratelimitKey(phone, purpose))
 }
 
 func (s *AuthService) sendOtpAsync(
@@ -102,7 +119,9 @@ func (s *AuthService) sendOtpAsync(
 	go func() {
 		bgCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), sendOtpTimeout)
 		defer cancel()
-		s.smssvc.SendOTP(bgCtx, phone, otp)
+		if err := s.smssvc.SendOTP(bgCtx, phone, otp); err != nil {
+			log.Printf("failed to send OTP to %s: %v", phone, err)
+		}
 	}()
 }
 
@@ -184,4 +203,8 @@ func (s *AuthService) createUser(ctx context.Context, phone string) (*domain.Use
 func (s *AuthService) generateToken(ctx context.Context, userID int64) (string, error) {
 	claims := domain.TokenClaims{UserID: userID}
 	return s.tokenService.GenerateToken(ctx, claims)
+}
+
+func ratelimitKey(phone string, purpose domain.OTPPurpose) string {
+	return fmt.Sprintf("auth:%s:otp:ratelimit:%s", purpose, phone)
 }

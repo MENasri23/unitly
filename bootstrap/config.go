@@ -154,6 +154,7 @@ func newSmsConfig(env *Env) *smsConfig {
 type otpConfig struct {
 	Secret    string
 	TempID    string
+	RateLimit time.Duration
 	SmsConfig *smsConfig
 }
 
@@ -161,6 +162,7 @@ func newOtpConfig(env *Env, smsCfg *smsConfig) *otpConfig {
 	return &otpConfig{
 		Secret:    env.OtpSecret,
 		TempID:    env.OtpTemplateID,
+		RateLimit: env.OtpRateLimit,
 		SmsConfig: smsCfg,
 	}
 }

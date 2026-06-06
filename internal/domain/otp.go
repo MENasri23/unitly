@@ -21,8 +21,6 @@ type VerifyOTPReq struct {
 
 type OTPRepository interface {
 	IsBlocked(ctx context.Context, phone string, purpose OTPPurpose) (bool, error)
-	IsRateLimited(ctx context.Context, phone string, purpose OTPPurpose) (bool, error)
-	DeleteRateLimit(ctx context.Context, phone string, purpose OTPPurpose)
 	Create(ctx context.Context, phone string, purpose OTPPurpose) (string, string, error)
 	GetPhoneByToken(ctx context.Context, token string, purpose OTPPurpose) (string, error)
 	Verify(ctx context.Context, verifyReq *VerifyOTPReq) error

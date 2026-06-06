@@ -58,6 +58,10 @@ func (app *Application) GetOtpTemplateID() string {
 	return app.config.otp.TempID
 }
 
+func (app *Application) GetOtpRateLimit() time.Duration {
+	return app.config.otp.RateLimit
+}
+
 func (app *Application) Run(mux http.Handler) error {
 	cfg := app.config
 	server := http.Server{
