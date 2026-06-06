@@ -70,10 +70,6 @@ func (s *AuthService) requestOTP(
 		return "", domain.ErrInvalidPhone
 	}
 
-	if err := s.checkRatelimit(ctx, phone, purpose); err != nil {
-		return "", err
-	}
-
 	blocked, err := s.otpRepo.IsBlocked(ctx, phone, purpose)
 	if err != nil {
 		return "", err
@@ -81,6 +77,10 @@ func (s *AuthService) requestOTP(
 
 	if blocked {
 		return "", domain.ErrTooManyAttempts
+	}
+
+	if err := s.checkRatelimit(ctx, phone, purpose); err != nil {
+		return "", err
 	}
 
 	otp, token, err := s.otpRepo.Create(ctx, phone, purpose)
