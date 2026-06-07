@@ -14,12 +14,13 @@ import (
 )
 
 const (
-	sendOtpTimeout = 15 * time.Second
+	sendOtpTimeout      = 15 * time.Second
+	resetPasswordExpiry = 5 * time.Minute
 )
 
 var (
 	authPurpose      = domain.OTPPurpose("register-login")
-	resetPassPurpose = domain.OTPPurpose("reset-password")
+	resetPassPurpose = domain.OTPPurpose("password-reset")
 )
 
 type AuthService struct {
@@ -106,7 +107,23 @@ func (s *AuthService) VerifyResetPasswordByOTP(
 	token string,
 	inputOTP string,
 ) (string, error) {
-	return "", nil
+	req := &domain.VerifyOTPReq{
+		Token:    token,
+		InputOTP: inputOTP,
+		Purpose:  resetPassPurpose,
+	}
+
+	result, err := s.otpRepo.Verify(ctx, req)
+	if err != nil {
+		return "", err
+	}
+	
+	userID, err := s.userRepo.GetUserIDByPhone(ctx, result.Phone)
+	if err != nil {
+		return "", err
+	}
+
+	return s.generateResetPassToken(ctx, userID)
 }
 
 func (s *AuthService) requestOTP(
@@ -226,6 +243,14 @@ func (s *AuthService) createUser(ctx context.Context, phone string) (*domain.Use
 
 func (s *AuthService) generateToken(ctx context.Context, userID int64) (string, error) {
 	claims := domain.TokenClaims{UserID: userID}
+	return s.tokenService.GenerateToken(ctx, claims)
+}
+
+func (s *AuthService) generateResetPassToken(ctx context.Context, userID int64) (string, error) {
+	claims := domain.TokenClaims{
+		UserID: userID,
+		Expiry: resetPasswordExpiry,
+	}
 	return s.tokenService.GenerateToken(ctx, claims)
 }
 
