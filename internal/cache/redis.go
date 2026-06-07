@@ -96,3 +96,15 @@ func (c *Cache) DeleteAll(ctx context.Context, keys ...string) (int64, error) {
 	delCount, err := c.Client.Del(ctx, keys...).Result()
 	return delCount, err
 }
+
+func (c *Cache) SetMap(ctx context.Context, key string, values map[string]any) error {
+	return c.Client.HSet(ctx, key, values).Err()
+}
+
+func (c *Cache) GetMap(ctx context.Context, key string) (map[string]string, error) {	
+	return c.Client.HGetAll(ctx, key).Result()
+}
+
+func (c *Cache) HIncrBy(ctx context.Context, key, field string, increment int64) (int64, error) {
+	return c.Client.HIncrBy(ctx, key, field, increment).Result()
+}

@@ -49,70 +49,82 @@ func (o *otpRepository) Create(ctx context.Context, phone string, purpose domain
 	}
 	hashedOTP := o.hashOTP(otp)
 
-	pipe := o.cache.Client.TxPipeline()
-	pipe.Set(ctx, phoneKey(token, purpose), phone, otpExpiry)
-	pipe.Set(ctx, otpCodeKey(phone, purpose), hashedOTP, otpExpiry)
-	pipe.Set(ctx, attemptsKey(phone, purpose), 0, otpExpiry)
+	sessionKey := otpSessionKey(token, purpose)
+	session := &otpSession{
+		Phone:    phone,
+		otpHash:  hashedOTP,
+		Attempts: 0,
+	}
 
-	if _, err := pipe.Exec(ctx); err != nil {
-		log.Printf("failed to store OTP in cache: %v", err)
+	pipe := o.cache.Client.TxPipeline()
+	pipe.HSet(
+		ctx,
+		sessionKey,
+		session.serialize(),
+	)
+	pipe.Expire(ctx, sessionKey, otpExpiry)
+
+	if _, err = pipe.Exec(ctx); err != nil {
+		log.Printf("failed to create OTP session: %v", err)
 		return "", "", err
 	}
 
 	return otp, token, nil
 }
 
-func (o *otpRepository) GetPhoneByToken(ctx context.Context, token string, purpose domain.OTPPurpose) (string, error) {
-	key := phoneKey(token, purpose)
-	phone, err := o.cache.Get(ctx, key)
+func (o *otpRepository) Verify(ctx context.Context, r *domain.VerifyOTPReq) (*domain.VerifyOTPResult, error) {
+	sessionKey := otpSessionKey(r.Token, r.Purpose)
+	sessionMap, err := o.cache.GetMap(ctx, sessionKey)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return phone, nil
-}
 
-func (o *otpRepository) Verify(ctx context.Context, r *domain.VerifyOTPReq) error {
-	otpKey := otpCodeKey(r.Phone, r.Purpose)
-	atmptsKey := attemptsKey(r.Phone, r.Purpose)
-	blkKey := blockKey(r.Phone, r.Purpose)
-	tokKey := phoneKey(r.Token, r.Purpose)
-
-	storeHashedOTP, err := o.cache.Get(ctx, otpKey)
+	session, err := deserializeOtpSession(sessionMap)
 	if err != nil {
-		return domain.ErrInvalidOTP
+		return nil, err
+	}
+
+	blocked, err := o.IsBlocked(ctx, session.Phone, r.Purpose)
+	if err != nil {
+		return nil, err
+	}
+
+	if blocked {
+		return nil, domain.ErrTooManyAttempts
 	}
 
 	inputHashedOTP := o.hashOTP(r.InputOTP)
-	match := eql.IsEqual(storeHashedOTP, inputHashedOTP)
+	match := eql.IsEqual(session.otpHash, inputHashedOTP)
 
 	if !match {
-		attempts, err := o.cache.Incr(ctx, atmptsKey)
+		attempts, err := o.incrementAttempts(ctx, sessionKey)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		if attempts >= maxAttempts {
-			if _, err = o.block(ctx, blkKey); err != nil {
+			blockKey := blockKey(session.Phone, r.Purpose)
+			if _, err = o.block(ctx, blockKey); err != nil {
 				log.Printf("failed to block user after max OTP attempts: %v", err)
 			}
 
-			return domain.ErrTooManyAttempts
+			return nil, domain.ErrTooManyAttempts
 		}
 
-		return domain.ErrInvalidOTP
+		return nil, domain.ErrInvalidOTP
 	}
 
-	deleted, err := o.cache.Delete(ctx, otpKey)
+	deleted, err := o.cache.Delete(ctx, sessionKey)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if !deleted {
-		return domain.ErrOTPAlreadyUsed
+		return nil, domain.ErrOTPAlreadyUsed
 	}
 
-	o.cache.DeleteAll(ctx, tokKey, atmptsKey)
-
-	return nil
+	return &domain.VerifyOTPResult{
+		Phone: session.Phone,
+	}, nil
 }
 
 // hashOTP creates an HMAC-SHA256 hash of the OTP for secure storage
@@ -126,6 +138,10 @@ func (o *otpRepository) block(ctx context.Context, key string) (bool, error) {
 	return o.cache.SetIfNotExist(ctx, key, 1, blockExpiry)
 }
 
+func (o *otpRepository) incrementAttempts(ctx context.Context, sessionKey string) (int64, error) {
+	return o.cache.HIncrBy(ctx, sessionKey, otpAttemptsField, 1)
+}
+
 func blockKey(phone string, purpose domain.OTPPurpose) string {
 	return fmt.Sprintf("auth:%s:otp:block:%s", purpose, phone)
 }
@@ -136,6 +152,10 @@ func otpCodeKey(phone string, purpose domain.OTPPurpose) string {
 
 func phoneKey(token string, purpose domain.OTPPurpose) string {
 	return fmt.Sprintf("auth:%s:otp:phone:%s", purpose, token)
+}
+
+func otpSessionKey(token string, purpose domain.OTPPurpose) string {
+	return fmt.Sprintf("auth:%s:otp:session:%s", purpose, token)
 }
 
 func attemptsKey(phone string, purpose domain.OTPPurpose) string {

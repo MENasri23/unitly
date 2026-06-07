@@ -131,34 +131,21 @@ func (s *AuthService) verifyOTP(
 	inputOTP string,
 	purpose domain.OTPPurpose,
 ) (string, error) {
-	phone, err := s.otpRepo.GetPhoneByToken(ctx, token, purpose)
-	if err != nil {
-		return "", domain.ErrInvalidToken
-	}
-
-	blocked, err := s.otpRepo.IsBlocked(ctx, phone, purpose)
-	if err != nil {
-		return "", err
-	}
-
-	if blocked {
-		return "", domain.ErrTooManyAttempts
-	}
-
 	req := &domain.VerifyOTPReq{
-		Phone:    phone,
 		Token:    token,
 		InputOTP: inputOTP,
 		Purpose:  purpose,
 	}
-	if err = s.otpRepo.Verify(ctx, req); err != nil {
+	
+	result, err := s.otpRepo.Verify(ctx, req)
+	if err != nil {
 		return "", err
 	}
 
-	userID, err := s.userRepo.GetUserIDByPhone(ctx, phone)
+	userID, err := s.userRepo.GetUserIDByPhone(ctx, result.Phone)
 	if err != nil {
 		if isNotFound(err) {
-			return s.registerUser(ctx, phone)
+			return s.registerUser(ctx, result.Phone)
 		}
 
 		return "", err
