@@ -13,12 +13,12 @@ type AccountController struct {
 }
 
 type requestOTPRequest struct {
-	Phone string `json:"phone"`
+	Phone string `json:"phone" validate:"required,e164"`
 }
 
 type verifyOTPRequest struct {
-	Sign string `json:"sign"`
-	Otp  string `json:"otp"`
+	Sign string `json:"sign" validate:"required,base64rawurl"`
+	Otp  string `json:"otp" validate:"required,number,len=6"`
 }
 
 func NewAccountController(authSvc *auth.AuthService) *AccountController {
@@ -30,6 +30,11 @@ func NewAccountController(authSvc *auth.AuthService) *AccountController {
 func (c *AccountController) RequestAuthByOTP(w http.ResponseWriter, r *http.Request) {
 	var req requestOTPRequest
 	if err := jsonutil.ReadJSON(w, r, &req); err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := validateStruct(req); err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -52,6 +57,11 @@ func (c *AccountController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if err := validateStruct(req); err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	token, err := c.authSvc.VerifyAuthByOTP(r.Context(), req.Sign, req.Otp)
 	if err != nil {
 		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err.Error())
@@ -66,6 +76,11 @@ func (c *AccountController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Reque
 func (c *AccountController) RequestResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
 	var req requestOTPRequest
 	if err := jsonutil.ReadJSON(w, r, &req); err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := validateStruct(req); err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -88,6 +103,11 @@ func (c *AccountController) VerifyResetPasswordByOTP(w http.ResponseWriter, r *h
 		return
 	}
 
+	if err := validateStruct(req); err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	token, err := c.authSvc.VerifyResetPasswordByOTP(r.Context(), req.Sign, req.Otp)
 	if err != nil {
 		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err.Error())
@@ -104,7 +124,7 @@ func SetupAccountRoutes(
 	authService *auth.AuthService,
 ) {
 	accountController := NewAccountController(authService)
-	
+
 	r.Route("/accounts", func(r chi.Router) {
 		r.Route("/auth", func(r chi.Router) {
 			r.Route("/by-otp", func(r chi.Router) {
