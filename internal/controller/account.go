@@ -60,3 +60,39 @@ func (c *AccountController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Reque
 		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, "failed to write response")
 	}
 }
+
+func (c *AccountController) RequestResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
+	var req requestOTPRequest
+	if err := jsonutil.ReadJSON(w, r, &req); err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, ErrInvalidReqest.Error())
+		return
+	}
+
+	token, err := c.authSvc.RequestResetPasswordByOTP(r.Context(), req.Phone)
+	if err != nil {
+		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err.Error())
+		return
+	}
+
+	if err = jsonutil.WriteJSON(w, http.StatusOK, token); err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, "failed to write response")
+	}
+}
+
+func (c *AccountController) VerifyResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
+	var req verifyOTPRequest
+	if err := jsonutil.ReadJSON(w, r, &req); err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, ErrInvalidReqest.Error())
+		return
+	}
+
+	token, err := c.authSvc.VerifyResetPasswordByOTP(r.Context(), req.Sign, req.Otp)
+	if err != nil {
+		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err.Error())
+		return
+	}
+
+	if err = jsonutil.WriteJSON(w, http.StatusOK, token); err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, "failed to write response")
+	}
+}

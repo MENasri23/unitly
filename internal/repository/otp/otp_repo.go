@@ -50,7 +50,7 @@ func (o *otpRepository) Create(ctx context.Context, req *domain.CreateOTPReq) (s
 	}
 
 	sessionKey := sessionKey(req.Token, req.Purpose)
-	
+
 	pipe := o.cache.Client.TxPipeline()
 	pipe.HSet(
 		ctx,
@@ -72,6 +72,10 @@ func (o *otpRepository) Verify(ctx context.Context, r *domain.VerifyOTPReq) (*do
 	sessionMap, err := o.cache.GetMap(ctx, sessionKey)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(sessionMap) == 0 {
+		return nil, domain.ErrInvalidOTP
 	}
 
 	session, err := deserializeOtpSession(sessionMap)

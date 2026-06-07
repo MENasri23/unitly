@@ -65,10 +65,18 @@ func main() {
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/v1", func(r chi.Router) {
 			r.Route("/accounts", func(r chi.Router) {
+
 				r.Route("/auth", func(r chi.Router) {
 					r.Route("/by-otp", func(r chi.Router) {
 						r.Post("/request", accountController.RequestAuthByOTP)
 						r.Post("/verify", accountController.VerifyAuthByOTP)
+					})
+				})
+
+				r.Route("/reset-password", func(r chi.Router) {
+					r.Route("/by-otp", func(r chi.Router) {
+						r.Post("/request", accountController.RequestResetPasswordByOTP)
+						r.Post("/verify", accountController.VerifyResetPasswordByOTP)
 					})
 				})
 
