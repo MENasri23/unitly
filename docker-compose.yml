@@ -33,6 +33,21 @@ services:
       timeout: 5s
       retries: 5
 
+  app:
+    build: .
+    image: unitly:latest
+    container_name: unitly-app
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      REDIS_HOST: redis
+
 volumes:
   postgres_data:
   redis_data:
