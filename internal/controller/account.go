@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"unitly/internal/service/auth"
 	"unitly/pkg/jsonutil"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type AccountController struct {
@@ -95,4 +97,29 @@ func (c *AccountController) VerifyResetPasswordByOTP(w http.ResponseWriter, r *h
 	if err = jsonutil.WriteJSON(w, http.StatusOK, token); err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, "failed to write response")
 	}
+}
+
+func SetupAccountRoutes(
+	r chi.Router,
+	authService *auth.AuthService,
+) {
+	accountController := NewAccountController(authService)
+	
+	r.Route("/accounts", func(r chi.Router) {
+		r.Route("/auth", func(r chi.Router) {
+			r.Route("/by-otp", func(r chi.Router) {
+				r.Post("/request", accountController.RequestAuthByOTP)
+				r.Post("/verify", accountController.VerifyAuthByOTP)
+			})
+		})
+
+		r.Route("/reset-password", func(r chi.Router) {
+			r.Route("/by-otp", func(r chi.Router) {
+				r.Post("/request", accountController.RequestResetPasswordByOTP)
+				r.Post("/verify", accountController.VerifyResetPasswordByOTP)
+			})
+		})
+
+	})
+
 }
