@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:17.4-alpine
-    container_name: my-postgres
+    container_name: "${DB_HOST}"
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USER}
@@ -15,7 +15,7 @@ services:
 
   redis:
     image: redis:8.6.3-alpine
-    container_name: my-redis
+    container_name: "${REDIS_HOST}"
     restart: unless-stopped
     command: >
       --aclfile /usr/local/etc/redis/users.acl
@@ -44,9 +44,6 @@ services:
       - "8080:8080"
     env_file:
       - .env
-    environment:
-      DB_HOST: db
-      REDIS_HOST: redis
 
 volumes:
   postgres_data:
