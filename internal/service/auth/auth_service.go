@@ -18,7 +18,8 @@ const (
 )
 
 var (
-	authPurpose = domain.OTPPurpose("register-login")
+	authPurpose      = domain.OTPPurpose("register-login")
+	resetPassPurpose = domain.OTPPurpose("reset-password")
 )
 
 type AuthService struct {
@@ -49,10 +50,38 @@ func (s *AuthService) RequestAuthByOTP(
 	ctx context.Context,
 	phone string,
 ) (string, error) {
+	if !s.isValidPhone(phone) {
+		return "", domain.ErrInvalidPhone
+	}
+
 	return s.requestOTP(ctx, phone, authPurpose)
 }
 
 func (s *AuthService) VerifyAuthByOTP(
+	ctx context.Context,
+	token string,
+	inputOTP string,
+) (string, error) {
+	return s.verifyOTP(ctx, token, inputOTP, authPurpose)
+}
+
+func (s *AuthService) RequestResetPasswordByOTP(
+	ctx context.Context,
+	phone string,
+) (string, error) {
+	if !validate.IsValidPhone(phone) {
+		return "", domain.ErrInvalidPhone
+	}
+
+	_, err := s.userRepo.GetUserIDByPhone(ctx, phone)
+	if err != nil {
+		return "", err
+	}
+
+	return s.requestOTP(ctx, phone, resetPassPurpose)
+}
+
+func (s *AuthService) VerifyResetPasswordByOTP(
 	ctx context.Context,
 	token string,
 	inputOTP string,
@@ -65,20 +94,7 @@ func (s *AuthService) requestOTP(
 	phone string,
 	purpose domain.OTPPurpose,
 ) (string, error) {
-	if !s.isValidPhone(phone) {
-		return "", domain.ErrInvalidPhone
-	}
-
-	blocked, err := s.otpRepo.IsBlocked(ctx, phone, purpose)
-	if err != nil {
-		return "", err
-	}
-
-	if blocked {
-		return "", domain.ErrTooManyAttempts
-	}
-
-	if err = s.checkRatelimit(ctx, phone, purpose); err != nil {
+	if err := s.ensureOTPRequestAllowed(ctx, phone, purpose); err != nil {
 		return "", err
 	}
 
@@ -86,7 +102,7 @@ func (s *AuthService) requestOTP(
 	if err != nil {
 		return "", err
 	}
-	
+
 	req := &domain.CreateOTPReq{
 		Phone:   phone,
 		Token:   token,
@@ -94,13 +110,34 @@ func (s *AuthService) requestOTP(
 	}
 	otp, err := s.otpRepo.Create(ctx, req)
 	if err != nil {
-		s.resetRatelimit(ctx, phone, purpose)
+		s.reset(ctx, phone, purpose)
 		return "", err
 	}
 
 	s.sendOtpAsync(ctx, phone, otp)
 
 	return token, nil
+}
+
+func (s *AuthService) ensureOTPRequestAllowed(
+	ctx context.Context,
+	phone string,
+	purpose domain.OTPPurpose,
+) error {
+	blocked, err := s.otpRepo.IsBlocked(ctx, phone, purpose)
+	if err != nil {
+		return err
+	}
+
+	if blocked {
+		return domain.ErrTooManyAttempts
+	}
+
+	if err = s.checkRatelimit(ctx, phone, purpose); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *AuthService) checkRatelimit(ctx context.Context, phone string, purpose domain.OTPPurpose) error {
@@ -116,7 +153,7 @@ func (s *AuthService) checkRatelimit(ctx context.Context, phone string, purpose 
 	return nil
 }
 
-func (s *AuthService) resetRatelimit(ctx context.Context, phone string, purpose domain.OTPPurpose) {
+func (s *AuthService) reset(ctx context.Context, phone string, purpose domain.OTPPurpose) {
 	s.otpRateLimiter.Reset(ctx, ratelimitKey(phone, purpose))
 }
 
