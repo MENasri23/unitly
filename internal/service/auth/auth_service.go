@@ -62,7 +62,27 @@ func (s *AuthService) VerifyAuthByOTP(
 	token string,
 	inputOTP string,
 ) (string, error) {
-	return s.verifyOTP(ctx, token, inputOTP, authPurpose)
+	req := &domain.VerifyOTPReq{
+		Token:    token,
+		InputOTP: inputOTP,
+		Purpose:  authPurpose,
+	}
+
+	result, err := s.otpRepo.Verify(ctx, req)
+	if err != nil {
+		return "", err
+	}
+
+	userID, err := s.userRepo.GetUserIDByPhone(ctx, result.Phone)
+	if err != nil {
+		if isNotFound(err) {
+			return s.registerUser(ctx, result.Phone)
+		}
+
+		return "", err
+	}
+
+	return s.generateToken(ctx, userID)
 }
 
 func (s *AuthService) RequestResetPasswordByOTP(
@@ -86,7 +106,7 @@ func (s *AuthService) VerifyResetPasswordByOTP(
 	token string,
 	inputOTP string,
 ) (string, error) {
-	return s.verifyOTP(ctx, token, inputOTP, authPurpose)
+	return "", nil
 }
 
 func (s *AuthService) requestOTP(
@@ -169,35 +189,6 @@ func (s *AuthService) sendOtpAsync(
 			log.Printf("failed to send OTP to %s: %v", phone, err)
 		}
 	}()
-}
-
-func (s *AuthService) verifyOTP(
-	ctx context.Context,
-	token string,
-	inputOTP string,
-	purpose domain.OTPPurpose,
-) (string, error) {
-	req := &domain.VerifyOTPReq{
-		Token:    token,
-		InputOTP: inputOTP,
-		Purpose:  purpose,
-	}
-
-	result, err := s.otpRepo.Verify(ctx, req)
-	if err != nil {
-		return "", err
-	}
-
-	userID, err := s.userRepo.GetUserIDByPhone(ctx, result.Phone)
-	if err != nil {
-		if isNotFound(err) {
-			return s.registerUser(ctx, result.Phone)
-		}
-
-		return "", err
-	}
-
-	return s.generateToken(ctx, userID)
 }
 
 func (s *AuthService) isValidPhone(phone string) bool {
