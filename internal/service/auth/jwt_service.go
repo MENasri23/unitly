@@ -22,9 +22,9 @@ type customClaims struct {
 	jwt.RegisteredClaims
 }
 
-func NewJWTService(secret []byte, expiry time.Duration) *JWTService {
+func NewJWTService(secret string, expiry time.Duration) *JWTService {
 	return &JWTService{
-		secret:  secret,
+		secret:  []byte(secret),
 		expiry:  expiry,
 		issuer:  issuer,
 		options: jwtOptions(issuer),

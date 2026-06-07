@@ -8,10 +8,10 @@ import (
 	"unitly/internal/cache"
 	"unitly/internal/controller"
 	"unitly/internal/db"
+	"unitly/internal/domain"
 	"unitly/internal/repository"
 	otprepo "unitly/internal/repository/otp"
 	"unitly/internal/service/auth"
-	"unitly/internal/service/sms"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -41,18 +41,20 @@ func main() {
 	otpRateLimiter := otprepo.NewOtpRateLimiter(cache, app.GetOtpRateLimit())
 
 	// services
-	smsService := sms.NewMeliPayamakService(
-		app.GetSmsUsername(),
-		app.GetSmsApiKey(),
-		app.GetOtpTemplateID(),
-	)
+	// smsService := sms.NewMeliPayamakService(
+	// 	app.GetSmsUsername(),
+	// 	app.GetSmsApiKey(),
+	// 	app.GetOtpTemplateID(),
+	// )
+
+	var smsSvc domain.SmsService = &smsServiceMock{}
+	tokenService := auth.NewJWTService(app.GetTokenSecret(), app.GetTokenExpiry())
 	authService := auth.NewAuthService(
 		otpRepository,
 		userRepository,
-		smsService,
+		smsSvc,
+		tokenService,
 		otpRateLimiter,
-		app.GetTokenSecret(),
-		app.GetTokenExpiry(),
 	)
 
 	// controllers

@@ -33,11 +33,9 @@ func NewAuthService(
 	otpRepo domain.OTPRepository,
 	userRepo domain.UserRepository,
 	smssvc domain.SmsService,
+	tokenService domain.TokenService,
 	otpRateLimiter domain.RateLimiter,
-	accessTokenSecret string,
-	accessTokenExpiry time.Duration,
 ) *AuthService {
-	tokenService := NewJWTService([]byte(accessTokenSecret), accessTokenExpiry)
 	return &AuthService{
 		otpRepo:        otpRepo,
 		userRepo:       userRepo,
