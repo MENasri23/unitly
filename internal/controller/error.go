@@ -6,10 +6,6 @@ import (
 	"unitly/internal/domain"
 )
 
-var (
-	ErrInvalidReqest = errors.New("Invalid request body")
-)
-
 func mapErrToStatusCode(err error) int {
 	switch {
 	case errors.Is(err, domain.ErrNotFound):

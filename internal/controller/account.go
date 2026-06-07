@@ -30,7 +30,7 @@ func NewAccountController(authSvc *auth.AuthService) *AccountController {
 func (c *AccountController) RequestAuthByOTP(w http.ResponseWriter, r *http.Request) {
 	var req requestOTPRequest
 	if err := jsonutil.ReadJSON(w, r, &req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, ErrInvalidReqest.Error())
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -48,7 +48,7 @@ func (c *AccountController) RequestAuthByOTP(w http.ResponseWriter, r *http.Requ
 func (c *AccountController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Request) {
 	var req verifyOTPRequest
 	if err := jsonutil.ReadJSON(w, r, &req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, ErrInvalidReqest.Error())
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -66,7 +66,7 @@ func (c *AccountController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Reque
 func (c *AccountController) RequestResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
 	var req requestOTPRequest
 	if err := jsonutil.ReadJSON(w, r, &req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, ErrInvalidReqest.Error())
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -84,7 +84,7 @@ func (c *AccountController) RequestResetPasswordByOTP(w http.ResponseWriter, r *
 func (c *AccountController) VerifyResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
 	var req verifyOTPRequest
 	if err := jsonutil.ReadJSON(w, r, &req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, ErrInvalidReqest.Error())
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
