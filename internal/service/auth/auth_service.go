@@ -7,6 +7,7 @@ import (
 	"log"
 	"time"
 	"unitly/internal/domain"
+	"unitly/internal/util/rand"
 	"unitly/internal/util/validate"
 
 	"github.com/google/uuid"
@@ -83,7 +84,17 @@ func (s *AuthService) requestOTP(
 		return "", err
 	}
 
-	otp, token, err := s.otpRepo.Create(ctx, phone, purpose)
+	token, err := rand.GenereteDefaultToken()
+	if err != nil {
+		return "", err
+	}
+	
+	req := &domain.CreateOTPReq{
+		Phone:   phone,
+		Token:   token,
+		Purpose: purpose,
+	}
+	otp, err := s.otpRepo.Create(ctx, req)
 	if err != nil {
 		s.resetRatelimit(ctx, phone, purpose)
 		return "", err
@@ -136,7 +147,7 @@ func (s *AuthService) verifyOTP(
 		InputOTP: inputOTP,
 		Purpose:  purpose,
 	}
-	
+
 	result, err := s.otpRepo.Verify(ctx, req)
 	if err != nil {
 		return "", err

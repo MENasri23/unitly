@@ -12,6 +12,12 @@ var (
 
 type OTPPurpose string
 
+type CreateOTPReq struct {
+	Phone   string
+	Token   string
+	Purpose OTPPurpose
+}
+
 type VerifyOTPReq struct {
 	Token    string
 	InputOTP string
@@ -24,6 +30,6 @@ type VerifyOTPResult struct {
 
 type OTPRepository interface {
 	IsBlocked(ctx context.Context, phone string, purpose OTPPurpose) (bool, error)
-	Create(ctx context.Context, phone string, purpose OTPPurpose) (string, string, error)
+	Create(ctx context.Context, req *CreateOTPReq) (string, error)
 	Verify(ctx context.Context, verifyReq *VerifyOTPReq) (*VerifyOTPResult, error)
 }

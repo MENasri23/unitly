@@ -11,7 +11,6 @@ import (
 	"unitly/internal/cache"
 	"unitly/internal/domain"
 	"unitly/internal/util/eql"
-	"unitly/internal/util/rand"
 )
 
 var (
@@ -37,25 +36,21 @@ func (o *otpRepository) IsBlocked(ctx context.Context, phone string, purpose dom
 	return o.cache.ExistsKey(ctx, blockKey(phone, purpose))
 }
 
-func (o *otpRepository) Create(ctx context.Context, phone string, purpose domain.OTPPurpose) (string, string, error) {
-	token, err := rand.GenereteDefaultToken()
-	if err != nil {
-		return "", "", err
-	}
-
+func (o *otpRepository) Create(ctx context.Context, req *domain.CreateOTPReq) (string, error) {
 	otp, err := generateOTP(otpLength)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
-	hashedOTP := o.hashOTP(otp)
 
-	sessionKey := otpSessionKey(token, purpose)
+	otpHash := o.hashOTP(otp)
 	session := &otpSession{
-		Phone:    phone,
-		otpHash:  hashedOTP,
+		Phone:    req.Phone,
+		otpHash:  otpHash,
 		Attempts: 0,
 	}
 
+	sessionKey := sessionKey(req.Token, req.Purpose)
+	
 	pipe := o.cache.Client.TxPipeline()
 	pipe.HSet(
 		ctx,
@@ -66,14 +61,14 @@ func (o *otpRepository) Create(ctx context.Context, phone string, purpose domain
 
 	if _, err = pipe.Exec(ctx); err != nil {
 		log.Printf("failed to create OTP session: %v", err)
-		return "", "", err
+		return "", err
 	}
 
-	return otp, token, nil
+	return otp, nil
 }
 
 func (o *otpRepository) Verify(ctx context.Context, r *domain.VerifyOTPReq) (*domain.VerifyOTPResult, error) {
-	sessionKey := otpSessionKey(r.Token, r.Purpose)
+	sessionKey := sessionKey(r.Token, r.Purpose)
 	sessionMap, err := o.cache.GetMap(ctx, sessionKey)
 	if err != nil {
 		return nil, err
@@ -146,18 +141,6 @@ func blockKey(phone string, purpose domain.OTPPurpose) string {
 	return fmt.Sprintf("auth:%s:otp:block:%s", purpose, phone)
 }
 
-func otpCodeKey(phone string, purpose domain.OTPPurpose) string {
-	return fmt.Sprintf("auth:%s:otp:code:%s", purpose, phone)
-}
-
-func phoneKey(token string, purpose domain.OTPPurpose) string {
-	return fmt.Sprintf("auth:%s:otp:phone:%s", purpose, token)
-}
-
-func otpSessionKey(token string, purpose domain.OTPPurpose) string {
+func sessionKey(token string, purpose domain.OTPPurpose) string {
 	return fmt.Sprintf("auth:%s:otp:session:%s", purpose, token)
-}
-
-func attemptsKey(phone string, purpose domain.OTPPurpose) string {
-	return fmt.Sprintf("auth:%s:otp:attempts:%s", purpose, phone)
 }
