@@ -33,7 +33,7 @@ func TestGenerateCode_FullRange(t *testing.T) {
 	}
 
 	for i, v := range out {
-		if v >= 255 {
+		if v == 255 {
 			t.Errorf("invalid value at %d: %d", i, v)
 		}
 	}
