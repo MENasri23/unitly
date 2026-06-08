@@ -19,5 +19,4 @@ coverage.*
 
 # Env
 .env
-.env.*
 users.acl
