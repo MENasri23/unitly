@@ -17,7 +17,8 @@ const (
 type Env struct {
 	AppEnv AppEnv `mapstructure:"APP_ENV"`
 
-	ServerAddress     string        `mapstructure:"SERVER_ADDRESS"`
+	ServerHost        string        `mapstructure:"SERVER_HOST"`
+	ServerPort        string        `mapstructure:"SERVER_PORT"`
 	WriteTimeout      time.Duration `mapstructure:"WRITE_TIMEOUT"`
 	ReadTimeout       time.Duration `mapstructure:"READ_TIMEOUT"`
 	ReadHeaderTimeout time.Duration `mapstructure:"READ_HEADER_TIMEOUT"`
@@ -38,10 +39,10 @@ type Env struct {
 	AccessTokenSecret string        `mapstructure:"ACCESS_TOKEN_SECRET"`
 	AccessTokenExpiry time.Duration `mapstructure:"ACCESS_TOKEN_EXPIRY"`
 
-	OtpSecret     string `mapstructure:"OTP_SECRET"`
-	OtpTemplateID string `mapstructure:"OTP_TEMPLATE_ID"`
+	OtpSecret     string        `mapstructure:"OTP_SECRET"`
+	OtpTemplateID string        `mapstructure:"OTP_TEMPLATE_ID"`
 	OtpRateLimit  time.Duration `mapstructure:"OTP_RATE_LIMIT"`
-	
+
 	SmsUsername string `mapstructure:"SMS_USER"`
 	SmsApiKey   string `mapstructure:"SMS_API_KEY"`
 }

@@ -41,7 +41,7 @@ services:
       - db
       - redis
     ports:
-      - "8080:8080"
+      - "${SERVER_PORT}:${SERVER_PORT}"
     env_file:
       - .env
 

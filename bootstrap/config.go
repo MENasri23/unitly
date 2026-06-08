@@ -20,7 +20,7 @@ type config struct {
 
 func newConfig(env *Env) *config {
 	return &config{
-		Address:           env.ServerAddress,
+		Address:           serverAddress(env),
 		WriteTimeout:      env.WriteTimeout,
 		ReadTimeout:       env.ReadTimeout,
 		ReadHeaderTimeout: env.ReadHeaderTimeout,
@@ -30,6 +30,10 @@ func newConfig(env *Env) *config {
 		token:             newTokenConfig(env),
 		otp:               newOtpConfig(env, newSmsConfig(env)),
 	}
+}
+
+func serverAddress(env *Env) string {
+	return fmt.Sprintf("%s:%s", env.ServerHost, env.ServerPort)
 }
 
 type Args map[string]string
