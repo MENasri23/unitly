@@ -15,5 +15,5 @@ WORKDIR /app
 COPY --from=builder /usr/local/bin/unitly /usr/local/bin/unitly
 COPY .env .env
 
-EXPOSE 8080
+EXPOSE ${SERVER_PORT}
 ENTRYPOINT ["/usr/local/bin/unitly"]
