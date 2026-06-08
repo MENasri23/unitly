@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: ${DB_NAME}
     ports:
-      - "${DB_PORT}:5432"
+      - "${DB_PORT}:${DB_PORT}"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/db_init.sql:/docker-entrypoint-initdb.d/db_init.sql
@@ -23,7 +23,7 @@ services:
       --maxmemory 512mb  
       --maxmemory-policy allkeys-lru
     ports:
-      - "${REDIS_PORT}:6379"
+      - "${REDIS_PORT}:${REDIS_PORT}"
     volumes:
        - redis_data:/data
        - ./users.acl:/usr/local/etc/redis/users.acl:ro
