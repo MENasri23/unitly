@@ -34,7 +34,7 @@ func (u *userRepository) getQuerier(ctx context.Context) db.Querier {
 
 func (u *userRepository) Create(ctx context.Context, user *domain.User) error {
 	query := `
-	INSERT INTO users (phone, public_id) VALUES ($1, $2) 
+	INSERT INTO users (phone, public_id, active) VALUES ($1, $2, $3) 
 	RETURNING id, created_at
 	`
 
@@ -44,6 +44,7 @@ func (u *userRepository) Create(ctx context.Context, user *domain.User) error {
 		query,
 		user.Phone,
 		user.GUID,
+		user.IsActive,
 	).Scan(
 		&user.ID,
 		&user.CreatedAt,
