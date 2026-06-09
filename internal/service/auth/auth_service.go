@@ -96,7 +96,7 @@ func (s *AuthService) RequestResetPasswordByOTP(
 
 	_, err := s.userRepo.GetUserIDByPhone(ctx, phone)
 	if err != nil {
-		return "", err
+		return rand.GenereteDefaultToken()
 	}
 
 	return s.requestOTP(ctx, phone, resetPassPurpose)
