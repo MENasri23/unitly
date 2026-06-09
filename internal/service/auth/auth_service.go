@@ -102,12 +102,35 @@ func (s *AuthService) RequestResetPasswordByOTP(
 		return "", err
 	}
 
-	_, err := s.userRepo.GetUserIDByPhone(ctx, phone)
-	if err != nil {
-		return rand.GenereteDefaultToken()
+	_, err := s.userRepo.GetActiveUserIDByPhone(ctx, phone)
+	if err == nil {
+		return s.requestOTP(ctx, phone, resetPassPurpose)
 	}
 
-	return s.requestOTP(ctx, phone, resetPassPurpose)
+	// If the phone is not associated with an active user, do not reveal that fact.
+	// Create an OTP record so timing/behaviour is consistent, but do not send an SMS.
+	if !isNotFound(err) {
+		return "", err
+	}
+
+	token, err := rand.GenereteDefaultToken()
+	if err != nil {
+		return "", err
+	}
+
+	req := &domain.CreateOTPReq{
+		Phone:   phone,
+		Token:   token,
+		Purpose: resetPassPurpose,
+	}
+
+	if _, err = s.otpRepo.Create(ctx, req); err != nil {
+		s.reset(ctx, phone, resetPassPurpose)
+		return "", err
+	}
+
+	// Return the generated token (same shape as success) without indicating existence.
+	return token, nil
 }
 
 func (s *AuthService) VerifyResetPasswordByOTP(
@@ -125,9 +148,13 @@ func (s *AuthService) VerifyResetPasswordByOTP(
 	if err != nil {
 		return "", err
 	}
-	
-	userID, err := s.userRepo.GetUserIDByPhone(ctx, result.Phone)
+
+	userID, err := s.userRepo.GetActiveUserIDByPhone(ctx, result.Phone)
 	if err != nil {
+		// Do not reveal whether the phone maps to a user. Return a generic OTP error for not-found.
+		if isNotFound(err) {
+			return "", domain.ErrInvalidOTP
+		}
 		return "", err
 	}
 
@@ -234,8 +261,9 @@ func (s *AuthService) createUser(ctx context.Context, phone string) (*domain.Use
 		return nil, err
 	}
 	user := &domain.User{
-		GUID:  guid,
-		Phone: phone,
+		GUID:     guid,
+		Phone:    phone,
+		IsActive: true,
 	}
 
 	if err = s.userRepo.Create(ctx, user); err != nil {

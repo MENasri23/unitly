@@ -21,5 +21,7 @@ type User struct {
 type UserRepository interface {
 	Create(ctx context.Context, user *User) error
 	GetByID(ctx context.Context, userID int64) (*User, error)
+	GetByPhone(ctx context.Context, phone string) (*User, error)
 	GetUserIDByPhone(ctx context.Context, phone string) (int64, error)
+	GetActiveUserIDByPhone(ctx context.Context, phone string) (int64, error)
 }

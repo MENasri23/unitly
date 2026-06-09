@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 	"unitly/internal/db"
 	"unitly/internal/domain"
 
@@ -52,11 +53,20 @@ func (u *userRepository) Create(ctx context.Context, user *domain.User) error {
 }
 
 func (u *userRepository) GetByID(ctx context.Context, userID int64) (*domain.User, error) {
-	query := `
-	SELECT id, public_id, phone, first_name, last_name, created_at
+	return u.getBy(ctx, "id", userID)
+}
+
+func (u *userRepository) GetByPhone(ctx context.Context, phone string) (*domain.User, error) {
+	return u.getBy(ctx, "phone", phone)
+}
+
+func (u *userRepository) getBy(ctx context.Context, column string, value any) (*domain.User, error) {
+	query := fmt.Sprintf(`
+	SELECT id, public_id, phone, first_name, last_name, active, created_at
 	FROM users
-	WHERE id = $1
-	`
+	WHERE %s = $1
+	`, column,
+	)
 
 	querier := u.getQuerier(ctx)
 
@@ -64,13 +74,14 @@ func (u *userRepository) GetByID(ctx context.Context, userID int64) (*domain.Use
 	err := querier.QueryRow(
 		ctx,
 		query,
-		userID,
+		value,
 	).Scan(
 		&user.ID,
 		&user.GUID,
 		&user.Phone,
 		&user.FirstName,
 		&user.LastName,
+		&user.IsActive,
 		&user.CreatedAt,
 	)
 
@@ -82,12 +93,20 @@ func (u *userRepository) GetByID(ctx context.Context, userID int64) (*domain.Use
 }
 
 func (u *userRepository) GetUserIDByPhone(ctx context.Context, phone string) (int64, error) {
-	query := "SELECT id from users WHERE phone = $1"
+	return u.getUserIDBy(ctx, phone, false)
+}
+
+func (u *userRepository) GetActiveUserIDByPhone(ctx context.Context, phone string) (int64, error) {
+	return u.getUserIDBy(ctx, phone, true)
+}
+
+func (u *userRepository) getUserIDBy(ctx context.Context, phone string, isActive bool) (int64, error) {
+	query := "SELECT id from users WHERE phone = $1 AND active = $2"
 
 	querier := u.getQuerier(ctx)
 
 	var userID int64
-	err := querier.QueryRow(ctx, query, phone).Scan(&userID)
+	err := querier.QueryRow(ctx, query, phone, isActive).Scan(&userID)
 	if err != nil {
 		return -1, mapDBError(err)
 	}
