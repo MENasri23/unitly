@@ -55,6 +55,10 @@ func (s *AuthService) RequestAuthByOTP(
 		return "", domain.ErrInvalidPhone
 	}
 
+	if err := s.ensureOTPRequestAllowed(ctx, phone, authPurpose); err != nil {
+		return "", err
+	}
+
 	return s.requestOTP(ctx, phone, authPurpose)
 }
 
@@ -94,6 +98,10 @@ func (s *AuthService) RequestResetPasswordByOTP(
 		return "", domain.ErrInvalidPhone
 	}
 
+	if err := s.ensureOTPRequestAllowed(ctx, phone, resetPassPurpose); err != nil {
+		return "", err
+	}
+
 	_, err := s.userRepo.GetUserIDByPhone(ctx, phone)
 	if err != nil {
 		return rand.GenereteDefaultToken()
@@ -131,10 +139,6 @@ func (s *AuthService) requestOTP(
 	phone string,
 	purpose domain.OTPPurpose,
 ) (string, error) {
-	if err := s.ensureOTPRequestAllowed(ctx, phone, purpose); err != nil {
-		return "", err
-	}
-
 	token, err := rand.GenereteDefaultToken()
 	if err != nil {
 		return "", err
