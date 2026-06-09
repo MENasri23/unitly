@@ -3,7 +3,7 @@ include .env
 export
 
 # Database connection URL
-DB_URL=postgres://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
+DB_URL=postgres://$(DB_USER):$(DB_PASS)@localhost:$(DB_PORT)/$(DB_NAME)?sslmode=disable
 
 # Migration directory
 MIGRATIONS_DIR=./migrations
