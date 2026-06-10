@@ -2,9 +2,6 @@ package otprepo
 
 import (
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"log"
 	"time"
@@ -129,11 +126,9 @@ func (o *otpRepository) Verify(ctx context.Context, r *domain.VerifyOTPReq) (*do
 	}, nil
 }
 
-// hashOTP creates an HMAC-SHA256 hash of the OTP for secure storage
+// hashOTP returns the SHA-256 hash of the provided OTP string.
 func (o *otpRepository) hashOTP(otp string) string {
-	h := hmac.New(sha256.New, o.hmacSecret)
-	h.Write([]byte(otp))
-	return hex.EncodeToString(h.Sum(nil))
+	return hash.SHA256(otp)
 }
 
 func (o *otpRepository) block(ctx context.Context, key string) (bool, error) {
