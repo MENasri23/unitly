@@ -249,10 +249,20 @@ func isNotFound(err error) bool {
 
 func (s *AuthService) registerUser(ctx context.Context, phone string) (string, error) {
 	user, err := s.createUser(ctx, phone)
-	if err != nil {
-		return "", err
+	if err == nil {
+		return s.generateToken(ctx, user.ID)
 	}
-	return s.generateToken(ctx, user.ID)
+
+	// Possible race condition: user may have been created by another goroutine.
+	// Attempt to retrieve the user. If successful, proceed; otherwise return original error.
+	if err == domain.ErrAleardyExist {
+		userID, lookupErr := s.userRepo.GetUserIDByPhone(ctx, phone)
+		if lookupErr == nil {
+			return s.generateToken(ctx, userID)
+		}
+	}
+
+	return "", err
 }
 
 func (s *AuthService) createUser(ctx context.Context, phone string) (*domain.User, error) {

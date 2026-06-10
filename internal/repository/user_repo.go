@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"unitly/internal/db"
 	"unitly/internal/domain"
@@ -35,12 +34,14 @@ func (u *userRepository) getQuerier(ctx context.Context) db.Querier {
 
 func (u *userRepository) Create(ctx context.Context, user *domain.User) error {
 	query := `
-	INSERT INTO users (phone, public_id, active) VALUES ($1, $2, $3) 
+	INSERT INTO users (phone, public_id, active) 
+	VALUES ($1, $2, $3)
+	ON CONFLICT (phone) DO NOTHING
 	RETURNING id, created_at
 	`
 
 	querier := u.getQuerier(ctx)
-	return querier.QueryRow(
+	err := querier.QueryRow(
 		ctx,
 		query,
 		user.Phone,
@@ -50,6 +51,12 @@ func (u *userRepository) Create(ctx context.Context, user *domain.User) error {
 		&user.ID,
 		&user.CreatedAt,
 	)
+
+	if err == pgx.ErrNoRows {
+		return domain.ErrAleardyExist
+	}
+
+	return err
 }
 
 func (u *userRepository) GetByID(ctx context.Context, userID int64) (*domain.User, error) {
@@ -119,8 +126,8 @@ func mapDBError(err error) error {
 		return nil
 	}
 
-	switch {
-	case errors.Is(err, pgx.ErrNoRows):
+	switch err {
+	case pgx.ErrNoRows:
 		return domain.ErrNotFound
 	default:
 		return err
