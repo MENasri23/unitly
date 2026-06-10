@@ -17,8 +17,8 @@ type JWTService struct {
 	options []jwt.ParserOption
 }
 
-type customClaims struct {
-	UserID int64 `json:"user_id"`
+type accessTokenClaims struct {
+	UserID string `json:"user_id"`
 	jwt.RegisteredClaims
 }
 
@@ -31,7 +31,67 @@ func NewJWTService(secret string, expiry time.Duration) *JWTService {
 	}
 }
 
-func (s *JWTService) GenerateToken(_ context.Context, claims domain.TokenClaims) (string, error) {
+func (s *JWTService) GenerateAccessToken(_ context.Context, claims domain.AccessTokenClaims) (string, error) {
+	jwtClaims := accessTokenClaims{
+		UserID:           claims.UserID,
+		RegisteredClaims: s.registeredClaims(claims.TokenClaims),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwtClaims)
+	tokenString, err := token.SignedString(s.secret)
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
+}
+
+func (s *JWTService) ValidateAccessToken(_ context.Context, tokenString string) (domain.AccessTokenClaims, error) {
+	claims := &accessTokenClaims{}
+
+	token, err := jwt.ParseWithClaims(
+		tokenString,
+		claims,
+		s.parseKey,
+		s.options...,
+	)
+
+	if err != nil {
+		return domain.AccessTokenClaims{}, domain.ErrInvalidToken
+	}
+
+	if !token.Valid {
+		return domain.AccessTokenClaims{}, domain.ErrInvalidToken
+	}
+
+	var issuedAt, expiresAt, notBefore time.Time
+
+	if claims.RegisteredClaims.IssuedAt != nil {
+		issuedAt = claims.RegisteredClaims.IssuedAt.Time
+	}
+	if claims.RegisteredClaims.ExpiresAt != nil {
+		expiresAt = claims.RegisteredClaims.ExpiresAt.Time
+	}
+	if claims.RegisteredClaims.NotBefore != nil {
+		notBefore = claims.RegisteredClaims.NotBefore.Time
+	}
+
+	return domain.AccessTokenClaims{
+		TokenClaims: domain.TokenClaims{
+			Issuer:    claims.RegisteredClaims.Issuer,
+			Subject:   claims.RegisteredClaims.Subject,
+			Audience:  claims.RegisteredClaims.Audience,
+			ID:        claims.RegisteredClaims.ID,
+			IssuedAt:  issuedAt,
+			ExpiresAt: expiresAt,
+			Expiry:    expiresAt.Sub(issuedAt),
+			NotBefore: notBefore,
+		},
+		UserID: claims.UserID,
+	}, nil
+}
+
+func (s *JWTService) registeredClaims(claims domain.TokenClaims) jwt.RegisteredClaims {
 	now := time.Now()
 
 	expiresAt := claims.ExpiresAt
@@ -54,69 +114,15 @@ func (s *JWTService) GenerateToken(_ context.Context, claims domain.TokenClaims)
 		notBefore = now
 	}
 
-	jwtClaims := customClaims{
-		UserID: claims.UserID,
-		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    issuer,
-			Subject:   claims.Subject,
-			Audience:  jwt.ClaimStrings(claims.Audience),
-			ID:        claims.ID,
-			IssuedAt:  jwt.NewNumericDate(issuedAt),
-			ExpiresAt: jwt.NewNumericDate(expiresAt),
-			NotBefore: jwt.NewNumericDate(notBefore),
-		},
+	return jwt.RegisteredClaims{
+		Issuer:    issuer,
+		Subject:   claims.Subject,
+		Audience:  jwt.ClaimStrings(claims.Audience),
+		ID:        claims.ID,
+		IssuedAt:  jwt.NewNumericDate(issuedAt),
+		ExpiresAt: jwt.NewNumericDate(expiresAt),
+		NotBefore: jwt.NewNumericDate(notBefore),
 	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwtClaims)
-	tokenString, err := token.SignedString(s.secret)
-	if err != nil {
-		return "", err
-	}
-
-	return tokenString, nil
-}
-
-func (s *JWTService) ValidateToken(_ context.Context, tokenString string) (domain.TokenClaims, error) {
-	claims := &customClaims{}
-
-	token, err := jwt.ParseWithClaims(
-		tokenString,
-		claims,
-		s.parseKey,
-		s.options...,
-	)
-
-	if err != nil {
-		return domain.TokenClaims{}, domain.ErrInvalidToken
-	}
-
-	if !token.Valid {
-		return domain.TokenClaims{}, domain.ErrInvalidToken
-	}
-
-	var issuedAt, expiresAt, notBefore time.Time
-
-	if claims.RegisteredClaims.IssuedAt != nil {
-		issuedAt = claims.RegisteredClaims.IssuedAt.Time
-	}
-	if claims.RegisteredClaims.ExpiresAt != nil {
-		expiresAt = claims.RegisteredClaims.ExpiresAt.Time
-	}
-	if claims.RegisteredClaims.NotBefore != nil {
-		notBefore = claims.RegisteredClaims.NotBefore.Time
-	}
-
-	return domain.TokenClaims{
-		UserID:    claims.UserID,
-		Issuer:    claims.RegisteredClaims.Issuer,
-		Subject:   claims.RegisteredClaims.Subject,
-		Audience:  claims.RegisteredClaims.Audience,
-		ID:        claims.RegisteredClaims.ID,
-		IssuedAt:  issuedAt,
-		ExpiresAt: expiresAt,
-		Expiry:    expiresAt.Sub(issuedAt),
-		NotBefore: notBefore,
-	}, nil
 }
 
 func (s *JWTService) parseKey(token *jwt.Token) (any, error) {

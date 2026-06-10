@@ -18,12 +18,14 @@ type TokenClaims struct {
 	IssuedAt  time.Time
 	NotBefore time.Time
 	ID        string
+}
 
-	// Application-specific claims
-	UserID int64
+type AccessTokenClaims struct {
+	TokenClaims
+	UserID string
 }
 
 type TokenService interface {
-	GenerateToken(ctx context.Context, claims TokenClaims) (string, error)
-	ValidateToken(ctx context.Context, token string) (TokenClaims, error)
+	GenerateAccessToken(ctx context.Context, claims AccessTokenClaims) (string, error)
+	ValidateAccessToken(ctx context.Context, token string) (AccessTokenClaims, error)
 }

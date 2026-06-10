@@ -78,7 +78,7 @@ func (s *AuthService) VerifyAuthByOTP(
 		return "", err
 	}
 
-	userID, err := s.userRepo.GetUserIDByPhone(ctx, result.Phone)
+	user, err := s.userRepo.GetByPhone(ctx, result.Phone)
 	if err != nil {
 		if isNotFound(err) {
 			return s.registerUser(ctx, result.Phone)
@@ -87,7 +87,7 @@ func (s *AuthService) VerifyAuthByOTP(
 		return "", err
 	}
 
-	return s.generateToken(ctx, userID)
+	return s.generateToken(ctx, user.GUID)
 }
 
 func (s *AuthService) RequestResetPasswordByOTP(
@@ -149,7 +149,7 @@ func (s *AuthService) VerifyResetPasswordByOTP(
 		return "", err
 	}
 
-	userID, err := s.userRepo.GetActiveUserIDByPhone(ctx, result.Phone)
+	user, err := s.userRepo.GetByPhone(ctx, result.Phone)
 	if err != nil {
 		// Do not reveal whether the phone maps to a user. Return a generic OTP error for not-found.
 		if isNotFound(err) {
@@ -158,7 +158,11 @@ func (s *AuthService) VerifyResetPasswordByOTP(
 		return "", err
 	}
 
-	return s.generateResetPassToken(ctx, userID)
+	if !user.IsActive {
+		return "", domain.ErrInvalidOTP
+	}
+
+	return s.generateResetPassToken(ctx, user.GUID)
 }
 
 func (s *AuthService) requestOTP(
@@ -250,15 +254,15 @@ func isNotFound(err error) bool {
 func (s *AuthService) registerUser(ctx context.Context, phone string) (string, error) {
 	user, err := s.createUser(ctx, phone)
 	if err == nil {
-		return s.generateToken(ctx, user.ID)
+		return s.generateToken(ctx, user.GUID)
 	}
 
 	// Possible race condition: user may have been created by another goroutine.
 	// Attempt to retrieve the user. If successful, proceed; otherwise return original error.
 	if err == domain.ErrAleardyExist {
-		userID, lookupErr := s.userRepo.GetUserIDByPhone(ctx, phone)
+		user, lookupErr := s.userRepo.GetByPhone(ctx, phone)
 		if lookupErr == nil {
-			return s.generateToken(ctx, userID)
+			return s.generateToken(ctx, user.GUID)
 		}
 	}
 
@@ -283,17 +287,19 @@ func (s *AuthService) createUser(ctx context.Context, phone string) (*domain.Use
 	return user, nil
 }
 
-func (s *AuthService) generateToken(ctx context.Context, userID int64) (string, error) {
-	claims := domain.TokenClaims{UserID: userID}
-	return s.tokenService.GenerateToken(ctx, claims)
+func (s *AuthService) generateToken(ctx context.Context, userID uuid.UUID) (string, error) {
+	claims := domain.AccessTokenClaims{UserID: userID.String()}
+	return s.tokenService.GenerateAccessToken(ctx, claims)
 }
 
-func (s *AuthService) generateResetPassToken(ctx context.Context, userID int64) (string, error) {
-	claims := domain.TokenClaims{
-		UserID: userID,
-		Expiry: resetPasswordExpiry,
+func (s *AuthService) generateResetPassToken(ctx context.Context, userID uuid.UUID) (string, error) {
+	claims := domain.AccessTokenClaims{
+		UserID: userID.String(),
+		TokenClaims: domain.TokenClaims{
+			Expiry: resetPasswordExpiry,
+		},
 	}
-	return s.tokenService.GenerateToken(ctx, claims)
+	return s.tokenService.GenerateAccessToken(ctx, claims)
 }
 
 func ratelimitKey(phone string, purpose domain.OTPPurpose) string {
