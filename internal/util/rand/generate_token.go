@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 )
 
-const defaultTokenBytes = 32
+const defaultTokenBytes = 48
 
 func GenereteDefaultToken() (string, error) {
 	return GenerateToken(defaultTokenBytes)
