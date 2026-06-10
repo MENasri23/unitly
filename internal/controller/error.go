@@ -1,32 +1,31 @@
 package controller
 
 import (
-	"errors"
 	"net/http"
 	"unitly/internal/domain"
 )
 
 func mapErrToStatusCode(err error) int {
-	switch {
-	case errors.Is(err, domain.ErrNotFound):
+	switch err {
+	case domain.ErrNotFound:
 		return http.StatusNotFound
 
-	case errors.Is(err, domain.ErrTooManyAttempts):
+	case domain.ErrTooManyAttempts:
 		return http.StatusTooManyRequests
 
-	case errors.Is(err, domain.ErrInvalidOTP):
+	case domain.ErrInvalidOTP:
 		return http.StatusUnauthorized
 
-	case errors.Is(err, domain.ErrInvalidToken):
+	case domain.ErrInvalidToken:
 		return http.StatusUnauthorized
 
-	case errors.Is(err, domain.ErrRateLimit):
+	case domain.ErrRateLimit:
 		return http.StatusTooManyRequests
 
-	case errors.Is(err, domain.ErrInvalidPhone):
+	case domain.ErrInvalidPhone:
 		return http.StatusBadRequest
 
-	case errors.Is(err, domain.ErrOTPAlreadyUsed):
+	case domain.ErrOTPAlreadyUsed:
 		return http.StatusBadRequest
 
 	default:
