@@ -11,6 +11,7 @@ import (
 	"unitly/internal/cache"
 	"unitly/internal/domain"
 	"unitly/internal/util/eql"
+	"unitly/internal/util/hash"
 )
 
 var (
@@ -49,7 +50,8 @@ func (o *otpRepository) Create(ctx context.Context, req *domain.CreateOTPReq) (s
 		Attempts: 0,
 	}
 
-	sessionKey := sessionKey(req.Token, req.Purpose)
+	tokenHash := hash.SHA256(req.Token)
+	sessionKey := sessionKey(tokenHash, req.Purpose)
 
 	pipe := o.cache.Client.TxPipeline()
 	pipe.HSet(
@@ -68,7 +70,8 @@ func (o *otpRepository) Create(ctx context.Context, req *domain.CreateOTPReq) (s
 }
 
 func (o *otpRepository) Verify(ctx context.Context, r *domain.VerifyOTPReq) (*domain.VerifyOTPResult, error) {
-	sessionKey := sessionKey(r.Token, r.Purpose)
+	tokenHash := hash.SHA256(r.Token)
+	sessionKey := sessionKey(tokenHash, r.Purpose)
 	sessionMap, err := o.cache.GetMap(ctx, sessionKey)
 	if err != nil {
 		return nil, err
