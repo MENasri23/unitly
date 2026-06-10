@@ -26,7 +26,7 @@ var (
 type AuthService struct {
 	otpRepo        domain.OTPRepository
 	userRepo       domain.UserRepository
-	smssvc         domain.SmsService
+	smsService     domain.SmsService
 	tokenService   domain.TokenService
 	otpRateLimiter domain.RateLimiter
 }
@@ -34,14 +34,14 @@ type AuthService struct {
 func NewAuthService(
 	otpRepo domain.OTPRepository,
 	userRepo domain.UserRepository,
-	smssvc domain.SmsService,
+	smsService domain.SmsService,
 	tokenService domain.TokenService,
 	otpRateLimiter domain.RateLimiter,
 ) *AuthService {
 	return &AuthService{
 		otpRepo:        otpRepo,
 		userRepo:       userRepo,
-		smssvc:         smssvc,
+		smsService:     smsService,
 		tokenService:   tokenService,
 		otpRateLimiter: otpRateLimiter,
 	}
@@ -233,7 +233,7 @@ func (s *AuthService) sendOtpAsync(
 	go func() {
 		bgCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), sendOtpTimeout)
 		defer cancel()
-		if err := s.smssvc.SendOTP(bgCtx, phone, otp); err != nil {
+		if err := s.smsService.SendOTP(bgCtx, phone, otp); err != nil {
 			log.Printf("failed to send OTP to %s: %v", phone, err)
 		}
 	}()
