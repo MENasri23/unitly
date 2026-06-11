@@ -5,8 +5,6 @@ import (
 	"time"
 )
 
-type TokenType string
-
 // TokenClaims represents the application's view of claims contained in a JWT.
 // It includes the standard JWT registered claims plus common custom fields
 // used across the app.
@@ -20,8 +18,6 @@ type TokenClaims struct {
 	IssuedAt  time.Time
 	NotBefore time.Time
 	ID        string
-
-	TokenType TokenType
 }
 
 type AccessTokenClaims struct {
@@ -32,4 +28,7 @@ type AccessTokenClaims struct {
 type TokenService interface {
 	GenerateAccessToken(ctx context.Context, claims AccessTokenClaims) (string, error)
 	ValidateAccessToken(ctx context.Context, token string) (AccessTokenClaims, error)
+
+	GenerateResetPasswordToken(ctx context.Context, claims AccessTokenClaims) (string, error)
+	ValidateResetPasswordToken(ctx context.Context, token string) (AccessTokenClaims, error)
 }

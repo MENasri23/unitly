@@ -8,7 +8,14 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+type TokenType string
+
 const issuer = "unitly"
+
+const (
+	tokenTypeAccess    = TokenType("access")
+	tokenTypeResetPass = TokenType("reset-pass")
+)
 
 type JWTService struct {
 	secret  []byte
@@ -18,7 +25,8 @@ type JWTService struct {
 }
 
 type accessTokenClaims struct {
-	UserID string `json:"user_id"`
+	UserID    string    `json:"user_id"`
+	TokenType TokenType `json:"token_type"`
 	jwt.RegisteredClaims
 }
 
@@ -34,10 +42,25 @@ func NewJWTService(secret string, expiry time.Duration) *JWTService {
 func (s *JWTService) GenerateAccessToken(_ context.Context, claims domain.AccessTokenClaims) (string, error) {
 	jwtClaims := accessTokenClaims{
 		UserID:           claims.UserID,
+		TokenType:        tokenTypeAccess,
 		RegisteredClaims: s.registeredClaims(claims.TokenClaims),
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwtClaims)
+	return s.generateAccessToken(jwtClaims)
+}
+
+func (s *JWTService) GenerateResetPasswordToken(_ context.Context, claims domain.AccessTokenClaims) (string, error) {
+	jwtClaims := accessTokenClaims{
+		UserID:           claims.UserID,
+		TokenType:        tokenTypeResetPass,
+		RegisteredClaims: s.registeredClaims(claims.TokenClaims),
+	}
+
+	return s.generateAccessToken(jwtClaims)
+}
+
+func (s *JWTService) generateAccessToken(claims jwt.Claims) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(s.secret)
 	if err != nil {
 		return "", err
@@ -60,35 +83,60 @@ func (s *JWTService) ValidateAccessToken(_ context.Context, tokenString string) 
 		return domain.AccessTokenClaims{}, domain.ErrInvalidToken
 	}
 
-	if !token.Valid {
+	if !token.Valid || claims.TokenType != tokenTypeAccess {
 		return domain.AccessTokenClaims{}, domain.ErrInvalidToken
 	}
 
+	return s.accessTokenClaims(claims), nil
+}
+
+func (s *JWTService) ValidateResetPasswordToken(_ context.Context, tokenString string) (domain.AccessTokenClaims, error) {
+	claims := &accessTokenClaims{}
+
+	token, err := jwt.ParseWithClaims(
+		tokenString,
+		claims,
+		s.parseKey,
+		s.options...,
+	)
+
+	if err != nil {
+		return domain.AccessTokenClaims{}, domain.ErrInvalidToken
+	}
+
+	if !token.Valid || claims.TokenType != tokenTypeResetPass {
+		return domain.AccessTokenClaims{}, domain.ErrInvalidToken
+	}
+
+	return s.accessTokenClaims(claims), nil
+}
+
+func (s *JWTService) accessTokenClaims(claims *accessTokenClaims) domain.AccessTokenClaims {
 	var issuedAt, expiresAt, notBefore time.Time
 
-	if claims.RegisteredClaims.IssuedAt != nil {
-		issuedAt = claims.RegisteredClaims.IssuedAt.Time
+	if claims.IssuedAt != nil {
+		issuedAt = claims.IssuedAt.Time
 	}
-	if claims.RegisteredClaims.ExpiresAt != nil {
-		expiresAt = claims.RegisteredClaims.ExpiresAt.Time
+	if claims.ExpiresAt != nil {
+		expiresAt = claims.ExpiresAt.Time
 	}
-	if claims.RegisteredClaims.NotBefore != nil {
-		notBefore = claims.RegisteredClaims.NotBefore.Time
+	if claims.NotBefore != nil {
+		notBefore = claims.NotBefore.Time
 	}
 
 	return domain.AccessTokenClaims{
 		TokenClaims: domain.TokenClaims{
-			Issuer:    claims.RegisteredClaims.Issuer,
-			Subject:   claims.RegisteredClaims.Subject,
-			Audience:  claims.RegisteredClaims.Audience,
-			ID:        claims.RegisteredClaims.ID,
+			Issuer:    claims.Issuer,
+			Subject:   claims.Subject,
+			Audience:  claims.Audience,
+			ID:        claims.ID,
 			IssuedAt:  issuedAt,
 			ExpiresAt: expiresAt,
 			Expiry:    expiresAt.Sub(issuedAt),
 			NotBefore: notBefore,
 		},
 		UserID: claims.UserID,
-	}, nil
+	}
 }
 
 func (s *JWTService) registeredClaims(claims domain.TokenClaims) jwt.RegisteredClaims {

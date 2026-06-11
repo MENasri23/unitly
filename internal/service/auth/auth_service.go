@@ -21,9 +21,6 @@ const (
 var (
 	authPurpose      = domain.OTPPurpose("register-login")
 	resetPassPurpose = domain.OTPPurpose("password-reset")
-
-	tokenTypeAccess    = domain.TokenType("access")
-	tokenTypeResetPass = domain.TokenType("reset-pass")
 )
 
 type AuthService struct {
@@ -293,9 +290,6 @@ func (s *AuthService) createUser(ctx context.Context, phone string) (*domain.Use
 func (s *AuthService) generateAccessToken(ctx context.Context, userID uuid.UUID) (string, error) {
 	claims := domain.AccessTokenClaims{
 		UserID: userID.String(),
-		TokenClaims: domain.TokenClaims{
-			TokenType: tokenTypeAccess,
-		},
 	}
 	return s.tokenService.GenerateAccessToken(ctx, claims)
 }
@@ -304,11 +298,10 @@ func (s *AuthService) generateResetPassToken(ctx context.Context, userID uuid.UU
 	claims := domain.AccessTokenClaims{
 		UserID: userID.String(),
 		TokenClaims: domain.TokenClaims{
-			Expiry:    resetPasswordExpiry,
-			TokenType: tokenTypeResetPass,
+			Expiry: resetPasswordExpiry,
 		},
 	}
-	return s.tokenService.GenerateAccessToken(ctx, claims)
+	return s.tokenService.GenerateResetPasswordToken(ctx, claims)
 }
 
 func ratelimitKey(phone string, purpose domain.OTPPurpose) string {
