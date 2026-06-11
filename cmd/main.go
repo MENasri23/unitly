@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"time"
 	"unitly/bootstrap"
@@ -21,7 +20,7 @@ func main() {
 	app := bootstrap.CreateAppliaction()
 	db, err := newPostgresDB(app)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 		return
 	}
 	defer db.Close()
