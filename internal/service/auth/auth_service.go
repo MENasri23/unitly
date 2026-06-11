@@ -90,7 +90,7 @@ func (s *AuthService) VerifyAuthByOTP(
 		return "", err
 	}
 
-	return s.generateToken(ctx, user.GUID)
+	return s.generateAccessToken(ctx, user.GUID)
 }
 
 func (s *AuthService) RequestResetPasswordByOTP(
@@ -257,7 +257,7 @@ func isNotFound(err error) bool {
 func (s *AuthService) registerUser(ctx context.Context, phone string) (string, error) {
 	user, err := s.createUser(ctx, phone)
 	if err == nil {
-		return s.generateToken(ctx, user.GUID)
+		return s.generateAccessToken(ctx, user.GUID)
 	}
 
 	// Possible race condition: user may have been created by another goroutine.
@@ -265,7 +265,7 @@ func (s *AuthService) registerUser(ctx context.Context, phone string) (string, e
 	if err == domain.ErrAleardyExist {
 		user, lookupErr := s.userRepo.GetByPhone(ctx, phone)
 		if lookupErr == nil {
-			return s.generateToken(ctx, user.GUID)
+			return s.generateAccessToken(ctx, user.GUID)
 		}
 	}
 
@@ -290,7 +290,7 @@ func (s *AuthService) createUser(ctx context.Context, phone string) (*domain.Use
 	return user, nil
 }
 
-func (s *AuthService) generateToken(ctx context.Context, userID uuid.UUID) (string, error) {
+func (s *AuthService) generateAccessToken(ctx context.Context, userID uuid.UUID) (string, error) {
 	claims := domain.AccessTokenClaims{
 		UserID: userID.String(),
 		TokenClaims: domain.TokenClaims{
