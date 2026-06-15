@@ -9,6 +9,9 @@ services:
       POSTGRES_DB: ${DB_NAME}
     ports:
       - "${DB_PORT}:${DB_PORT}"
+    networks:
+      - admin
+      - backend
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/db_init.sql:/docker-entrypoint-initdb.d/db_init.sql
@@ -24,6 +27,9 @@ services:
       --maxmemory-policy allkeys-lru
     ports:
       - "${REDIS_PORT}:${REDIS_PORT}"
+    networks:
+      - admin
+      - backend
     volumes:
        - redis_data:/data
        - ./users.acl:/usr/local/etc/redis/users.acl:ro
@@ -39,6 +45,8 @@ services:
     restart: unless-stopped
     ports:
       - "5540:5540"
+    networks:
+      - admin
     volumes:
       - redisinsight_data:/data
 
@@ -51,8 +59,14 @@ services:
       - redis
     ports:
       - "${SERVER_PORT}:${SERVER_PORT}"
+    networks:
+      - backend
     env_file:
       - .env
+
+networks:
+  backend:
+  admin:
 
 volumes:
   postgres_data:
