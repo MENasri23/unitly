@@ -33,6 +33,15 @@ services:
       timeout: 5s
       retries: 5
 
+  redisinsight:
+    image: redis/redisinsight:3.4.1
+    container_name: redisinsight
+    restart: unless-stopped
+    ports:
+      - "5540:5540"
+    volumes:
+      - redisinsight_data:/data
+
   app:
     build: .
     image: unitly:latest
@@ -48,3 +57,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  redisinsight_data:
