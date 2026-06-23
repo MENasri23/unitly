@@ -23,6 +23,11 @@ var (
 	resetPassPurpose = domain.OTPPurpose("password-reset")
 )
 
+type AuthResult struct {
+	AccessToken  string
+	RefreshToken string
+}
+
 type AuthService struct {
 	otpRepo        domain.OTPRepository
 	userRepo       domain.UserRepository
@@ -66,7 +71,7 @@ func (s *AuthService) VerifyAuthByOTP(
 	ctx context.Context,
 	token string,
 	inputOTP string,
-) (string, error) {
+) (*AuthResult, error) {
 	req := &domain.VerifyOTPReq{
 		Token:    token,
 		InputOTP: inputOTP,
@@ -75,19 +80,36 @@ func (s *AuthService) VerifyAuthByOTP(
 
 	result, err := s.otpRepo.Verify(ctx, req)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	user, err := s.userRepo.GetByPhone(ctx, result.Phone)
 	if err != nil {
-		if isNotFound(err) {
-			return s.registerUser(ctx, result.Phone)
+		if !isNotFound(err) {
+			return nil, err
 		}
-
-		return "", err
+		
+		user, err = s.registerUser(ctx, result.Phone)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return s.generateAccessToken(ctx, user.GUID)
+	if user != nil {
+		accessToken, err := s.generateAccessToken(ctx, user.GUID)
+		if err != nil {
+			return nil, err
+		}
+
+		result := &AuthResult{
+			AccessToken: accessToken,
+			RefreshToken: "",
+		}
+
+		return result, nil
+	}
+
+	return nil, domain.ErrInternal
 }
 
 func (s *AuthService) RequestResetPasswordByOTP(
@@ -251,10 +273,10 @@ func isNotFound(err error) bool {
 	return errors.Is(err, domain.ErrNotFound)
 }
 
-func (s *AuthService) registerUser(ctx context.Context, phone string) (string, error) {
+func (s *AuthService) registerUser(ctx context.Context, phone string) (*domain.User, error) {
 	user, err := s.createUser(ctx, phone)
 	if err == nil {
-		return s.generateAccessToken(ctx, user.GUID)
+		return user, nil
 	}
 
 	// Possible race condition: user may have been created by another goroutine.
@@ -262,11 +284,11 @@ func (s *AuthService) registerUser(ctx context.Context, phone string) (string, e
 	if err == domain.ErrAleardyExist {
 		user, lookupErr := s.userRepo.GetByPhone(ctx, phone)
 		if lookupErr == nil {
-			return s.generateAccessToken(ctx, user.GUID)
+			return user, nil
 		}
 	}
 
-	return "", err
+	return nil, err
 }
 
 func (s *AuthService) createUser(ctx context.Context, phone string) (*domain.User, error) {

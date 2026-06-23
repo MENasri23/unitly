@@ -62,13 +62,20 @@ func (c *AccountController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	token, err := c.authSvc.VerifyAuthByOTP(r.Context(), req.Sign, req.Otp)
+	result, err := c.authSvc.VerifyAuthByOTP(r.Context(), req.Sign, req.Otp)
 	if err != nil {
 		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err.Error())
 		return
 	}
 
-	if err = jsonutil.WriteJSON(w, http.StatusOK, token); err != nil {
+	envelop := struct {
+		AccessToken  string `json:"access-token"`
+		RefreshToken string `json:"refresh-token"`
+	}{
+		AccessToken:  result.AccessToken,
+		RefreshToken: result.RefreshToken,
+	}
+	if err = jsonutil.WriteJSON(w, http.StatusOK, envelop); err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, "failed to write response")
 	}
 }
