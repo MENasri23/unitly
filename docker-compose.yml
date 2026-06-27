@@ -15,6 +15,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/db_init.sql:/docker-entrypoint-initdb.d/db_init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   redis:
     image: redis:8.6.3-alpine
