@@ -20,14 +20,14 @@ func main() {
 	app := bootstrap.CreateAppliaction()
 	db, err := newPostgresDB(app)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("postgres connection failed: %v", err)
 		return
 	}
 	defer db.Close()
 
 	cache, err := newCacheClient(app)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("redis ping failed: %v", err)
 		return
 	}
 	defer cache.Close()
