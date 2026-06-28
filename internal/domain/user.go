@@ -24,4 +24,5 @@ type UserRepository interface {
 	GetByPhone(ctx context.Context, phone string) (*User, error)
 	GetUserIDByPhone(ctx context.Context, phone string) (int64, error)
 	GetActiveUserIDByPhone(ctx context.Context, phone string) (int64, error)
+	UpdatePassword(ctx context.Context, userGUID uuid.UUID, password string) error
 }

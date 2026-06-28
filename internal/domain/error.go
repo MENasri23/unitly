@@ -10,4 +10,5 @@ var (
 	ErrTooManyAttempts = errors.New("too many failed attempts, please try again later")
 	ErrInvalidPhone    = errors.New("invalid phone number")
 	ErrAleardyExist    = errors.New("record already exist")
+	ErrInvalidPassword = errors.New("invalid password")
 )

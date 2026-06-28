@@ -21,6 +21,11 @@ type verifyOTPRequest struct {
 	Otp  string `json:"otp" validate:"required,number,len=6"`
 }
 
+type finalizeResetPasswordRequest struct {
+	Token       string `json:"token" validate:"required,jwt"`
+	NewPassword string `json:"password" validate:"required,min=8,max=64"`
+}
+
 func NewAccountController(authSvc *auth.AuthService) *AccountController {
 	return &AccountController{
 		authSvc: authSvc,
@@ -126,6 +131,28 @@ func (c *AccountController) VerifyResetPasswordByOTP(w http.ResponseWriter, r *h
 	}
 }
 
+func (c *AccountController) FinalizeResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
+	var req finalizeResetPasswordRequest
+	if err := jsonutil.ReadJSON(w, r, &req); err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := validateStruct(req); err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := c.authSvc.FinalizeResetPasswordByOTP(r.Context(), req.Token, req.NewPassword); err != nil {
+		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err.Error())
+		return
+	}
+
+	if err := jsonutil.WriteJSON(w, http.StatusOK, true); err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, "failed to write response")
+	}
+}
+
 func SetupAccountRoutes(
 	r chi.Router,
 	authService *auth.AuthService,
@@ -144,6 +171,7 @@ func SetupAccountRoutes(
 			r.Route("/by-otp", func(r chi.Router) {
 				r.Post("/request", accountController.RequestResetPasswordByOTP)
 				r.Post("/verify", accountController.VerifyResetPasswordByOTP)
+				r.Post("/finalize", accountController.FinalizeResetPasswordByOTP)
 			})
 		})
 

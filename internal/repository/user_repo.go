@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"unitly/internal/db"
 	"unitly/internal/domain"
+	"unitly/internal/util/hash"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -119,6 +121,26 @@ func (u *userRepository) getUserIDBy(ctx context.Context, phone string, isActive
 	}
 
 	return userID, nil
+}
+
+func (u *userRepository) UpdatePassword(ctx context.Context, userGUID uuid.UUID, password string) error {
+	query := `UPDATE users 
+	SET password_hash = $1 
+	WHERE public_id = $2`
+
+	passwordHash := hash.SHA256(password)
+	querier := u.getQuerier(ctx)
+
+	cmdTag, err := querier.Exec(ctx, query, passwordHash, userGUID)
+	if err != nil {
+		return err
+	}
+
+	if cmdTag.RowsAffected() == 0 {
+		return domain.ErrNotFound
+	}
+
+	return nil
 }
 
 func mapDBError(err error) error {

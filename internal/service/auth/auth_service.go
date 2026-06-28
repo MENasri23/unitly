@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"unicode"
 	"unitly/internal/domain"
 	"unitly/internal/util/rand"
 	"unitly/internal/util/validate"
@@ -31,9 +32,11 @@ type AuthResult struct {
 type AuthService struct {
 	otpRepo        domain.OTPRepository
 	userRepo       domain.UserRepository
+	sessionRepo    domain.SessionRepository
 	smsService     domain.SmsService
 	tokenService   domain.TokenService
 	otpRateLimiter domain.RateLimiter
+	uow            domain.UnitOfWork
 }
 
 func NewAuthService(
@@ -88,7 +91,7 @@ func (s *AuthService) VerifyAuthByOTP(
 		if !isNotFound(err) {
 			return nil, err
 		}
-		
+
 		user, err = s.registerUser(ctx, result.Phone)
 		if err != nil {
 			return nil, err
@@ -102,7 +105,7 @@ func (s *AuthService) VerifyAuthByOTP(
 		}
 
 		result := &AuthResult{
-			AccessToken: accessToken,
+			AccessToken:  accessToken,
 			RefreshToken: "",
 		}
 
@@ -328,4 +331,73 @@ func (s *AuthService) generateResetPassToken(ctx context.Context, userID uuid.UU
 
 func ratelimitKey(phone string, purpose domain.OTPPurpose) string {
 	return fmt.Sprintf("auth:%s:otp:ratelimit:%s", purpose, phone)
+}
+
+func (s *AuthService) FinalizeResetPasswordByOTP(
+	ctx context.Context, token, newPassword string,
+) error {
+	if err := validatePassword(newPassword); err != nil {
+		return err
+	}
+
+	claims, err := s.tokenService.ValidateResetPasswordToken(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	userUUID, err := uuid.Parse(claims.UserID)
+	if err != nil {
+		return err
+	}
+
+	if s.uow == nil || s.sessionRepo == nil {
+		return domain.ErrInternal
+	}
+
+	return s.uow.Do(ctx, func(ctx context.Context) error {
+		if err := s.userRepo.UpdatePassword(ctx, userUUID, newPassword); err != nil {
+			return err
+		}
+
+		if err := s.sessionRepo.RevokeAll(ctx, userUUID); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func validatePassword(password string) error {
+	const (
+		minPassLength = 8
+		maxPassLength = 64
+	)
+
+	if len(password) < minPassLength || len(password) > maxPassLength {
+		return domain.ErrInvalidPassword
+	}
+
+	hasUpper := false
+	hasLower := false
+	hasDigit := false
+	hasSymbol := false
+
+	for _, r := range password {
+		switch {
+		case unicode.IsUpper(r):
+			hasUpper = true
+		case unicode.IsLower(r):
+			hasLower = true
+		case unicode.IsDigit(r):
+			hasDigit = true
+		case unicode.IsPunct(r) || unicode.IsSymbol(r):
+			hasSymbol = true
+		}
+	}
+
+	if !hasUpper || !hasLower || !hasDigit || !hasSymbol {
+		return domain.ErrInvalidPassword
+	}
+
+	return nil
 }
