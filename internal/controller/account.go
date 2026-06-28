@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"unitly/internal/domain"
 	"unitly/internal/service/auth"
 	"unitly/pkg/jsonutil"
 
@@ -22,7 +23,7 @@ type verifyOTPRequest struct {
 }
 
 type finalizeResetPasswordRequest struct {
-	Sign       string `json:"token" validate:"required,jwt"`
+	Sign       string `json:"sign" validate:"required,jwt"`
 	NewPassword string `json:"password" validate:"required,min=8,max=64"`
 }
 
@@ -40,7 +41,7 @@ func (c *AccountController) RequestAuthByOTP(w http.ResponseWriter, r *http.Requ
 	}
 
 	if err := validateStruct(req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err.Error())
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, domain.ErrInvalidPassword.Error())
 		return
 	}
 
