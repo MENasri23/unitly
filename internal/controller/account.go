@@ -23,7 +23,7 @@ type verifyOTPRequest struct {
 }
 
 type finalizeResetPasswordRequest struct {
-	Sign       string `json:"sign" validate:"required,jwt"`
+	Sign        string `json:"sign" validate:"required,jwt"`
 	NewPassword string `json:"password" validate:"required,min=8,max=64"`
 }
 
