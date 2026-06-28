@@ -48,6 +48,9 @@ services:
     image: redis/redisinsight:3.4.1
     container_name: redisinsight
     restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
     ports:
       - "5540:5540"
     networks:
