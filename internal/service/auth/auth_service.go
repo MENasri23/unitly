@@ -334,13 +334,13 @@ func ratelimitKey(phone string, purpose domain.OTPPurpose) string {
 }
 
 func (s *AuthService) FinalizeResetPasswordByOTP(
-	ctx context.Context, token, newPassword string,
+	ctx context.Context, sign, newPassword string,
 ) error {
 	if err := validatePassword(newPassword); err != nil {
 		return err
 	}
 
-	claims, err := s.tokenService.ValidateResetPasswordToken(ctx, token)
+	claims, err := s.tokenService.ValidateResetPasswordToken(ctx, sign)
 	if err != nil {
 		return err
 	}

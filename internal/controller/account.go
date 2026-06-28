@@ -22,7 +22,7 @@ type verifyOTPRequest struct {
 }
 
 type finalizeResetPasswordRequest struct {
-	Token       string `json:"token" validate:"required,jwt"`
+	Sign       string `json:"token" validate:"required,jwt"`
 	NewPassword string `json:"password" validate:"required,min=8,max=64"`
 }
 
@@ -143,7 +143,7 @@ func (c *AccountController) FinalizeResetPasswordByOTP(w http.ResponseWriter, r 
 		return
 	}
 
-	if err := c.authSvc.FinalizeResetPasswordByOTP(r.Context(), req.Token, req.NewPassword); err != nil {
+	if err := c.authSvc.FinalizeResetPasswordByOTP(r.Context(), req.Sign, req.NewPassword); err != nil {
 		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err.Error())
 		return
 	}
