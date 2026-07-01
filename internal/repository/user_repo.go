@@ -55,7 +55,7 @@ func (u *userRepository) Create(ctx context.Context, user *domain.User) error {
 	)
 
 	if err == pgx.ErrNoRows {
-		return domain.ErrAleardyExist
+		return domain.ErrAlreadyExist
 	}
 
 	return err
