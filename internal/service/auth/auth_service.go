@@ -42,16 +42,20 @@ type AuthService struct {
 func NewAuthService(
 	otpRepo domain.OTPRepository,
 	userRepo domain.UserRepository,
+	sessionRepo domain.SessionRepository,
 	smsService domain.SmsService,
 	tokenService domain.TokenService,
 	otpRateLimiter domain.RateLimiter,
+	uow domain.UnitOfWork,
 ) *AuthService {
 	return &AuthService{
 		otpRepo:        otpRepo,
 		userRepo:       userRepo,
+		sessionRepo:    sessionRepo,
 		smsService:     smsService,
 		tokenService:   tokenService,
 		otpRateLimiter: otpRateLimiter,
+		uow:            uow,
 	}
 }
 

@@ -18,12 +18,12 @@ import (
 
 func main() {
 	app := bootstrap.CreateAppliaction()
-	db, err := newPostgresDB(app)
+	pgxDb, err := newPostgresDB(app)
 	if err != nil {
 		log.Fatalf("postgres connection failed: %v", err)
 		return
 	}
-	defer db.Close()
+	defer pgxDb.Close()
 
 	cache, err := newCacheClient(app)
 	if err != nil {
@@ -33,8 +33,9 @@ func main() {
 	defer cache.Close()
 
 	// repositories
-	userRepository := repository.NewUserRepository(db)
+	userRepository := repository.NewUserRepository(pgxDb)
 	otpRepository := otprepo.NewOtpRepository(cache, app.GetOtpSecret())
+	sessionRepository := repository.NewSessionRepository(pgxDb)
 
 	// rate limiters
 	otpRateLimiter := otprepo.NewOtpRateLimiter(cache, app.GetOtpRateLimit())
@@ -46,14 +47,18 @@ func main() {
 	// 	app.GetOtpTemplateID(),
 	// )
 
+	txManager := db.NewSqlTxManager(pgxDb)
+
 	var smsSvc domain.SmsService = &smsServiceMock{}
 	tokenService := auth.NewJWTService(app.GetTokenSecret(), app.GetTokenExpiry())
 	authService := auth.NewAuthService(
 		otpRepository,
 		userRepository,
+		sessionRepository,
 		smsSvc,
 		tokenService,
 		otpRateLimiter,
+		txManager,
 	)
 
 	r := chi.NewRouter()
