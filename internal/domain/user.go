@@ -7,6 +7,8 @@ import (
 	"github.com/google/uuid"
 )
 
+var ErrUserNotFound = NewNotFoundError("user")
+
 type User struct {
 	ID             int64
 	GUID           uuid.UUID

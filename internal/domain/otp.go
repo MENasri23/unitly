@@ -1,13 +1,10 @@
 package domain
 
-import (
-	"context"
-	"errors"
-)
+import "context"
 
 var (
-	ErrInvalidOTP     = errors.New("invalid or expired OTP")
-	ErrOTPAlreadyUsed = errors.New("OTP has already been used")
+	ErrInvalidOTP     = NewError(ErrorCode("INVALID_OTP"), "invalid or expired OTP")
+	ErrOTPAlreadyUsed = NewError(ErrorCode("OTP_ALREADY_USED"), "OTP has already been used")
 )
 
 type OTPPurpose string

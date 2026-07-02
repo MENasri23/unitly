@@ -2,12 +2,12 @@ package rand
 
 import (
 	"crypto/rand"
-	"errors"
+	"unitly/internal/domain"
 )
 
 var (
-	ErrInvalidRange = errors.New("invalid range")
-	ErrInvalidMax   = errors.New("max must be between 1 and 255")
+	ErrInvalidRange = domain.NewError(domain.ErrorCode("INVALID_RANGE"), "invalid range")
+	ErrInvalidMax   = domain.NewError(domain.ErrorCode("INVALID_MAX"), "max must be between 1 and 255")
 )
 
 func GenerateCode(

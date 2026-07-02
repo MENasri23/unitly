@@ -3,7 +3,9 @@ package jsonutil
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
+	"unitly/internal/domain"
 )
 
 var (
@@ -18,7 +20,8 @@ var (
 // errorResponse defines the standard structure used for all JSON error responses.
 // This ensures consistent API error formatting across the application.
 type errorResponse struct {
-	Message string `json:"message"`
+	Code    domain.ErrorCode `json:"code"`
+	Message string           `json:"message"`
 }
 
 // WriteErrJSON writes a JSON-formatted error response to the client.
@@ -26,20 +29,31 @@ type errorResponse struct {
 // It sets the HTTP status code and returns a JSON object in the form:
 //
 //	{
+//	  "code": "INVALID_REQUEST",
 //	  "message": "error description"
 //	}
 //
 // Example usage:
 //
-//	return jsonutil.WriteErrJSON(w, http.StatusBadRequest, "invalid input")
+//	return jsonutil.WriteErrJSON(w, http.StatusBadRequest, domain.NewError("INVALID_REQUEST", "invalid input"))
 //
 // Returns an error if JSON encoding fails (rare, but possible if the writer fails).
 func WriteErrJSON(
 	w http.ResponseWriter,
 	statusCode int,
-	message string,
+	err error,
 ) error {
-	return WriteJSON(w, statusCode, &errorResponse{Message: message})
+	if err == nil {
+		err = domain.ErrInternal
+	}
+
+	payload := errorResponse{Message: err.Error()}
+	var domainErr domain.Error
+	if errors.As(err, &domainErr) {
+		payload.Code = domainErr.Code()
+	}
+
+	return WriteJSON(w, statusCode, &payload)
 }
 
 // WriteJSON writes any Go value as a JSON response.
@@ -86,5 +100,9 @@ func ReadJSON(
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 
-	return decoder.Decode(data)
+	if err := decoder.Decode(data); err != nil {
+		return domain.NewError(domain.ErrorCode("INVALID_JSON"), err.Error())
+	}
+
+	return nil
 }

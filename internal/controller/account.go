@@ -36,41 +36,41 @@ func NewAccountController(authSvc *auth.AuthService) *AccountController {
 func (c *AccountController) RequestAuthByOTP(w http.ResponseWriter, r *http.Request) {
 	var req requestOTPRequest
 	if err := jsonutil.ReadJSON(w, r, &req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err.Error())
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
 
 	if err := validateStruct(req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, domain.ErrInvalidPassword.Error())
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, domain.ErrInvalidPassword)
 		return
 	}
 
 	token, err := c.authSvc.RequestAuthByOTP(r.Context(), req.Phone)
 	if err != nil {
-		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err.Error())
+		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
 		return
 	}
 
 	if err = jsonutil.WriteJSON(w, http.StatusOK, token); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, "failed to write response")
+		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, domain.NewError(domain.ErrorCode("WRITE_RESPONSE_FAILED"), "failed to write response"))
 	}
 }
 
 func (c *AccountController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Request) {
 	var req verifyOTPRequest
 	if err := jsonutil.ReadJSON(w, r, &req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err.Error())
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
 
 	if err := validateStruct(req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err.Error())
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
 
 	result, err := c.authSvc.VerifyAuthByOTP(r.Context(), req.Sign, req.Otp)
 	if err != nil {
-		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err.Error())
+		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
 		return
 	}
 
@@ -82,75 +82,75 @@ func (c *AccountController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Reque
 		RefreshToken: result.RefreshToken,
 	}
 	if err = jsonutil.WriteJSON(w, http.StatusOK, envelop); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, "failed to write response")
+		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, domain.NewError(domain.ErrorCode("WRITE_RESPONSE_FAILED"), "failed to write response"))
 	}
 }
 
 func (c *AccountController) RequestResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
 	var req requestOTPRequest
 	if err := jsonutil.ReadJSON(w, r, &req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err.Error())
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
 
 	if err := validateStruct(req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err.Error())
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
 
 	token, err := c.authSvc.RequestResetPasswordByOTP(r.Context(), req.Phone)
 	if err != nil {
-		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err.Error())
+		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
 		return
 	}
 
 	if err = jsonutil.WriteJSON(w, http.StatusOK, token); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, "failed to write response")
+		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, domain.NewError(domain.ErrorCode("WRITE_RESPONSE_FAILED"), "failed to write response"))
 	}
 }
 
 func (c *AccountController) VerifyResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
 	var req verifyOTPRequest
 	if err := jsonutil.ReadJSON(w, r, &req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err.Error())
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
 
 	if err := validateStruct(req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err.Error())
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
 
 	token, err := c.authSvc.VerifyResetPasswordByOTP(r.Context(), req.Sign, req.Otp)
 	if err != nil {
-		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err.Error())
+		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
 		return
 	}
 
 	if err = jsonutil.WriteJSON(w, http.StatusOK, token); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, "failed to write response")
+		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, domain.NewError(domain.ErrorCode("WRITE_RESPONSE_FAILED"), "failed to write response"))
 	}
 }
 
 func (c *AccountController) FinalizeResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
 	var req finalizeResetPasswordRequest
 	if err := jsonutil.ReadJSON(w, r, &req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err.Error())
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
 
 	if err := validateStruct(req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err.Error())
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
 
 	if err := c.authSvc.FinalizeResetPasswordByOTP(r.Context(), req.Sign, req.NewPassword); err != nil {
-		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err.Error())
+		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
 		return
 	}
 
 	if err := jsonutil.WriteJSON(w, http.StatusOK, true); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, "failed to write response")
+		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, domain.NewError(domain.ErrorCode("WRITE_RESPONSE_FAILED"), "failed to write response"))
 	}
 }
 

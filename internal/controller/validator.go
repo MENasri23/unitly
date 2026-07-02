@@ -1,6 +1,10 @@
 package controller
 
-import "github.com/go-playground/validator/v10"
+import (
+	"unitly/internal/domain"
+
+	"github.com/go-playground/validator/v10"
+)
 
 var appValidator *validator.Validate
 
@@ -9,5 +13,9 @@ func init() {
 }
 
 func validateStruct(s any) error {
-	return appValidator.Struct(s)
+	if err := appValidator.Struct(s); err != nil {
+		return domain.NewError(domain.ErrorCode("VALIDATION_ERROR"), err.Error())
+	}
+
+	return nil
 }

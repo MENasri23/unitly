@@ -1,11 +1,11 @@
 package otprepo
 
 import (
-	"errors"
+	"unitly/internal/domain"
 	"unitly/internal/util/rand"
 )
 
-var ErrInvalidLength = errors.New("invalid otp length")
+var ErrInvalidLength = domain.NewError(domain.ErrorCode("INVALID_LENGTH"), "invalid otp length")
 
 func generateOTP(length int) (string, error) {
 	if length <= 0 {
@@ -13,7 +13,7 @@ func generateOTP(length int) (string, error) {
 	}
 
 	out := make([]byte, length)
-	
+
 	if err := rand.GenerateCode(out, 10); err != nil {
 		return "", err
 	}

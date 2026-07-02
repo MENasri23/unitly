@@ -137,7 +137,7 @@ func (u *userRepository) UpdatePassword(ctx context.Context, userGUID uuid.UUID,
 	}
 
 	if cmdTag.RowsAffected() == 0 {
-		return domain.ErrNotFound
+		return domain.ErrUserNotFound
 	}
 
 	return nil
@@ -150,7 +150,7 @@ func mapDBError(err error) error {
 
 	switch err {
 	case pgx.ErrNoRows:
-		return domain.ErrNotFound
+		return domain.ErrUserNotFound
 	default:
 		return err
 	}

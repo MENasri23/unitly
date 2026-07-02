@@ -7,7 +7,8 @@ import (
 
 func mapErrToStatusCode(err error) int {
 	switch err {
-	case domain.ErrNotFound:
+	case domain.ErrUserNotFound,
+		domain.ErrNotFound:
 		return http.StatusNotFound
 
 	case domain.ErrTooManyAttempts:

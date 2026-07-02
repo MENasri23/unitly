@@ -88,7 +88,7 @@ func (s *AuthService) VerifyAuthByOTP(
 
 	user, err := s.userRepo.GetByPhone(ctx, result.Phone)
 	if err != nil {
-		if !isNotFound(err) {
+		if !isUserNotFound(err) {
 			return nil, err
 		}
 
@@ -134,7 +134,7 @@ func (s *AuthService) RequestResetPasswordByOTP(
 
 	// If the phone is not associated with an active user, do not reveal that fact.
 	// Create an OTP record so timing/behaviour is consistent, but do not send an SMS.
-	if !isNotFound(err) {
+	if !isUserNotFound(err) {
 		return "", err
 	}
 
@@ -177,7 +177,7 @@ func (s *AuthService) VerifyResetPasswordByOTP(
 	user, err := s.userRepo.GetByPhone(ctx, result.Phone)
 	if err != nil {
 		// Do not reveal whether the phone maps to a user. Return a generic OTP error for not-found.
-		if isNotFound(err) {
+		if isUserNotFound(err) {
 			return "", domain.ErrInvalidOTP
 		}
 		return "", err
@@ -272,8 +272,8 @@ func (s *AuthService) isValidPhone(phone string) bool {
 	return validate.IsValidPhone(phone)
 }
 
-func isNotFound(err error) bool {
-	return errors.Is(err, domain.ErrNotFound)
+func isUserNotFound(err error) bool {
+	return errors.Is(err, domain.ErrUserNotFound)
 }
 
 func (s *AuthService) registerUser(ctx context.Context, phone string) (*domain.User, error) {
@@ -284,7 +284,7 @@ func (s *AuthService) registerUser(ctx context.Context, phone string) (*domain.U
 
 	// Possible race condition: user may have been created by another goroutine.
 	// Attempt to retrieve the user. If successful, proceed; otherwise return original error.
-	if err == domain.ErrAleardyExist {
+	if errors.Is(err, domain.ErrAlreadyExist) {
 		user, lookupErr := s.userRepo.GetByPhone(ctx, phone)
 		if lookupErr == nil {
 			return user, nil
