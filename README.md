@@ -186,7 +186,6 @@ Example:
 
 - `INVALID_PHONE` — invalid phone format
 - `INVALID_OTP` — OTP is invalid or expired
-- `OTP_ALREADY_USED` — same OTP token was already consumed
 - `TOO_MANY_ATTEMPTS` — OTP verification rate limit exceeded
 - `TOO_MANY_REQUESTS` — OTP request rate limit exceeded
 - `INVALID_TOKEN` — invalid or expired JWT / reset token
