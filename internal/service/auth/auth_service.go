@@ -82,6 +82,10 @@ func (s *AuthService) VerifyAuthByOTP(
 	}
 
 	result, err := s.otpRepo.Verify(ctx, req)
+	if err == domain.ErrOTPAlreadyUsed {
+		return nil, domain.ErrInvalidOTP
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -170,6 +174,10 @@ func (s *AuthService) VerifyResetPasswordByOTP(
 	}
 
 	result, err := s.otpRepo.Verify(ctx, req)
+	if err == domain.ErrOTPAlreadyUsed {
+		return "", domain.ErrInvalidOTP
+	}
+
 	if err != nil {
 		return "", err
 	}
