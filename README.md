@@ -7,7 +7,8 @@ Unitly is a Go-based authentication service focused on OTP-based sign-in and pas
 This repository implements:
 - OTP request and verification for login/registration
 - OTP-based password reset flow with secure reset token handling
-- JWT access token generation
+- JWT access token generation with refresh token support
+- Secure refresh token management (opaque tokens with SHA256 hashing)
 - Redis-backed OTP session storage and rate limiting
 - PostgreSQL user persistence
 - Consistent JSON error responses
@@ -107,10 +108,35 @@ The HTTP API is mounted at `/api/v1`.
   ```json
   {
     "access-token": "<jwt-access-token>",
-    "refresh-token": ""
+    "refresh-token": "<opaque-refresh-token>"
   }
   ```
 - Behavior: if the phone is not found, the service auto-registers a new active user.
+
+### Refresh Token
+
+#### Refresh Access Token
+
+- Method: `POST`
+- Path: `/api/v1/accounts/auth/refresh`
+- Request body:
+  ```json
+  {
+    "refresh-token": "<opaque-refresh-token>"
+  }
+  ```
+- Success response:
+  ```json
+  {
+    "access-token": "<new-jwt-access-token>",
+    "refresh-token": "<new-opaque-refresh-token>"
+  }
+  ```
+- Behavior: 
+  - Validates the refresh token and user status
+  - Revokes the old refresh token (prevents reuse)
+  - Returns new access token and refresh token
+  - Fails with `401 Unauthorized` if token is invalid, expired, or user is inactive
 
 ### Password Reset by OTP
 
@@ -208,6 +234,24 @@ Example:
 - After 3 failed OTP attempts, the phone is blocked for 10 minutes.
 - Request rate limiting is enforced via a Redis-based rate limiter.
 - Password reset flow does not disclose whether a phone exists in the system.
+
+## Token Security
+
+### Refresh Tokens
+
+- Refresh tokens are opaque, cryptographically generated tokens (48 bytes of entropy)
+- Tokens are encoded with base64url for safe transmission
+- Only the SHA256 hash of the token is persisted in the database (plaintext never stored)
+- Refresh tokens expire after 7 days
+- When a new token is generated via `/auth/refresh`, the old refresh token is immediately revoked
+- Revoked tokens cannot be reused even if not expired
+- User must be active to refresh tokens; deleted or deactivated users cannot refresh
+
+### Access Tokens
+
+- Access tokens are JWT tokens with a default expiry of 24 hours
+- Access tokens contain the user ID and token type
+- Access tokens cannot be revoked (only expired tokens are invalidated)
 
 ## Database and Cache
 

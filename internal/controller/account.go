@@ -27,6 +27,10 @@ type finalizeResetPasswordRequest struct {
 	NewPassword string `json:"password" validate:"required,min=8,max=64"`
 }
 
+type refreshRequest struct {
+	RefreshToken string `json:"refresh-token" validate:"required,base64rawurl"`
+}
+
 func NewAccountController(authSvc *auth.AuthService) *AccountController {
 	return &AccountController{
 		authSvc: authSvc,
@@ -154,6 +158,36 @@ func (c *AccountController) FinalizeResetPasswordByOTP(w http.ResponseWriter, r 
 	}
 }
 
+func (c *AccountController) RefreshByToken(w http.ResponseWriter, r *http.Request) {
+	var req refreshRequest
+	if err := jsonutil.ReadJSON(w, r, &req); err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err := validateStruct(req); err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		return
+	}
+
+	result, err := c.authSvc.RefreshAuthByToken(r.Context(), req.RefreshToken)
+	if err != nil {
+		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
+		return
+	}
+
+	envelope := struct {
+		AccessToken  string `json:"access-token"`
+		RefreshToken string `json:"refresh-token"`
+	}{
+		AccessToken:  result.AccessToken,
+		RefreshToken: result.RefreshToken,
+	}
+	if err = jsonutil.WriteJSON(w, http.StatusOK, envelope); err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, domain.NewError(domain.ErrorCode("WRITE_RESPONSE_FAILED"), "failed to write response"))
+	}
+}
+
 func SetupAccountRoutes(
 	r chi.Router,
 	authService *auth.AuthService,
@@ -166,6 +200,7 @@ func SetupAccountRoutes(
 				r.Post("/request", accountController.RequestAuthByOTP)
 				r.Post("/verify", accountController.VerifyAuthByOTP)
 			})
+			r.Post("/refresh", accountController.RefreshByToken)
 		})
 
 		r.Route("/reset-password", func(r chi.Router) {

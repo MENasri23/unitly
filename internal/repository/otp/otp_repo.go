@@ -40,6 +40,14 @@ func (o *otpRepository) Create(ctx context.Context, req *domain.CreateOTPReq) (s
 		return "", err
 	}
 
+	if err = o.storeOTP(ctx, req, otp); err != nil {
+		return "", err
+	}
+
+	return otp, nil
+}
+
+func (o *otpRepository) storeOTP(ctx context.Context, req *domain.CreateOTPReq, otp string) error {
 	otpHash := o.hashOTP(otp)
 	session := &otpSession{
 		Phone:    req.Phone,
@@ -58,12 +66,12 @@ func (o *otpRepository) Create(ctx context.Context, req *domain.CreateOTPReq) (s
 	)
 	pipe.Expire(ctx, sessionKey, otpExpiry)
 
-	if _, err = pipe.Exec(ctx); err != nil {
+	if _, err := pipe.Exec(ctx); err != nil {
 		log.Printf("failed to create OTP session: %v", err)
-		return "", err
+		return err
 	}
 
-	return otp, nil
+	return nil
 }
 
 func (o *otpRepository) Verify(ctx context.Context, r *domain.VerifyOTPReq) (*domain.VerifyOTPResult, error) {

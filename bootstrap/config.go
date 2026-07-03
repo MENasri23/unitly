@@ -7,6 +7,7 @@ import (
 )
 
 type config struct {
+	Environment       AppEnv
 	Address           string
 	WriteTimeout      time.Duration
 	ReadTimeout       time.Duration
@@ -20,6 +21,7 @@ type config struct {
 
 func newConfig(env *Env) *config {
 	return &config{
+		Environment:       env.AppEnv,
 		Address:           serverAddress(env),
 		WriteTimeout:      env.WriteTimeout,
 		ReadTimeout:       env.ReadTimeout,

@@ -18,6 +18,10 @@ func CreateAppliaction() *Application {
 	}
 }
 
+func (app *Application) IsDevelopmentEnv() bool {
+	return app.config.Environment == Development
+}
+
 func (app *Application) GetDatabaseURL() string {
 	return app.config.db.GetURL()
 }

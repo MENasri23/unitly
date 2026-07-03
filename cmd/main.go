@@ -34,7 +34,7 @@ func main() {
 
 	// repositories
 	userRepository := repository.NewUserRepository(pgxDb)
-	otpRepository := otprepo.NewOtpRepository(cache, app.GetOtpSecret())
+	otpRepository := newOtpRepository(app, cache)
 	sessionRepository := repository.NewSessionRepository(pgxDb)
 
 	// rate limiters
@@ -90,4 +90,15 @@ func newCacheClient(app *bootstrap.Application) (*cache.Cache, error) {
 		app.GetCachePassword(),
 		0,
 	)
+}
+
+func newOtpRepository(app *bootstrap.Application, cache *cache.Cache) domain.OTPRepository {
+	var otpRepo domain.OTPRepository
+	if app.IsDevelopmentEnv() {
+		otpRepo = otprepo.NewOTPMockRepo(cache, app.GetOtpSecret())
+	} else {
+		otpRepo = otprepo.NewOtpRepository(cache, app.GetOtpSecret())
+	}
+
+	return otpRepo
 }
