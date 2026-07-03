@@ -23,4 +23,5 @@ type SessionRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*Session, error)
 	Revoke(ctx context.Context, id uuid.UUID) error
 	RevokeAll(ctx context.Context, userID uuid.UUID) error
+	GetByRefreshToken(ctx context.Context, refreshTokenHash string) (*Session, error)
 }

@@ -78,6 +78,36 @@ func (s *sessionRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.
 	return &session, nil
 }
 
+func (s *sessionRepository) GetByRefreshToken(ctx context.Context, refreshTokenHash string) (*domain.Session, error) {
+	query := `
+    SELECT id, user_id, refresh_token_hash, created_at, expires_at, revoked_at
+    FROM sessions
+    WHERE refresh_token_hash = $1
+      AND revoked_at IS NULL
+      AND expires_at > NOW()
+    `
+
+	querier := s.getQuerier(ctx)
+
+	var session domain.Session
+	err := querier.QueryRow(ctx, query, refreshTokenHash).Scan(
+		&session.ID,
+		&session.UserID,
+		&session.RefreshTokenHash,
+		&session.CreatedAt,
+		&session.ExpiresAt,
+		&session.RevokedAt,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, domain.ErrNotFound
+		}
+		return nil, err
+	}
+
+	return &session, nil
+}
+
 func (s *sessionRepository) Revoke(ctx context.Context, id uuid.UUID) error {
 	query := `
     UPDATE sessions

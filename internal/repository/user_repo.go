@@ -65,6 +65,10 @@ func (u *userRepository) GetByID(ctx context.Context, userID int64) (*domain.Use
 	return u.getBy(ctx, "id", userID)
 }
 
+func (u *userRepository) GetByGUID(ctx context.Context, guid uuid.UUID) (*domain.User, error) {
+	return u.getBy(ctx, "public_id", guid)
+}
+
 func (u *userRepository) GetByPhone(ctx context.Context, phone string) (*domain.User, error) {
 	return u.getBy(ctx, "phone", phone)
 }

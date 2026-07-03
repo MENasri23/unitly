@@ -8,6 +8,7 @@ import (
 	"time"
 	"unicode"
 	"unitly/internal/domain"
+	"unitly/internal/util/hash"
 	"unitly/internal/util/rand"
 	"unitly/internal/util/validate"
 
@@ -17,6 +18,7 @@ import (
 const (
 	sendOtpTimeout      = 15 * time.Second
 	resetPasswordExpiry = 5 * time.Minute
+	refreshTokenExpiry  = 7 * 24 * time.Hour
 )
 
 var (
@@ -112,9 +114,14 @@ func (s *AuthService) VerifyAuthByOTP(
 			return nil, err
 		}
 
+		refreshToken, err := s.createSession(ctx, user.GUID)
+		if err != nil {
+			return nil, err
+		}
+
 		result := &AuthResult{
 			AccessToken:  accessToken,
-			RefreshToken: "",
+			RefreshToken: refreshToken,
 		}
 
 		return result, nil
@@ -200,6 +207,68 @@ func (s *AuthService) VerifyResetPasswordByOTP(
 	}
 
 	return s.generateResetPassToken(ctx, user.GUID)
+}
+
+func (s *AuthService) RefreshAuthByToken(
+	ctx context.Context,
+	refreshToken string,
+) (*AuthResult, error) {
+	if refreshToken == "" {
+		return nil, domain.ErrInvalidToken
+	}
+
+	tokenHash := hash.SHA256(refreshToken)
+	session, err := s.sessionRepo.GetByRefreshToken(ctx, tokenHash)
+	if err != nil {
+		if err == domain.ErrNotFound {
+			return nil, domain.ErrInvalidToken
+		}
+		return nil, err
+	}
+
+	user, err := s.userRepo.GetByGUID(ctx, session.UserID)
+	if err != nil {
+		if isUserNotFound(err) {
+			return nil, domain.ErrInvalidToken
+		}
+		return nil, err
+	}
+
+	if !user.IsActive {
+		return nil, domain.ErrInvalidToken
+	}
+
+	newRefreshToken, err := rand.GenereteDefaultToken()
+	if err != nil {
+		return nil, err
+	}
+
+	newSession := &domain.Session{
+		ID:               uuid.New(),
+		UserID:           user.GUID,
+		RefreshTokenHash: hash.SHA256(newRefreshToken),
+		ExpiresAt:        time.Now().Add(refreshTokenExpiry),
+	}
+
+	if err := s.uow.Do(ctx, func(txCtx context.Context) error {
+		if err := s.sessionRepo.Revoke(txCtx, session.ID); err != nil {
+			return err
+		}
+
+		return s.sessionRepo.Create(txCtx, newSession)
+	}); err != nil {
+		return nil, err
+	}
+
+	accessToken, err := s.generateAccessToken(ctx, user.GUID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthResult{
+		AccessToken:  accessToken,
+		RefreshToken: newRefreshToken,
+	}, nil
 }
 
 func (s *AuthService) requestOTP(
@@ -322,6 +391,26 @@ func (s *AuthService) createUser(ctx context.Context, phone string) (*domain.Use
 	}
 
 	return user, nil
+}
+
+func (s *AuthService) createSession(ctx context.Context, userID uuid.UUID) (string, error) {
+	refreshToken, err := rand.GenereteDefaultToken()
+	if err != nil {
+		return "", err
+	}
+
+	session := &domain.Session{
+		ID:               uuid.New(),
+		UserID:           userID,
+		RefreshTokenHash: hash.SHA256(refreshToken),
+		ExpiresAt:        time.Now().Add(refreshTokenExpiry),
+	}
+
+	if err := s.sessionRepo.Create(ctx, session); err != nil {
+		return "", err
+	}
+
+	return refreshToken, nil
 }
 
 func (s *AuthService) generateAccessToken(ctx context.Context, userID uuid.UUID) (string, error) {
