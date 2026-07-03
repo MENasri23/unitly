@@ -18,17 +18,17 @@ type requestOTPRequest struct {
 }
 
 type verifyOTPRequest struct {
-	Sign string `json:"sign" validate:"required,base64rawurl"`
+	Sign string `json:"sign" validate:"required,base64rawurl,max=256"`
 	Otp  string `json:"otp" validate:"required,number,len=6"`
 }
 
 type finalizeResetPasswordRequest struct {
-	Sign        string `json:"sign" validate:"required,jwt"`
+	Sign        string `json:"sign" validate:"required,jwt,max=512"`
 	NewPassword string `json:"password" validate:"required,min=8,max=64"`
 }
 
 type refreshRequest struct {
-	RefreshToken string `json:"refresh-token" validate:"required,base64rawurl"`
+	RefreshToken string `json:"refresh-token" validate:"required,base64rawurl,max=256"`
 }
 
 func NewAccountController(authSvc *auth.AuthService) *AccountController {
