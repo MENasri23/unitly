@@ -11,6 +11,7 @@ import (
 	"unitly/internal/repository"
 	otprepo "unitly/internal/repository/otp"
 	"unitly/internal/service/auth"
+	"unitly/internal/service/sms"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -40,16 +41,9 @@ func main() {
 	// rate limiters
 	otpRateLimiter := otprepo.NewOtpRateLimiter(cache, app.GetOtpRateLimit())
 
-	// services
-	// smsService := sms.NewMeliPayamakService(
-	// 	app.GetSmsUsername(),
-	// 	app.GetSmsApiKey(),
-	// 	app.GetOtpTemplateID(),
-	// )
-
 	txManager := db.NewSqlTxManager(pgxDb)
 
-	var smsSvc domain.SmsService = &smsServiceMock{}
+	smsSvc := newSmsService(app)
 	tokenService := auth.NewJWTService(app.GetTokenSecret(), app.GetTokenExpiry())
 	authService := auth.NewAuthService(
 		otpRepository,
@@ -101,4 +95,16 @@ func newOtpRepository(app *bootstrap.Application, cache *cache.Cache) domain.OTP
 	}
 
 	return otpRepo
+}
+
+func newSmsService(app *bootstrap.Application) domain.SmsService {
+	if app.IsDevelopmentEnv() {
+		return &smsServiceMock{}
+	}
+
+	return sms.NewMeliPayamakService(
+		app.GetSmsUsername(),
+		app.GetSmsApiKey(),
+		app.GetOtpTemplateID(),
+	)
 }
