@@ -5,6 +5,20 @@ import (
 	"strings"
 )
 
+var (
+	ErrInternal     = NewError(ErrorCode("INTERNAL"), "something went wrong")
+	ErrAlreadyExist = NewError(ErrorCode("ALREADY_EXIST"), "record already exist")
+
+	ErrNotFound = NewNotFoundError("record")
+
+	ErrInvalidToken    = NewError(ErrorCode("INVALID_TOKEN"), "invalid or expired token")
+	ErrInvalidPhone    = NewError(ErrorCode("INVALID_PHONE"), "invalid phone number")
+	ErrInvalidPassword = NewError(ErrorCode("INVALID_PASSWORD"), "invalid password")
+
+	ErrRateLimit       = NewError(ErrorCode("TOO_MANY_REQUESTS"), "too many request")
+	ErrTooManyAttempts = NewError(ErrorCode("TOO_MANY_ATTEMPTS"), "too many failed attempts, please try again later")
+)
+
 type ErrorCode string
 
 type Error interface {
@@ -24,20 +38,6 @@ func (e *errorCode) Error() string {
 func (e *errorCode) Code() ErrorCode {
 	return e.code
 }
-
-var (
-	ErrInternal     = NewError(ErrorCode("INTERNAL"), "something went wrong")
-	ErrAlreadyExist = NewError(ErrorCode("ALREADY_EXIST"), "record already exist")
-
-	ErrNotFound = NewNotFoundError("record")
-
-	ErrInvalidToken    = NewError(ErrorCode("INVALID_TOKEN"), "invalid or expired token")
-	ErrInvalidPhone    = NewError(ErrorCode("INVALID_PHONE"), "invalid phone number")
-	ErrInvalidPassword = NewError(ErrorCode("INVALID_PASSWORD"), "invalid password")
-
-	ErrRateLimit       = NewError(ErrorCode("TOO_MANY_REQUESTS"), "too many request")
-	ErrTooManyAttempts = NewError(ErrorCode("TOO_MANY_ATTEMPTS"), "too many failed attempts, please try again later")
-)
 
 func NewError(code ErrorCode, msg string) error {
 	return &errorCode{code: code, message: msg}
