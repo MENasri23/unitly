@@ -22,6 +22,11 @@ type verifyOTPRequest struct {
 	Otp  string `json:"otp" validate:"required,number,len=6"`
 }
 
+type authByPasswordRequest struct {
+	Phone    string `json:"phone" validate:"required,e164"`
+	Password string `json:"password" validate:"required,min=8,max=64"`
+}
+
 type finalizeResetPasswordRequest struct {
 	Sign        string `json:"sign" validate:"required,jwt,max=512"`
 	NewPassword string `json:"password" validate:"required,min=8,max=64"`
@@ -29,6 +34,11 @@ type finalizeResetPasswordRequest struct {
 
 type refreshRequest struct {
 	RefreshToken string `json:"refresh-token" validate:"required,base64rawurl,max=256"`
+}
+
+type TokensDTO struct {
+	AccessToken  string `json:"access-token"`
+	RefreshToken string `json:"refresh-token"`
 }
 
 func NewAccountController(authSvc *auth.AuthService) *AccountController {
@@ -78,14 +88,38 @@ func (c *AccountController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	envelop := struct {
-		AccessToken  string `json:"access-token"`
-		RefreshToken string `json:"refresh-token"`
-	}{
+	tokens := TokensDTO{
 		AccessToken:  result.AccessToken,
 		RefreshToken: result.RefreshToken,
 	}
-	if err = jsonutil.WriteJSON(w, http.StatusOK, envelop); err != nil {
+	if err = jsonutil.WriteJSON(w, http.StatusOK, tokens); err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, domain.NewError(domain.ErrorCode("WRITE_RESPONSE_FAILED"), "failed to write response"))
+	}
+}
+
+func (c *AccountController) AuthenticateByPassword(w http.ResponseWriter, r *http.Request) {
+	var req authByPasswordRequest
+	if err := jsonutil.ReadJSON(w, r, &req); err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err := validateStruct(req); err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		return
+	}
+
+	result, err := c.authSvc.AuthenticateByPassword(r.Context(), req.Phone, req.Password)
+	if err != nil {
+		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
+		return
+	}
+
+	tokens := TokensDTO{
+		AccessToken:  result.AccessToken,
+		RefreshToken: result.RefreshToken,
+	}
+	if err = jsonutil.WriteJSON(w, http.StatusOK, tokens); err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, domain.NewError(domain.ErrorCode("WRITE_RESPONSE_FAILED"), "failed to write response"))
 	}
 }
@@ -176,14 +210,11 @@ func (c *AccountController) RefreshByToken(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	envelope := struct {
-		AccessToken  string `json:"access-token"`
-		RefreshToken string `json:"refresh-token"`
-	}{
+	tokens := TokensDTO{
 		AccessToken:  result.AccessToken,
 		RefreshToken: result.RefreshToken,
 	}
-	if err = jsonutil.WriteJSON(w, http.StatusOK, envelope); err != nil {
+	if err = jsonutil.WriteJSON(w, http.StatusOK, tokens); err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, domain.NewError(domain.ErrorCode("WRITE_RESPONSE_FAILED"), "failed to write response"))
 	}
 }
@@ -200,6 +231,7 @@ func SetupAccountRoutes(
 				r.Post("/request", accountController.RequestAuthByOTP)
 				r.Post("/verify", accountController.VerifyAuthByOTP)
 			})
+			r.Post("/by-password", accountController.AuthenticateByPassword)
 			r.Post("/refresh", accountController.RefreshByToken)
 		})
 

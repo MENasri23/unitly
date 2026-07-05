@@ -8,6 +8,7 @@ import (
 	"time"
 	"unicode"
 	"unitly/internal/domain"
+	"unitly/internal/util/eql"
 	"unitly/internal/util/hash"
 	"unitly/internal/util/rand"
 	"unitly/internal/util/validate"
@@ -128,6 +129,51 @@ func (s *AuthService) VerifyAuthByOTP(
 	}
 
 	return nil, domain.ErrInternal
+}
+
+func (s *AuthService) AuthenticateByPassword(
+	ctx context.Context,
+	phone string,
+	password string,
+) (*AuthResult, error) {
+	if !s.isValidPhone(phone) {
+		return nil, domain.ErrInvalidPhone
+	}
+
+	if password == "" {
+		return nil, domain.ErrInvalidPassword
+	}
+
+	user, err := s.userRepo.GetByPhone(ctx, phone)
+	if err != nil {
+		if isUserNotFound(err) {
+			return nil, domain.ErrInvalidCredentials
+		}
+		return nil, err
+	}
+
+	if !user.IsActive || user.HashedPassword == nil || *user.HashedPassword == "" {
+		return nil, domain.ErrInvalidCredentials
+	}
+
+	if !eql.IsEqual(hash.SHA256(password), *user.HashedPassword) {
+		return nil, domain.ErrInvalidCredentials
+	}
+
+	accessToken, err := s.generateAccessToken(ctx, user.GUID)
+	if err != nil {
+		return nil, err
+	}
+
+	refreshToken, err := s.createSession(ctx, user.GUID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthResult{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
 }
 
 func (s *AuthService) RequestResetPasswordByOTP(

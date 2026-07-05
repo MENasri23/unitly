@@ -6,6 +6,7 @@ Unitly is a Go-based authentication service focused on OTP-based sign-in and pas
 
 This repository implements:
 - OTP request and verification for login/registration
+- Password-based authentication for existing active users
 - OTP-based password reset flow with secure reset token handling
 - JWT access token generation with refresh token support
 - Secure refresh token management (opaque tokens with SHA256 hashing)
@@ -113,6 +114,38 @@ The HTTP API is mounted at `/api/v1`.
   ```
 - Behavior: if the phone is not found, the service auto-registers a new active user.
 
+### Auth by Password
+
+#### Authenticate with phone and password
+
+- Method: `POST`
+- Path: `/api/v1/accounts/auth/by-password`
+- Request body:
+  ```json
+  {
+    "phone": "+1234567890",
+    "password": "StrongP@ssw0rd!"
+  }
+  ```
+- Success response:
+  ```json
+  {
+    "access-token": "<jwt-access-token>",
+    "refresh-token": "<opaque-refresh-token>"
+  }
+  ```
+- Behavior:
+  - Authenticates only active users who already have a stored password.
+  - Returns `401 Unauthorized` with `INVALID_CREDENTIALS` for invalid phone/password combinations, inactive users, or users without a password.
+  - This response is intentionally generic to avoid revealing whether a phone number exists in the system.
+
+#### Client integration notes
+
+- Use this endpoint for classic username/password-style sign-in for existing accounts.
+- On success, persist both tokens securely on the client and use the access token for authenticated requests.
+- On failure, treat the user as unauthenticated and prompt them to retry or start a password reset flow.
+- If the client needs to recover access for a user who never set a password, guide them through the OTP-based password reset flow instead.
+
 ### Refresh Token
 
 #### Refresh Access Token
@@ -211,6 +244,8 @@ Example:
 ### Current mapped error codes
 
 - `INVALID_PHONE` — invalid phone format
+- `INVALID_PASSWORD` — password failed basic validation rules
+- `INVALID_CREDENTIALS` — phone/password credentials are invalid for this account
 - `INVALID_OTP` — OTP is invalid or expired
 - `TOO_MANY_ATTEMPTS` — OTP verification rate limit exceeded
 - `TOO_MANY_REQUESTS` — OTP request rate limit exceeded
@@ -222,7 +257,7 @@ Example:
 ### HTTP status codes
 
 - `400 Bad Request` — invalid request body, validation failure, invalid phone, invalid JSON
-- `401 Unauthorized` — invalid OTP or invalid token
+- `401 Unauthorized` — invalid OTP, invalid token, or invalid phone/password credentials
 - `404 Not Found` — user or resource not found
 - `429 Too Many Requests` — rate limiting or too many OTP attempts
 - `500 Internal Server Error` — unexpected server error

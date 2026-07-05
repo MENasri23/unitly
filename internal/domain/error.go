@@ -11,9 +11,10 @@ var (
 
 	ErrNotFound = NewNotFoundError("record")
 
-	ErrInvalidToken    = NewError(ErrorCode("INVALID_TOKEN"), "invalid or expired token")
-	ErrInvalidPhone    = NewError(ErrorCode("INVALID_PHONE"), "invalid phone number")
-	ErrInvalidPassword = NewError(ErrorCode("INVALID_PASSWORD"), "invalid password")
+	ErrInvalidToken       = NewError(ErrorCode("INVALID_TOKEN"), "invalid or expired token")
+	ErrInvalidPhone       = NewError(ErrorCode("INVALID_PHONE"), "invalid phone number")
+	ErrInvalidPassword    = NewError(ErrorCode("INVALID_PASSWORD"), "invalid password")
+	ErrInvalidCredentials = NewError(ErrorCode("INVALID_CREDENTIALS"), "invalid username or password")
 
 	ErrRateLimit       = NewError(ErrorCode("TOO_MANY_REQUESTS"), "too many request")
 	ErrTooManyAttempts = NewError(ErrorCode("TOO_MANY_ATTEMPTS"), "too many failed attempts, please try again later")

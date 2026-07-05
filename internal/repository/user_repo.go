@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"unitly/internal/db"
 	"unitly/internal/domain"
@@ -75,7 +76,7 @@ func (u *userRepository) GetByPhone(ctx context.Context, phone string) (*domain.
 
 func (u *userRepository) getBy(ctx context.Context, column string, value any) (*domain.User, error) {
 	query := fmt.Sprintf(`
-	SELECT id, public_id, phone, first_name, last_name, active, created_at
+	SELECT id, public_id, phone, first_name, last_name, active, password_hash, created_at
 	FROM users
 	WHERE %s = $1
 	`, column,
@@ -84,6 +85,7 @@ func (u *userRepository) getBy(ctx context.Context, column string, value any) (*
 	querier := u.getQuerier(ctx)
 
 	var user domain.User
+	var passwordHash sql.NullString
 	err := querier.QueryRow(
 		ctx,
 		query,
@@ -95,8 +97,13 @@ func (u *userRepository) getBy(ctx context.Context, column string, value any) (*
 		&user.FirstName,
 		&user.LastName,
 		&user.IsActive,
+		&passwordHash,
 		&user.CreatedAt,
 	)
+
+	if passwordHash.Valid {
+		user.HashedPassword = &passwordHash.String
+	}
 
 	if err != nil {
 		return nil, mapDBError(err)
