@@ -44,7 +44,7 @@ func main() {
 	logger.Info("Postgres database connected successfully")
 
 	logger.Info("Initializing database migrations...")
-	if err := runDatabaseMigrations(logger, migrationsSrc, app.GetDatabaseURL()); err != nil {
+	if err := runDatabaseMigrations(migrationsSrc, app.GetDatabaseURL(), logger); err != nil {
 		logger.Error(fmt.Sprintf("Fatal error during migration: %v", err))
 		return
 	}
@@ -145,7 +145,7 @@ func newSmsService(app *bootstrap.Application) domain.SmsService {
 }
 
 // runDatabaseMigrations handles the initialization and execution of DB schema updates.
-func runDatabaseMigrations(logger log.Logger, sourceURL, dbURL string) error {
+func runDatabaseMigrations(sourceURL, dbURL string, logger log.Logger) error {
 	m, err := migrate.New(sourceURL, dbURL)
 	if err != nil {
 		return err
