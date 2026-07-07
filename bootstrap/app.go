@@ -39,12 +39,16 @@ func (app *Application) GetCachePassword() string {
 	return app.config.cache.Password
 }
 
-func (app *Application) GetTokenSecret() string {
+func (app *Application) GetAccessTokenSecret() string {
 	return app.config.token.accessTokenSecret
 }
 
-func (app *Application) GetTokenExpiry() time.Duration {
+func (app *Application) GetAccessTokenExpiry() time.Duration {
 	return app.config.token.accessTokenExpiry
+}
+
+func (app *Application) GetRefreshTokenExpiry() time.Duration {
+	return app.config.token.refreshTokenExpiry
 }
 
 func (app *Application) GetSmsUsername() string {

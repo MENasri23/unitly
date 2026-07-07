@@ -60,7 +60,7 @@ func main() {
 	txManager := db.NewSqlTxManager(pgxDb)
 
 	smsSvc := newSmsService(app)
-	tokenService := auth.NewJWTService(app.GetTokenSecret(), app.GetTokenExpiry())
+	tokenService := auth.NewJWTService(app.GetAccessTokenSecret(), app.GetAccessTokenExpiry())
 	authService := auth.NewAuthService(
 		otpRepository,
 		userRepository,
@@ -69,6 +69,7 @@ func main() {
 		tokenService,
 		otpRateLimiter,
 		txManager,
+		app.GetRefreshTokenExpiry(),
 	)
 
 	r := chi.NewRouter()
@@ -131,8 +132,8 @@ func runDatabaseMigrations(sourceURL, dbURL string) error {
 	if err != nil {
 		return err
 	}
-	
-	// Defer closing the underlying database connection and source drivers 
+
+	// Defer closing the underlying database connection and source drivers
 	// to prevent memory/connection leaks.
 	defer m.Close()
 

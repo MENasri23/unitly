@@ -36,8 +36,9 @@ type Env struct {
 	RedisUser string `mapstructure:"REDIS_USER"`
 	RedisPass string `mapstructure:"REDIS_PASS"`
 
-	AccessTokenSecret string        `mapstructure:"ACCESS_TOKEN_SECRET"`
-	AccessTokenExpiry time.Duration `mapstructure:"ACCESS_TOKEN_EXPIRY"`
+	AccessTokenSecret  string        `mapstructure:"ACCESS_TOKEN_SECRET"`
+	AccessTokenExpiry  time.Duration `mapstructure:"ACCESS_TOKEN_EXPIRY"`
+	RefreshTokenExpiry time.Duration `mapstructure:"REFRESH_TOKEN_EXPIRY"`
 
 	OtpSecret     string        `mapstructure:"OTP_SECRET"`
 	OtpTemplateID string        `mapstructure:"OTP_TEMPLATE_ID"`

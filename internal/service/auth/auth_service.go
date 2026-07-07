@@ -19,7 +19,6 @@ import (
 const (
 	sendOtpTimeout      = 15 * time.Second
 	resetPasswordExpiry = 5 * time.Minute
-	refreshTokenExpiry  = 7 * 24 * time.Hour
 )
 
 var (
@@ -33,13 +32,14 @@ type AuthResult struct {
 }
 
 type AuthService struct {
-	otpRepo        domain.OTPRepository
-	userRepo       domain.UserRepository
-	sessionRepo    domain.SessionRepository
-	smsService     domain.SmsService
-	tokenService   domain.TokenService
-	otpRateLimiter domain.RateLimiter
-	uow            domain.UnitOfWork
+	otpRepo            domain.OTPRepository
+	userRepo           domain.UserRepository
+	sessionRepo        domain.SessionRepository
+	smsService         domain.SmsService
+	tokenService       domain.TokenService
+	otpRateLimiter     domain.RateLimiter
+	uow                domain.UnitOfWork
+	refreshTokenExpiry time.Duration
 }
 
 func NewAuthService(
@@ -50,15 +50,17 @@ func NewAuthService(
 	tokenService domain.TokenService,
 	otpRateLimiter domain.RateLimiter,
 	uow domain.UnitOfWork,
+	refreshTokenExpiry time.Duration,
 ) *AuthService {
 	return &AuthService{
-		otpRepo:        otpRepo,
-		userRepo:       userRepo,
-		sessionRepo:    sessionRepo,
-		smsService:     smsService,
-		tokenService:   tokenService,
-		otpRateLimiter: otpRateLimiter,
-		uow:            uow,
+		otpRepo:            otpRepo,
+		userRepo:           userRepo,
+		sessionRepo:        sessionRepo,
+		smsService:         smsService,
+		tokenService:       tokenService,
+		otpRateLimiter:     otpRateLimiter,
+		uow:                uow,
+		refreshTokenExpiry: refreshTokenExpiry,
 	}
 }
 
@@ -298,7 +300,7 @@ func (s *AuthService) RefreshAuthByToken(
 		ID:               uuid.New(),
 		UserID:           user.GUID,
 		RefreshTokenHash: hash.SHA256(newRefreshToken),
-		ExpiresAt:        time.Now().Add(refreshTokenExpiry),
+		ExpiresAt:        time.Now().Add(s.refreshTokenExpiry),
 	}
 
 	if err := s.uow.Do(ctx, func(txCtx context.Context) error {
@@ -458,7 +460,7 @@ func (s *AuthService) createSession(ctx context.Context, userID uuid.UUID) (stri
 		ID:               uuid.New(),
 		UserID:           userID,
 		RefreshTokenHash: hash.SHA256(refreshToken),
-		ExpiresAt:        time.Now().Add(refreshTokenExpiry),
+		ExpiresAt:        time.Now().Add(s.refreshTokenExpiry),
 	}
 
 	if err := s.sessionRepo.Create(ctx, session); err != nil {
