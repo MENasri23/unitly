@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 	"unitly/internal/db"
 	"unitly/internal/domain"
 
@@ -136,4 +137,24 @@ func (s *sessionRepository) RevokeAll(ctx context.Context, userID uuid.UUID) err
 	querier := s.getQuerier(ctx)
 	_, err := querier.Exec(ctx, query, userID)
 	return err
+}
+
+func (s *sessionRepository) CleanupOldSessions(ctx context.Context, expiredThreshold, revokedThreshold time.Duration) (int64, error) {
+	query := `
+		DELETE FROM sessions 
+		WHERE expires_at < $1
+		   OR (revoked_at IS NOT NULL AND created_at < $2);
+	`
+
+	now := time.Now()
+	expiredCutoff := now.Add(-expiredThreshold)
+	revokedCutoff := now.Add(-revokedThreshold)
+
+	querier := s.getQuerier(ctx)
+	cmdTag, err := querier.Exec(ctx, query, expiredCutoff, revokedCutoff)
+	if err != nil {
+		return 0, err
+	}
+
+	return cmdTag.RowsAffected(), nil
 }

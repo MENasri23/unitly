@@ -28,4 +28,5 @@ type SessionRepository interface {
 	Revoke(ctx context.Context, id uuid.UUID) error
 	RevokeAll(ctx context.Context, userID uuid.UUID) error
 	GetByRefreshToken(ctx context.Context, refreshTokenHash string) (*Session, error)
+	CleanupOldSessions(ctx context.Context, expiredThreshold, revokedThreshold time.Duration) (int64, error)
 }
