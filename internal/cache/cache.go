@@ -2,7 +2,6 @@ package cache
 
 import (
 	"context"
-	"log"
 	"time"
 	"unitly/internal/domain"
 
@@ -51,8 +50,6 @@ func NewCache(cfg *Config) (*Cache, error) {
 	if err := rdb.Ping(ctx).Err(); err != nil {
 		return nil, err
 	}
-
-	log.Println("Cache client connected successfully.")
 
 	return &Cache{rdb}, nil
 }

@@ -2,17 +2,20 @@ package main
 
 import (
 	"errors"
-	"log"
+	"fmt"
+	"log/slog"
 	"time"
 	"unitly/bootstrap"
 	"unitly/internal/cache"
 	"unitly/internal/controller"
 	"unitly/internal/db"
 	"unitly/internal/domain"
+	"unitly/internal/log"
 	"unitly/internal/repository"
 	otprepo "unitly/internal/repository/otp"
 	"unitly/internal/service/auth"
 	"unitly/internal/service/sms"
+	"unitly/pkg/sloglogger"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/golang-migrate/migrate/v4"
@@ -28,26 +31,33 @@ const (
 
 func main() {
 	app := bootstrap.CreateAppliaction()
+
+	logOptions := &slog.HandlerOptions{Level: getLogLevel(app), AddSource: true}
+	logger := sloglogger.NewSlogLogger(logOptions)
+
 	pgxDb, err := newPostgresDB(app)
 	if err != nil {
-		log.Fatalf("postgres connection failed: %v", err)
+		logger.Error(fmt.Sprintf("Postgres connection failed: %v", err))
 		return
 	}
 	defer pgxDb.Close()
+	logger.Info("Postgres database connected successfully")
 
-	log.Println("Initializing database migrations...")
-	if err := runDatabaseMigrations(migrationsSrc, app.GetDatabaseURL()); err != nil {
-		log.Fatalf("Fatal error during migration: %v", err)
+	logger.Info("Initializing database migrations...")
+	if err := runDatabaseMigrations(logger, migrationsSrc, app.GetDatabaseURL()); err != nil {
+		logger.Error(fmt.Sprintf("Fatal error during migration: %v", err))
 		return
 	}
-	log.Println("Migrations complete. Starting application server...")
+	logger.Info("Migrations complete")
 
+	logger.Info("Starting cache client initialization...")
 	cache, err := newCacheClient(app)
 	if err != nil {
-		log.Fatalf("redis ping failed: %v", err)
+		logger.Error(fmt.Sprintf("Cache client ping failed: %v", err))
 		return
 	}
 	defer cache.Close()
+	logger.Info("Cache client connected successfully")
 
 	// repositories
 	userRepository := repository.NewUserRepository(pgxDb)
@@ -81,6 +91,14 @@ func main() {
 	})
 
 	app.Run(r)
+}
+
+func getLogLevel(app *bootstrap.Application) slog.Level {
+	if app.IsDevelopmentEnv() {
+		return slog.LevelDebug
+	}
+
+	return slog.LevelInfo
 }
 
 func newPostgresDB(app *bootstrap.Application) (*pgxpool.Pool, error) {
@@ -127,7 +145,7 @@ func newSmsService(app *bootstrap.Application) domain.SmsService {
 }
 
 // runDatabaseMigrations handles the initialization and execution of DB schema updates.
-func runDatabaseMigrations(sourceURL, dbURL string) error {
+func runDatabaseMigrations(logger log.Logger, sourceURL, dbURL string) error {
 	m, err := migrate.New(sourceURL, dbURL)
 	if err != nil {
 		return err
@@ -140,12 +158,12 @@ func runDatabaseMigrations(sourceURL, dbURL string) error {
 	// Execute the "Up" migrations
 	if err := m.Up(); err != nil {
 		if errors.Is(err, migrate.ErrNoChange) {
-			log.Println("Schema is up-to-date. No new migrations applied.")
+			logger.Info("Schema is up-to-date. No new migrations applied")
 			return nil
 		}
 		return err
 	}
 
-	log.Println("Database migrations applied successfully.")
+	logger.Info("Database migrations applied successfully")
 	return nil
 }

@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -38,8 +37,6 @@ func NewPostgresDB(
 	if err = pool.Ping(ctx); err != nil {
 		return nil, err
 	}
-
-	fmt.Println("database connected successfully")
 
 	return pool, nil
 }
