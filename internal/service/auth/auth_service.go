@@ -272,6 +272,11 @@ func (s *AuthService) RefreshAuthByToken(
 		return nil, err
 	}
 
+	if isCompromisedSession(session) {
+		s.sessionRepo.RevokeAll(ctx, session.UserID)
+		return nil, domain.ErrInvalidToken
+	}
+
 	user, err := s.userRepo.GetByGUID(ctx, session.UserID)
 	if err != nil {
 		if isUserNotFound(err) {
@@ -315,6 +320,10 @@ func (s *AuthService) RefreshAuthByToken(
 		AccessToken:  accessToken,
 		RefreshToken: newRefreshToken,
 	}, nil
+}
+
+func isCompromisedSession(session *domain.Session) bool {
+	return session.IsRevoked() || time.Now().After(session.ExpiresAt)
 }
 
 func (s *AuthService) requestOTP(

@@ -18,6 +18,10 @@ type Session struct {
 	RevokedAt *time.Time
 }
 
+func (s *Session) IsRevoked() bool {
+	return s.RevokedAt != nil
+}
+
 type SessionRepository interface {
 	Create(ctx context.Context, session *Session) error
 	GetByID(ctx context.Context, id uuid.UUID) (*Session, error)

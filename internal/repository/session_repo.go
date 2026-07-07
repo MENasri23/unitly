@@ -83,9 +83,7 @@ func (s *sessionRepository) GetByRefreshToken(ctx context.Context, refreshTokenH
     SELECT id, user_id, refresh_token_hash, created_at, expires_at, revoked_at
     FROM sessions
     WHERE refresh_token_hash = $1
-      AND revoked_at IS NULL
-      AND expires_at > NOW()
-    `
+	`
 
 	querier := s.getQuerier(ctx)
 
