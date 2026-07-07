@@ -2,7 +2,7 @@ package cache
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"time"
 	"unitly/internal/domain"
 
@@ -52,7 +52,7 @@ func NewCache(cfg *Config) (*Cache, error) {
 		return nil, err
 	}
 
-	fmt.Println("Cache client connected successfully.")
+	log.Println("Cache client connected successfully.")
 
 	return &Cache{rdb}, nil
 }
@@ -101,7 +101,7 @@ func (c *Cache) SetMap(ctx context.Context, key string, values map[string]any) e
 	return c.Client.HSet(ctx, key, values).Err()
 }
 
-func (c *Cache) GetMap(ctx context.Context, key string) (map[string]string, error) {	
+func (c *Cache) GetMap(ctx context.Context, key string) (map[string]string, error) {
 	return c.Client.HGetAll(ctx, key).Result()
 }
 

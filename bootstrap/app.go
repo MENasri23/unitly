@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"log"
 	"net/http"
 	"time"
 )
@@ -77,5 +78,6 @@ func (app *Application) Run(mux http.Handler) error {
 		IdleTimeout:       cfg.IdleTimeout,
 	}
 
+	log.Printf("Server is listening on %s", cfg.Address)
 	return server.ListenAndServe()
 }
