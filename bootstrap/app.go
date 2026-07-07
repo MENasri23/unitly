@@ -10,13 +10,15 @@ type Application struct {
 	config *config
 }
 
-func CreateAppliaction() *Application {
-	env := NewEnv()
-	cfg := newConfig(env)
+func CreateAppliaction() (*Application, error) {
+	env, err := NewEnv()
+	if err != nil {
+		return nil, err
+	}
 
 	return &Application{
-		config: cfg,
-	}
+		config: newConfig(env),
+	}, nil
 }
 
 func (app *Application) IsDevelopmentEnv() bool {

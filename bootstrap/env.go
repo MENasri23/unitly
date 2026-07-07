@@ -1,7 +1,7 @@
 package bootstrap
 
 import (
-	"log"
+	"fmt"
 	"time"
 
 	"github.com/spf13/viper"
@@ -48,23 +48,19 @@ type Env struct {
 	SmsApiKey   string `mapstructure:"SMS_API_KEY"`
 }
 
-func NewEnv() *Env {
+func NewEnv() (*Env, error) {
 	env := Env{}
 	viper.SetConfigFile(".env")
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		log.Fatal("Can't find the file .env : ", err)
+		return nil, fmt.Errorf("Can't find the file .env : %v", err)
 	}
 
 	err = viper.Unmarshal(&env)
 	if err != nil {
-		log.Fatal("Environment can't be loaded: ", err)
+		return nil, fmt.Errorf("Environment can't be loaded: %v", err)
 	}
 
-	if env.AppEnv == Development {
-		log.Println("The App is running in development env")
-	}
-
-	return &env
+	return &env, nil
 }

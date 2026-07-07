@@ -30,10 +30,16 @@ const (
 )
 
 func main() {
-	app := bootstrap.CreateAppliaction()
-
-	logOptions := &slog.HandlerOptions{Level: getLogLevel(app), AddSource: true}
+	logLevel := &slog.LevelVar{}
+	logOptions := &slog.HandlerOptions{Level: logLevel, AddSource: true}
 	logger := sloglogger.NewSlogLogger(logOptions)
+
+	app, err := bootstrap.CreateAppliaction()
+	if err != nil {
+		logger.Error(fmt.Sprintf("Initialize application failed: %v", err))
+		return
+	}
+	logLevel.Set(getLogLevel(app))
 
 	pgxDb, err := newPostgresDB(app)
 	if err != nil {
