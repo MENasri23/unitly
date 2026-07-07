@@ -31,7 +31,7 @@ const (
 
 func main() {
 	logLevel := &slog.LevelVar{}
-	logOptions := &slog.HandlerOptions{Level: logLevel, AddSource: true}
+	logOptions := &slog.HandlerOptions{Level: logLevel}
 	logger := sloglogger.NewSlogLogger(logOptions)
 
 	app, err := bootstrap.CreateAppliaction()
