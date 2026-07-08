@@ -8,15 +8,6 @@ import (
 	"unitly/internal/domain"
 )
 
-var (
-	// maxReadBytes defines the maximum allowed size of a JSON request body.
-	// This prevents clients from sending excessively large payloads that could
-	// exhaust memory or degrade service performance.
-	//
-	// Default: 1MB
-	maxReadBytes int64 = 1024 * 1024
-)
-
 // errorResponse defines the standard structure used for all JSON error responses.
 // This ensures consistent API error formatting across the application.
 type errorResponse struct {
@@ -80,23 +71,18 @@ func WriteJSON(
 //	err := jsonutil.ReadJSON(w, r, &req)
 //
 // Security notes:
-//   - Requests larger than maxReadBytes will be rejected automatically.
 //   - Unknown JSON fields will cause an error (decoder.DisallowUnknownFields()).
 //
 // Parameters:
-//   - w: ResponseWriter (used for MaxBytesReader limiting)
 //   - r: HTTP request containing JSON body
 //   - data: pointer to struct where decoded JSON will be stored
 //
 // Returns:
 //   - error if decoding fails, body is too large, or JSON is invalid
 func ReadJSON(
-	w http.ResponseWriter,
 	r *http.Request,
 	data any,
 ) error {
-	r.Body = http.MaxBytesReader(w, r.Body, maxReadBytes)
-
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 

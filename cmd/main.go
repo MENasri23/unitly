@@ -18,6 +18,7 @@ import (
 	"unitly/pkg/sloglogger"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -27,6 +28,16 @@ import (
 const (
 	// MigrationsDir is the directory where migration files are stored.
 	migrationsSrc = "file://migrations"
+
+	// defalut timeout which signals to to the request
+	requestTimeout = 60 * time.Second
+
+	// maxReadBytes defines the maximum allowed size of a JSON request body.
+	// This prevents clients from sending excessively large payloads that could
+	// exhaust memory or degrade service performance.
+	//
+	// Default: 1MB
+	maxReadBytes int64 = 1024 * 1024
 )
 
 func main() {
@@ -89,6 +100,13 @@ func main() {
 	)
 
 	r := chi.NewRouter()
+
+	r.Use(middleware.RequestID)
+	r.Use(middleware.ClientIPFromRemoteAddr)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.Timeout(requestTimeout))
+	r.Use(middleware.RequestSize(maxReadBytes))
 
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/v1", func(r chi.Router) {
