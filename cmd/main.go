@@ -31,6 +31,7 @@ const (
 
 func main() {
 	logLevel := &slog.LevelVar{}
+	logLevel.Set(slog.LevelDebug)
 	logOptions := &slog.HandlerOptions{Level: logLevel}
 	logger := sloglogger.NewSlogLogger(logOptions)
 
@@ -75,7 +76,7 @@ func main() {
 
 	txManager := db.NewSqlTxManager(pgxDb)
 
-	smsSvc := newSmsService(app)
+	smsSvc := newSmsService(app, logger)
 	tokenService := auth.NewJWTService(app.GetAccessTokenSecret(), app.GetAccessTokenExpiry())
 	authService := auth.NewAuthService(
 		otpRepository,
@@ -138,8 +139,8 @@ func newOtpRepository(app *bootstrap.Application, cache *cache.Cache) domain.OTP
 	return otpRepo
 }
 
-func newSmsService(app *bootstrap.Application) domain.SmsService {
-	if app.IsDevelopmentEnv() {
+func newSmsService(app *bootstrap.Application, logger log.Logger) domain.SmsService {
+	if false { //app.IsDevelopmentEnv() {
 		return &smsServiceMock{}
 	}
 
@@ -147,6 +148,7 @@ func newSmsService(app *bootstrap.Application) domain.SmsService {
 		app.GetSmsUsername(),
 		app.GetSmsApiKey(),
 		app.GetOtpTemplateID(),
+		logger,
 	)
 }
 

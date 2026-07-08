@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 	"unitly/internal/domain"
+	"unitly/internal/log"
 )
 
 const (
@@ -28,16 +29,24 @@ type patternRequest struct {
 	PatternID string `json:"bodyId"`
 }
 
+type response struct {
+	Value        string `json:"Value"`
+	RetStatus    int    `json:"RetStatus"`
+	StrRetStatus string `json:"StrRetStatus"`
+}
+
 type meliPayamakService struct {
 	client    *http.Client
+	logger    log.Logger
 	username  string
 	apiKey    string
 	otpTempID string
 }
 
-func NewMeliPayamakService(username, apiKey, otpTempID string) domain.SmsService {
+func NewMeliPayamakService(username, apiKey, otpTempID string, logger log.Logger) domain.SmsService {
 	return &meliPayamakService{
 		client:    newHTTPClient(),
+		logger:    logger,
 		username:  username,
 		apiKey:    apiKey,
 		otpTempID: otpTempID,
@@ -48,7 +57,7 @@ func newHTTPClient() *http.Client {
 	return &http.Client{Timeout: timeout}
 }
 
-func (s *meliPayamakService) SendOTP(ctx context.Context, phone string, code string) error {
+func (s *meliPayamakService) SendOTP(ctx context.Context, phone, code string) error {
 	data := patternRequest{
 		Username:  s.username,
 		Password:  s.apiKey,
@@ -57,38 +66,51 @@ func (s *meliPayamakService) SendOTP(ctx context.Context, phone string, code str
 		PatternID: s.otpTempID,
 	}
 
-	res, err := makeRequest(ctx, s.client, data, otpOp)
+	res, err := s.makeRequest(ctx, data, otpOp)
 	if err != nil {
+		s.logger.DebugCtx(ctx, "failed to send OTP via MeliPayamak", "phone", phone, "error", err)
 		return err
 	}
-	defer res.Body.Close()
+	defer func() {
+		// Drain and close to safely reuse the TCP connection via Keep-Alive
+		_, _ = io.Copy(io.Discard, res.Body)
+		res.Body.Close()
+	}()
 
-	response, err := io.ReadAll(res.Body)
-	if err != nil {
+	// Ensure we handle non-200 HTTP statuses safely
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		err = fmt.Errorf("melipayamak returned unexpected status: %d", res.StatusCode)
+		s.logger.DebugCtx(ctx, err.Error())
 		return err
 	}
-	fmt.Println("value from melipayamak: ", string(response))
+
+	var apiResp response
+	if err := json.NewDecoder(res.Body).Decode(&apiResp); err != nil {
+		s.logger.DebugCtx(ctx, "failed to decode response from MeliPayamak", "phone", phone, "error", err)
+		return err
+	}
+
+	s.logger.DebugCtx(ctx, "response from MeliPayamak", "phone", phone, "response", apiResp)
 
 	return nil
 }
 
-func makeRequest(ctx context.Context, client *http.Client, data any, op string) (*http.Response, error) {
-	jsonValue, err := json.Marshal(data)
-	if err != nil {
-		return nil, err
+func (s *meliPayamakService) makeRequest(ctx context.Context, data any, op string) (*http.Response, error) {
+	buf := new(bytes.Buffer)
+	if err := json.NewEncoder(buf).Encode(data); err != nil {
+		return nil, fmt.Errorf("encode payload failed: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		baseUrl+op,
-		bytes.NewBuffer(jsonValue),
-	)
+	url := baseUrl + op
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, buf)
 	if err != nil {
 		return nil, err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
-	return client.Do(req)
+	// Avoid string(jsonValue) allocation unless debug logging is explicitly enabled
+	s.logger.DebugCtx(ctx, "Send OTP via MeliPayamak", "url", url)
+
+	return s.client.Do(req)
 }
