@@ -100,7 +100,7 @@ func main() {
 }
 
 func getLogLevel(app *bootstrap.Application) slog.Level {
-	if app.IsDevelopmentEnv() {
+	if app.DebugMode() {
 		return slog.LevelDebug
 	}
 
@@ -129,7 +129,7 @@ func newCacheClient(app *bootstrap.Application) (*cache.Cache, error) {
 
 func newOtpRepository(app *bootstrap.Application, cache *cache.Cache) domain.OTPRepository {
 	var otpRepo domain.OTPRepository
-	if app.IsDevelopmentEnv() {
+	if app.DebugMode() {
 		otpRepo = otprepo.NewOTPMockRepo(cache, app.GetOtpSecret())
 	} else {
 		otpRepo = otprepo.NewOtpRepository(cache, app.GetOtpSecret())
@@ -139,7 +139,7 @@ func newOtpRepository(app *bootstrap.Application, cache *cache.Cache) domain.OTP
 }
 
 func newSmsService(app *bootstrap.Application, logger log.Logger) domain.SmsService {
-	if app.IsDevelopmentEnv() {
+	if app.DebugMode() {
 		return &smsServiceMock{}
 	}
 

@@ -21,7 +21,7 @@ func CreateAppliaction() (*Application, error) {
 	}, nil
 }
 
-func (app *Application) IsDevelopmentEnv() bool {
+func (app *Application) DebugMode() bool {
 	return app.config.Environment == Development
 }
 
