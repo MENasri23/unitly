@@ -31,7 +31,6 @@ const (
 
 func main() {
 	logLevel := &slog.LevelVar{}
-	logLevel.Set(slog.LevelDebug)
 	logOptions := &slog.HandlerOptions{Level: logLevel}
 	logger := sloglogger.NewSlogLogger(logOptions)
 
@@ -140,7 +139,7 @@ func newOtpRepository(app *bootstrap.Application, cache *cache.Cache) domain.OTP
 }
 
 func newSmsService(app *bootstrap.Application, logger log.Logger) domain.SmsService {
-	if false { //app.IsDevelopmentEnv() {
+	if app.IsDevelopmentEnv() {
 		return &smsServiceMock{}
 	}
 
