@@ -66,9 +66,16 @@ func (s *meliPayamakService) SendOTP(ctx context.Context, phone, code string) er
 		PatternID: s.otpTempID,
 	}
 
-	res, err := s.makeRequest(ctx, data, otpOp)
+	req, err := createRequest(ctx, data, otpOp)
 	if err != nil {
-		s.logger.DebugCtx(ctx, "failed to send OTP via MeliPayamak", "phone", phone, "error", err)
+		s.logger.DebugCtx(ctx, "failed to create sms request", "phone", phone, "error", err)
+		return err
+	}
+
+	s.logger.DebugCtx(ctx, "sending OTP", "phone", phone)
+	res, err := s.client.Do(req)
+	if err != nil {
+		s.logger.DebugCtx(ctx, "failed to send OTP", "phone", phone, "error", err)
 		return err
 	}
 	defer func() {
@@ -79,23 +86,23 @@ func (s *meliPayamakService) SendOTP(ctx context.Context, phone, code string) er
 
 	// Ensure we handle non-200 HTTP statuses safely
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		err = fmt.Errorf("melipayamak returned unexpected status: %d", res.StatusCode)
+		err = fmt.Errorf("sms service returned unexpected status: %d", res.StatusCode)
 		s.logger.DebugCtx(ctx, err.Error())
 		return err
 	}
 
 	var apiResp response
 	if err := json.NewDecoder(res.Body).Decode(&apiResp); err != nil {
-		s.logger.DebugCtx(ctx, "failed to decode response from MeliPayamak", "phone", phone, "error", err)
+		s.logger.DebugCtx(ctx, "failed to decode response from sms service", "phone", phone, "error", err)
 		return err
 	}
 
-	s.logger.DebugCtx(ctx, "response from MeliPayamak", "phone", phone, "response", apiResp)
+	s.logger.DebugCtx(ctx, "response from sms service", "phone", phone, "response", apiResp)
 
 	return nil
 }
 
-func (s *meliPayamakService) makeRequest(ctx context.Context, data any, op string) (*http.Response, error) {
+func createRequest(ctx context.Context, data any, op string) (*http.Request, error) {
 	buf := new(bytes.Buffer)
 	if err := json.NewEncoder(buf).Encode(data); err != nil {
 		return nil, fmt.Errorf("encode payload failed: %w", err)
@@ -109,7 +116,5 @@ func (s *meliPayamakService) makeRequest(ctx context.Context, data any, op strin
 
 	req.Header.Set("Content-Type", "application/json")
 
-	s.logger.DebugCtx(ctx, "Send OTP via MeliPayamak", "url", url)
-
-	return s.client.Do(req)
+	return req, nil
 }
