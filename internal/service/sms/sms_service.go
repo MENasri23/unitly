@@ -109,7 +109,6 @@ func (s *meliPayamakService) makeRequest(ctx context.Context, data any, op strin
 
 	req.Header.Set("Content-Type", "application/json")
 
-	// Avoid string(jsonValue) allocation unless debug logging is explicitly enabled
 	s.logger.DebugCtx(ctx, "Send OTP via MeliPayamak", "url", url)
 
 	return s.client.Do(req)
