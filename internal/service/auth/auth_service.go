@@ -296,7 +296,9 @@ func (s *AuthService) RefreshAuthByToken(
 			return domain.ErrInvalidToken
 		}
 
-		*session.RevokedAt = time.Now()
+		revokedAt := time.Now()
+		session.RevokedAt = &revokedAt
+		
 		if err = s.sessionRepo.Revoke(txCtx, session); err != nil {
 			return err
 		}
