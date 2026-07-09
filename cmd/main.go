@@ -47,34 +47,34 @@ func main() {
 
 	app, err := bootstrap.CreateAppliaction()
 	if err != nil {
-		logger.Error(fmt.Sprintf("Initialize application failed: %v", err))
+		logger.Error(fmt.Sprintf("initialize application failed: %v", err))
 		return
 	}
 	logLevel.Set(getLogLevel(app))
 
 	pgxDb, err := newPostgresDB(app)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Postgres connection failed: %v", err))
+		logger.Error(fmt.Sprintf("postgres connection failed: %v", err))
 		return
 	}
 	defer pgxDb.Close()
-	logger.Info("Postgres database connected successfully")
+	logger.Info("postgres database connected successfully")
 
-	logger.Info("Initializing database migrations...")
+	logger.Info("initializing database migrations...")
 	if err := runDatabaseMigrations(migrationsSrc, app.GetDatabaseURL(), logger); err != nil {
-		logger.Error(fmt.Sprintf("Fatal error during migration: %v", err))
+		logger.Error(fmt.Sprintf("fatal error during migration: %v", err))
 		return
 	}
-	logger.Info("Migrations complete")
+	logger.Info("migrations complete")
 
-	logger.Info("Starting cache client initialization...")
+	logger.Info("starting cache client initialization...")
 	cache, err := newCacheClient(app)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Cache client ping failed: %v", err))
+		logger.Error(fmt.Sprintf("cache client ping failed: %v", err))
 		return
 	}
 	defer cache.Close()
-	logger.Info("Cache client connected successfully")
+	logger.Info("cache client connected successfully")
 
 	// repositories
 	userRepository := repository.NewUserRepository(pgxDb)
@@ -115,13 +115,13 @@ func main() {
 	})
 
 	server := app.NewServer(r)
+
+	logger.Info(fmt.Sprintf("trying to listen on %s", app.GetServerAddress()))
 	if err = server.ListenAndServe(); err != nil {
-		logger.Error("Server failed to start: %v", err)
+		logger.Error("server failed to start: %v", err)
 		return
 	}
 
-	logger.Info(fmt.Sprintf("server is listening on %s", app.GetServerAddress()))
-	
 }
 
 func getLogLevel(app *bootstrap.Application) slog.Level {
