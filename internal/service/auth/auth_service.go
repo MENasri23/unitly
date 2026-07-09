@@ -266,54 +266,60 @@ func (s *AuthService) RefreshAuthByToken(
 	}
 
 	tokenHash := hash.SHA256(refreshToken)
-	session, err := s.sessionRepo.GetByRefreshToken(ctx, tokenHash)
-	if err != nil {
-		if err == domain.ErrNotFound {
-			return nil, domain.ErrInvalidToken
-		}
-		return nil, err
-	}
+	var activeUser *domain.User
+	var newRefreshToken string
 
-	if isCompromisedSession(session) {
-		s.sessionRepo.RevokeAll(ctx, session.UserID)
-		return nil, domain.ErrInvalidToken
-	}
-
-	user, err := s.userRepo.GetByGUID(ctx, session.UserID)
-	if err != nil {
-		if isUserNotFound(err) {
-			return nil, domain.ErrInvalidToken
-		}
-		return nil, err
-	}
-
-	if !user.IsActive {
-		return nil, domain.ErrInvalidToken
-	}
-
-	newRefreshToken, err := rand.GenereteDefaultToken()
-	if err != nil {
-		return nil, err
-	}
-
-	newSession := &domain.Session{
-		ID:               uuid.New(),
-		UserID:           user.GUID,
-		RefreshTokenHash: hash.SHA256(newRefreshToken),
-		ExpiresAt:        time.Now().Add(s.refreshTokenExpiry),
-	}
-
-	if err := s.uow.Do(ctx, func(txCtx context.Context) error {
-		if err := s.sessionRepo.Revoke(txCtx, session.ID); err != nil {
+	err := s.uow.Do(ctx, func(txCtx context.Context) error {
+		session, err := s.sessionRepo.GetByRefreshToken(txCtx, tokenHash)
+		if err != nil {
+			if errors.Is(err, domain.ErrNotFound) {
+				return domain.ErrInvalidToken
+			}
 			return err
 		}
 
-		return s.sessionRepo.Create(txCtx, newSession)
-	}); err != nil {
+		if session.IsExpired() {
+			return domain.ErrInvalidToken
+		}
+
+		if session.IsCompromised() {
+			activeUser = &domain.User{GUID: session.UserID}
+			return domain.ErrSessionCompromised
+		}
+
+		if session.IsRevoked() {
+			return domain.ErrInvalidToken
+		}
+
+		user, err := s.userRepo.GetByGUID(txCtx, session.UserID)
+		if err != nil || !user.IsActive {
+			return domain.ErrInvalidToken
+		}
+
+		*session.RevokedAt = time.Now()
+		if err = s.sessionRepo.Revoke(txCtx, session); err != nil {
+			return err
+		}
+
+		newRefreshToken, err = s.createSession(txCtx, user.GUID)
+		if err != nil {
+			return err
+		}
+
+		activeUser = user
+		return nil
+	})
+
+	if errors.Is(err, domain.ErrSessionCompromised) && activeUser != nil {
+		_ = s.sessionRepo.RevokeAll(ctx, activeUser.GUID)
+		return nil, domain.ErrInvalidToken
+	}
+
+	if err != nil {
 		return nil, err
 	}
 
-	accessToken, err := s.generateAccessToken(ctx, user.GUID)
+	accessToken, err := s.generateAccessToken(ctx, activeUser.GUID)
 	if err != nil {
 		return nil, err
 	}
@@ -322,10 +328,6 @@ func (s *AuthService) RefreshAuthByToken(
 		AccessToken:  accessToken,
 		RefreshToken: newRefreshToken,
 	}, nil
-}
-
-func isCompromisedSession(session *domain.Session) bool {
-	return session.IsRevoked() || time.Now().After(session.ExpiresAt)
 }
 
 func (s *AuthService) requestOTP(

@@ -53,7 +53,7 @@ func (s *sessionRepository) Create(ctx context.Context, session *domain.Session)
 
 func (s *sessionRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Session, error) {
 	query := `
-    SELECT id, user_id, refresh_token_hash, created_at, expires_at, revoked_at
+    SELECT id, user_id, refresh_token_hash, created_at, expires_at, revoked_at, version
     FROM sessions
     WHERE id = $1
     `
@@ -68,6 +68,7 @@ func (s *sessionRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.
 		&session.CreatedAt,
 		&session.ExpiresAt,
 		&session.RevokedAt,
+		&session.Version,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -81,7 +82,7 @@ func (s *sessionRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.
 
 func (s *sessionRepository) GetByRefreshToken(ctx context.Context, refreshTokenHash string) (*domain.Session, error) {
 	query := `
-    SELECT id, user_id, refresh_token_hash, created_at, expires_at, revoked_at
+    SELECT id, user_id, refresh_token_hash, created_at, expires_at, revoked_at, version
     FROM sessions
     WHERE refresh_token_hash = $1
 	`
@@ -96,6 +97,7 @@ func (s *sessionRepository) GetByRefreshToken(ctx context.Context, refreshTokenH
 		&session.CreatedAt,
 		&session.ExpiresAt,
 		&session.RevokedAt,
+		&session.Version,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -107,15 +109,15 @@ func (s *sessionRepository) GetByRefreshToken(ctx context.Context, refreshTokenH
 	return &session, nil
 }
 
-func (s *sessionRepository) Revoke(ctx context.Context, id uuid.UUID) error {
+func (s *sessionRepository) Revoke(ctx context.Context, session *domain.Session) error {
 	query := `
     UPDATE sessions
-    SET revoked_at = NOW()
-    WHERE id = $1 AND revoked_at IS NULL
+    SET revoked_at = $1, version = version + 1
+    WHERE id = $2 AND revoked_at IS NULL
     `
 
 	querier := s.getQuerier(ctx)
-	cmdTag, err := querier.Exec(ctx, query, id)
+	cmdTag, err := querier.Exec(ctx, query, session.RevokedAt, session.ID)
 	if err != nil {
 		return err
 	}
@@ -130,7 +132,7 @@ func (s *sessionRepository) Revoke(ctx context.Context, id uuid.UUID) error {
 func (s *sessionRepository) RevokeAll(ctx context.Context, userID uuid.UUID) error {
 	query := `
     UPDATE sessions
-    SET revoked_at = NOW()
+    SET revoked_at = NOW(), version = version + 1
     WHERE user_id = $1 AND revoked_at IS NULL
     `
 
