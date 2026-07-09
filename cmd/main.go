@@ -23,6 +23,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jackc/pgx/v5/pgxpool"
+	appmiddleware "unitly/internal/controller/middleware"
 )
 
 const (
@@ -99,6 +100,11 @@ func main() {
 		app.GetRefreshTokenExpiry(),
 	)
 
+	authMiddleware := appmiddleware.NewAuthMiddleware(
+		tokenService,
+		userRepository,
+	)
+
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -111,6 +117,11 @@ func main() {
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/v1", func(r chi.Router) {
 			controller.SetupAccountRoutes(r, authService)
+
+			r.Group(func(r chi.Router) {
+				r.Use(authMiddleware.AuthorizeUser)
+				r.Get("/healthcheck", controller.HealthCheck)
+			})
 		})
 	})
 
