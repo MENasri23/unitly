@@ -1,7 +1,6 @@
 package bootstrap
 
 import (
-	"log"
 	"net/http"
 	"time"
 )
@@ -23,6 +22,10 @@ func CreateAppliaction() (*Application, error) {
 
 func (app *Application) DebugMode() bool {
 	return app.config.Environment == Development
+}
+
+func (app *Application) GetServerAddress() string {
+	return app.config.Address
 }
 
 func (app *Application) GetDatabaseURL() string {
@@ -73,9 +76,9 @@ func (app *Application) GetOtpRateLimit() time.Duration {
 	return app.config.otp.RateLimit
 }
 
-func (app *Application) Run(mux http.Handler) error {
+func (app *Application) NewServer(mux http.Handler) *http.Server {
 	cfg := app.config
-	server := http.Server{
+	return &http.Server{
 		Handler:           mux,
 		Addr:              cfg.Address,
 		ReadHeaderTimeout: cfg.ReadHeaderTimeout,
@@ -83,7 +86,4 @@ func (app *Application) Run(mux http.Handler) error {
 		ReadTimeout:       cfg.ReadTimeout,
 		IdleTimeout:       cfg.IdleTimeout,
 	}
-
-	log.Printf("Server is listening on %s", cfg.Address)
-	return server.ListenAndServe()
 }

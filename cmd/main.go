@@ -114,7 +114,14 @@ func main() {
 		})
 	})
 
-	app.Run(r)
+	server := app.NewServer(r)
+	if err = server.ListenAndServe(); err != nil {
+		logger.Error("Server failed to start: %v", err)
+		return
+	}
+
+	logger.Info(fmt.Sprintf("server is listening on %s", app.GetServerAddress()))
+	
 }
 
 func getLogLevel(app *bootstrap.Application) slog.Level {
