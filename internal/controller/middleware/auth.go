@@ -11,6 +11,7 @@ import (
 )
 
 const userCtxKey = userContext("userCtxKey")
+const bearerPrefix = "Bearer "
 
 type userContext string
 
@@ -33,28 +34,28 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 
-		if !strings.HasPrefix(authHeader, "Bearer ") {
-			jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
+		if !startWithBearer(authHeader) {
+			unauthorized(w)
 			return
 		}
 
-		token := strings.TrimPrefix(authHeader, "Bearer ")
+		token := trimBearer(authHeader)
 
 		claims, err := m.tokenService.ValidateAccessToken(r.Context(), token)
 		if err != nil {
-			jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
+			unauthorized(w)
 			return
 		}
 
 		userID, err := uuid.Parse(claims.UserID)
 		if err != nil {
-			jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
+			unauthorized(w)
 			return
 		}
 
 		user, err := m.userRepo.GetByGUID(r.Context(), userID)
 		if err != nil {
-			jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
+			unauthorized(w)
 			return
 		}
 
@@ -62,6 +63,18 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	}
 	return http.HandlerFunc(f)
+}
+
+func startWithBearer(header string) bool {
+	return strings.HasPrefix(header, bearerPrefix)
+}
+
+func trimBearer(header string) string {
+	return strings.TrimPrefix(header, bearerPrefix)
+}
+
+func unauthorized(w http.ResponseWriter) {
+	jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
 }
 
 func GetUserFromCtx(ctx context.Context) *domain.User {
