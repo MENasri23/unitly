@@ -16,17 +16,17 @@ const bearerPrefix = "Bearer "
 type userContext string
 
 type AuthMiddleware struct {
-	tokenService domain.TokenService
-	userRepo     domain.UserRepository
+	tokenValidator domain.TokenValidator
+	userRepo       domain.UserRepository
 }
 
 func NewAuthMiddleware(
-	tokenService domain.TokenService,
+	tokenValidator domain.TokenValidator,
 	userRepo domain.UserRepository,
 ) *AuthMiddleware {
 	return &AuthMiddleware{
-		tokenService: tokenService,
-		userRepo:     userRepo,
+		tokenValidator: tokenValidator,
+		userRepo:       userRepo,
 	}
 }
 
@@ -41,7 +41,7 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 
 		token := trimBearer(authHeader)
 
-		claims, err := m.tokenService.ValidateAccessToken(r.Context(), token)
+		claims, err := m.tokenValidator.ValidateAccessToken(r.Context(), token)
 		if err != nil {
 			unauthorized(w)
 			return

@@ -26,9 +26,16 @@ type AccessTokenClaims struct {
 }
 
 type TokenService interface {
-	GenerateAccessToken(ctx context.Context, claims AccessTokenClaims) (string, error)
-	ValidateAccessToken(ctx context.Context, token string) (AccessTokenClaims, error)
+	TokenGenerator
+	TokenValidator
+}
 
+type TokenGenerator interface {
+	GenerateAccessToken(ctx context.Context, claims AccessTokenClaims) (string, error)
 	GenerateResetPasswordToken(ctx context.Context, claims AccessTokenClaims) (string, error)
+}
+
+type TokenValidator interface {
+	ValidateAccessToken(ctx context.Context, token string) (AccessTokenClaims, error)
 	ValidateResetPasswordToken(ctx context.Context, token string) (AccessTokenClaims, error)
 }
