@@ -29,39 +29,39 @@ func NewAuthMiddleware(
 	}
 }
 
-func (m *AuthMiddleware) AuthorizeUser(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authHeader := r.Header.Get("Authorization")
+func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
+	f := func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
 
-			if !strings.HasPrefix(authHeader, "Bearer ") {
-				jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
-				return
-			}
+		if !strings.HasPrefix(authHeader, "Bearer ") {
+			jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
+			return
+		}
 
-			token := strings.TrimPrefix(authHeader, "Bearer ")
+		token := strings.TrimPrefix(authHeader, "Bearer ")
 
-			claims, err := m.tokenService.ValidateAccessToken(r.Context(), token)
-			if err != nil {
-				jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
-				return
-			}
+		claims, err := m.tokenService.ValidateAccessToken(r.Context(), token)
+		if err != nil {
+			jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
+			return
+		}
 
-			userID, err := uuid.Parse(claims.UserID)
-			if err != nil {
-				jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
-				return
-			}
+		userID, err := uuid.Parse(claims.UserID)
+		if err != nil {
+			jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
+			return
+		}
 
-			user, err := m.userRepo.GetByGUID(r.Context(), userID)
-			if err != nil {
-				jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
-				return
-			}
+		user, err := m.userRepo.GetByGUID(r.Context(), userID)
+		if err != nil {
+			jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
+			return
+		}
 
-			r = r.WithContext(context.WithValue(r.Context(), userCtxKey, user))
-
-			next.ServeHTTP(w, r)
-		})
+		r = r.WithContext(context.WithValue(r.Context(), userCtxKey, user))
+		next.ServeHTTP(w, r)
+	}
+	return http.HandlerFunc(f)
 }
 
 func GetUserFromCtx(ctx context.Context) *domain.User {

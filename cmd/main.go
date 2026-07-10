@@ -17,13 +17,14 @@ import (
 	"unitly/internal/service/sms"
 	"unitly/pkg/sloglogger"
 
+	appmiddleware "unitly/internal/controller/middleware"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jackc/pgx/v5/pgxpool"
-	appmiddleware "unitly/internal/controller/middleware"
 )
 
 const (
@@ -119,7 +120,7 @@ func main() {
 			controller.SetupAccountRoutes(r, authService)
 
 			r.Group(func(r chi.Router) {
-				r.Use(authMiddleware.AuthorizeUser)
+				r.Use(authMiddleware.RequireAuth)
 				r.Get("/healthcheck", controller.HealthCheck)
 			})
 		})
