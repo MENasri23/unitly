@@ -13,6 +13,7 @@ import (
 	"unitly/internal/repository"
 	otprepo "unitly/internal/repository/otp"
 	"unitly/internal/service/auth"
+	sessionsvc "unitly/internal/service/session"
 	"unitly/internal/service/sms"
 	"unitly/pkg/sloglogger"
 
@@ -76,10 +77,18 @@ func main() {
 
 	smsSvc := newSmsService(app, logger)
 	tokenService := auth.NewJWTService(app.GetAccessTokenSecret(), app.GetAccessTokenExpiry())
+	sessionService := sessionsvc.NewSessionService(
+		sessionRepository,
+		userRepository,
+		tokenService,
+		txManager,
+		app.GetRefreshTokenExpiry(),
+		5*time.Minute,
+	)
 	authService := auth.NewAuthService(
 		otpRepository,
 		userRepository,
-		sessionRepository,
+		sessionService,
 		smsSvc,
 		tokenService,
 		otpRateLimiter,

@@ -50,3 +50,13 @@ type SessionRepository interface {
 	GetByRefreshToken(ctx context.Context, refreshTokenHash string) (*Session, error)
 	CleanupOldSessions(ctx context.Context, expiredThreshold, revokedThreshold time.Duration) (int64, error)
 }
+
+
+// SessionService isolates token management, token validation, and session auditing.
+type SessionService interface {
+	CreateSession(ctx context.Context, userID uuid.UUID) (accessToken, refreshToken string, err error)
+	RefreshSession(ctx context.Context, oldRefreshToken string) (accessToken, newRefreshToken string, err error)
+	RevokeAllSessions(ctx context.Context, userID uuid.UUID) error
+	GenerateResetToken(ctx context.Context, userID uuid.UUID) (string, error)
+	ValidateResetToken(ctx context.Context, token string) (uuid.UUID, error)
+}

@@ -17,8 +17,7 @@ import (
 )
 
 const (
-	sendOtpTimeout      = 15 * time.Second
-	resetPasswordExpiry = 5 * time.Minute
+	sendOtpTimeout = 15 * time.Second
 )
 
 var (
@@ -34,7 +33,7 @@ type AuthResult struct {
 type AuthService struct {
 	otpRepo            domain.OTPRepository
 	userRepo           domain.UserRepository
-	sessionRepo        domain.SessionRepository
+	sessionService     domain.SessionService
 	smsService         domain.SmsService
 	tokenService       domain.TokenService
 	otpRateLimiter     domain.RateLimiter
@@ -45,7 +44,7 @@ type AuthService struct {
 func NewAuthService(
 	otpRepo domain.OTPRepository,
 	userRepo domain.UserRepository,
-	sessionRepo domain.SessionRepository,
+	sesSvc domain.SessionService,
 	smsService domain.SmsService,
 	tokenService domain.TokenService,
 	otpRateLimiter domain.RateLimiter,
@@ -55,7 +54,7 @@ func NewAuthService(
 	return &AuthService{
 		otpRepo:            otpRepo,
 		userRepo:           userRepo,
-		sessionRepo:        sessionRepo,
+		sessionService:     sesSvc,
 		smsService:         smsService,
 		tokenService:       tokenService,
 		otpRateLimiter:     otpRateLimiter,
@@ -112,22 +111,15 @@ func (s *AuthService) VerifyAuthByOTP(
 	}
 
 	if user != nil {
-		accessToken, err := s.generateAccessToken(ctx, user.GUID)
+		accessToken, refreshToken, err := s.sessionService.CreateSession(ctx, user.GUID)
 		if err != nil {
 			return nil, err
 		}
 
-		refreshToken, err := s.createSession(ctx, user.GUID)
-		if err != nil {
-			return nil, err
-		}
-
-		result := &AuthResult{
+		return &AuthResult{
 			AccessToken:  accessToken,
 			RefreshToken: refreshToken,
-		}
-
-		return result, nil
+		}, nil
 	}
 
 	return nil, domain.ErrInternal
@@ -162,12 +154,7 @@ func (s *AuthService) AuthenticateByPassword(
 		return nil, domain.ErrInvalidCredentials
 	}
 
-	accessToken, err := s.generateAccessToken(ctx, user.GUID)
-	if err != nil {
-		return nil, err
-	}
-
-	refreshToken, err := s.createSession(ctx, user.GUID)
+	accessToken, refreshToken, err := s.sessionService.CreateSession(ctx, user.GUID)
 	if err != nil {
 		return nil, err
 	}
@@ -242,86 +229,18 @@ func (s *AuthService) VerifyResetPasswordByOTP(
 	}
 
 	user, err := s.userRepo.GetByPhone(ctx, result.Phone)
-	if err != nil {
-		// Do not reveal whether the phone maps to a user. Return a generic OTP error for not-found.
-		if isUserNotFound(err) {
-			return "", domain.ErrInvalidOTP
-		}
-		return "", err
-	}
-
-	if !user.IsActive {
+	if err != nil || !user.IsActive {
 		return "", domain.ErrInvalidOTP
 	}
 
-	return s.generateResetPassToken(ctx, user.GUID)
+	return s.sessionService.GenerateResetToken(ctx, user.GUID)
 }
 
 func (s *AuthService) RefreshAuthByToken(
 	ctx context.Context,
 	refreshToken string,
 ) (*AuthResult, error) {
-	if refreshToken == "" {
-		return nil, domain.ErrInvalidToken
-	}
-
-	tokenHash := hash.SHA256(refreshToken)
-	var activeUser *domain.User
-	var newRefreshToken string
-
-	err := s.uow.Do(ctx, func(txCtx context.Context) error {
-		session, err := s.sessionRepo.GetByRefreshToken(txCtx, tokenHash)
-		if err != nil {
-			if errors.Is(err, domain.ErrNotFound) {
-				return domain.ErrInvalidToken
-			}
-			return err
-		}
-
-		if session.IsExpired() {
-			return domain.ErrInvalidToken
-		}
-
-		if session.IsCompromised() {
-			activeUser = &domain.User{GUID: session.UserID}
-			return domain.ErrSessionCompromised
-		}
-
-		if session.IsRevoked() {
-			return domain.ErrInvalidToken
-		}
-
-		user, err := s.userRepo.GetByGUID(txCtx, session.UserID)
-		if err != nil || !user.IsActive {
-			return domain.ErrInvalidToken
-		}
-
-		revokedAt := time.Now()
-		session.RevokedAt = &revokedAt
-		
-		if err = s.sessionRepo.Revoke(txCtx, session); err != nil {
-			return err
-		}
-
-		newRefreshToken, err = s.createSession(txCtx, user.GUID)
-		if err != nil {
-			return err
-		}
-
-		activeUser = user
-		return nil
-	})
-
-	if errors.Is(err, domain.ErrSessionCompromised) && activeUser != nil {
-		_ = s.sessionRepo.RevokeAll(ctx, activeUser.GUID)
-		return nil, domain.ErrInvalidToken
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	accessToken, err := s.generateAccessToken(ctx, activeUser.GUID)
+	accessToken, newRefreshToken, err := s.sessionService.RefreshSession(ctx, refreshToken)
 	if err != nil {
 		return nil, err
 	}
@@ -454,43 +373,6 @@ func (s *AuthService) createUser(ctx context.Context, phone string) (*domain.Use
 	return user, nil
 }
 
-func (s *AuthService) createSession(ctx context.Context, userID uuid.UUID) (string, error) {
-	refreshToken, err := rand.GenereteDefaultToken()
-	if err != nil {
-		return "", err
-	}
-
-	session := &domain.Session{
-		ID:               uuid.New(),
-		UserID:           userID,
-		RefreshTokenHash: hash.SHA256(refreshToken),
-		ExpiresAt:        time.Now().Add(s.refreshTokenExpiry),
-	}
-
-	if err := s.sessionRepo.Create(ctx, session); err != nil {
-		return "", err
-	}
-
-	return refreshToken, nil
-}
-
-func (s *AuthService) generateAccessToken(ctx context.Context, userID uuid.UUID) (string, error) {
-	claims := domain.AccessTokenClaims{
-		UserID: userID.String(),
-	}
-	return s.tokenService.GenerateAccessToken(ctx, claims)
-}
-
-func (s *AuthService) generateResetPassToken(ctx context.Context, userID uuid.UUID) (string, error) {
-	claims := domain.AccessTokenClaims{
-		UserID: userID.String(),
-		TokenClaims: domain.TokenClaims{
-			Expiry: resetPasswordExpiry,
-		},
-	}
-	return s.tokenService.GenerateResetPasswordToken(ctx, claims)
-}
-
 func ratelimitKey(phone string, purpose domain.OTPPurpose) string {
 	return fmt.Sprintf("auth:%s:otp:ratelimit:%s", purpose, phone)
 }
@@ -502,30 +384,17 @@ func (s *AuthService) FinalizeResetPasswordByOTP(
 		return err
 	}
 
-	claims, err := s.tokenService.ValidateResetPasswordToken(ctx, sign)
+	userUUID, err := s.sessionService.ValidateResetToken(ctx, sign)
 	if err != nil {
 		return err
 	}
 
-	userUUID, err := uuid.Parse(claims.UserID)
-	if err != nil {
-		return err
-	}
-
-	if s.uow == nil || s.sessionRepo == nil {
-		return domain.ErrInternal
-	}
-
-	return s.uow.Do(ctx, func(ctx context.Context) error {
-		if err := s.userRepo.UpdatePassword(ctx, userUUID, newPassword); err != nil {
+	return s.uow.Do(ctx, func(txCtx context.Context) error {
+		if err := s.userRepo.UpdatePassword(txCtx, userUUID, newPassword); err != nil {
 			return err
 		}
 
-		if err := s.sessionRepo.RevokeAll(ctx, userUUID); err != nil {
-			return err
-		}
-
-		return nil
+		return s.sessionService.RevokeAllSessions(txCtx, userUUID)
 	})
 }
 
