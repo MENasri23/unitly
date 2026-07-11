@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -21,16 +20,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 const (
-	// MigrationsDir is the directory where migration files are stored.
-	migrationsSrc = "file://migrations"
-
 	// defalut timeout which signals to to the request
 	requestTimeout = 60 * time.Second
 
@@ -61,13 +54,6 @@ func main() {
 	}
 	defer pgxDb.Close()
 	logger.Info("postgres database connected successfully")
-
-	logger.Info("initializing database migrations...")
-	if err := runDatabaseMigrations(migrationsSrc, app.GetDatabaseURL(), logger); err != nil {
-		logger.Error(fmt.Sprintf("fatal error during migration: %v", err))
-		return
-	}
-	logger.Info("migrations complete")
 
 	logger.Info("starting cache client initialization...")
 	cache, err := newCacheClient(app)
@@ -186,28 +172,4 @@ func newSmsService(app *bootstrap.Application, logger log.Logger) domain.SmsServ
 		app.GetOtpTemplateID(),
 		logger,
 	)
-}
-
-// runDatabaseMigrations handles the initialization and execution of DB schema updates.
-func runDatabaseMigrations(sourceURL, dbURL string, logger log.Logger) error {
-	m, err := migrate.New(sourceURL, dbURL)
-	if err != nil {
-		return err
-	}
-
-	// Defer closing the underlying database connection and source drivers
-	// to prevent memory/connection leaks.
-	defer m.Close()
-
-	// Execute the "Up" migrations
-	if err := m.Up(); err != nil {
-		if errors.Is(err, migrate.ErrNoChange) {
-			logger.Info("Schema is up-to-date. No new migrations applied")
-			return nil
-		}
-		return err
-	}
-
-	logger.Info("Database migrations applied successfully")
-	return nil
 }
