@@ -30,3 +30,10 @@ type OTPRepository interface {
 	Create(ctx context.Context, req *CreateOTPReq) (string, error)
 	Verify(ctx context.Context, verifyReq *VerifyOTPReq) (*VerifyOTPResult, error)
 }
+
+// OTPService handles rate limiting, lifecycle, and transmission of one-time tokens.
+type OTPService interface {
+	EnsureAllowed(ctx context.Context, phone string, purpose OTPPurpose) error
+	RequestOTP(ctx context.Context, phone string, purpose OTPPurpose, executeDelivery bool) (string, error)
+	VerifyOTP(ctx context.Context, token, inputOTP string, purpose OTPPurpose) (string, error)
+}

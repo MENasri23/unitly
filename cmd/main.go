@@ -13,6 +13,7 @@ import (
 	"unitly/internal/repository"
 	otprepo "unitly/internal/repository/otp"
 	"unitly/internal/service/auth"
+	otpsvc "unitly/internal/service/otp"
 	sessionsvc "unitly/internal/service/session"
 	"unitly/internal/service/sms"
 	"unitly/pkg/sloglogger"
@@ -85,15 +86,18 @@ func main() {
 		app.GetRefreshTokenExpiry(),
 		5*time.Minute,
 	)
-	authService := auth.NewAuthService(
+	otpService := otpsvc.NewOTPService(
 		otpRepository,
+		smsSvc,
+		otpRateLimiter,
+	)
+	authService := auth.NewAuthService(
+		otpService,
 		userRepository,
 		sessionService,
 		smsSvc,
 		tokenService,
-		otpRateLimiter,
 		txManager,
-		app.GetRefreshTokenExpiry(),
 	)
 
 	authMiddleware := appmiddleware.NewAuthMiddleware(
