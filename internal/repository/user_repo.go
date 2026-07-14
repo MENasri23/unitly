@@ -35,18 +35,18 @@ func (u *userRepository) getQuerier(ctx context.Context) db.Querier {
 	return u.db
 }
 
-func (u *userRepository) Create(ctx context.Context, user *domain.User) error {
-	query := `
-	INSERT INTO users (phone, public_id, active) 
-	VALUES ($1, $2, $3)
-	ON CONFLICT (phone) DO NOTHING
-	RETURNING id, created_at
-	`
+const createUser = `
+INSERT INTO users (phone, public_id, active) 
+VALUES ($1, $2, $3)
+ON CONFLICT (phone) DO NOTHING
+RETURNING id, created_at
+`
 
+func (u *userRepository) Create(ctx context.Context, user *domain.User) error {
 	querier := u.getQuerier(ctx)
 	err := querier.QueryRow(
 		ctx,
-		query,
+		createUser,
 		user.Phone,
 		user.GUID,
 		user.IsActive,
@@ -134,15 +134,17 @@ func (u *userRepository) getUserIDBy(ctx context.Context, phone string, isActive
 	return userID, nil
 }
 
-func (u *userRepository) UpdatePassword(ctx context.Context, userGUID uuid.UUID, password string) error {
-	query := `UPDATE users 
-	SET password_hash = $1 
-	WHERE public_id = $2`
+const updateUserPassword = `
+UPDATE users 
+SET password_hash = $1 
+WHERE public_id = $2
+`
 
+func (u *userRepository) UpdatePassword(ctx context.Context, userGUID uuid.UUID, password string) error {
 	passwordHash := hash.SHA256(password)
 	querier := u.getQuerier(ctx)
 
-	cmdTag, err := querier.Exec(ctx, query, passwordHash, userGUID)
+	cmdTag, err := querier.Exec(ctx, updateUserPassword, passwordHash, userGUID)
 	if err != nil {
 		return err
 	}
