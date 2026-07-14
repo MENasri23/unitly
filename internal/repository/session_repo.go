@@ -31,17 +31,17 @@ func (s *sessionRepository) getQuerier(ctx context.Context) db.Querier {
 	return s.db
 }
 
-func (s *sessionRepository) Create(ctx context.Context, session *domain.Session) error {
-	query := `
-    INSERT INTO sessions (id, user_id, refresh_token_hash, expires_at)
-    VALUES ($1, $2, $3, $4)
-    RETURNING created_at
-    `
+const createSession = `
+INSERT INTO sessions (id, user_id, refresh_token_hash, expires_at)
+VALUES ($1, $2, $3, $4)
+RETURNING created_at
+`
 
+func (s *sessionRepository) Create(ctx context.Context, session *domain.Session) error {
 	querier := s.getQuerier(ctx)
 	err := querier.QueryRow(
 		ctx,
-		query,
+		createSession,
 		session.ID,
 		session.UserID,
 		session.RefreshTokenHash,
@@ -51,17 +51,17 @@ func (s *sessionRepository) Create(ctx context.Context, session *domain.Session)
 	return err
 }
 
-func (s *sessionRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Session, error) {
-	query := `
-    SELECT id, user_id, refresh_token_hash, created_at, expires_at, revoked_at, version
-    FROM sessions
-    WHERE id = $1
-    `
+const getSessionByID = `
+SELECT id, user_id, refresh_token_hash, created_at, expires_at, revoked_at, version
+FROM sessions
+WHERE id = $1
+`
 
+func (s *sessionRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Session, error) {
 	querier := s.getQuerier(ctx)
 
 	var session domain.Session
-	err := querier.QueryRow(ctx, query, id).Scan(
+	err := querier.QueryRow(ctx, getSessionByID, id).Scan(
 		&session.ID,
 		&session.UserID,
 		&session.RefreshTokenHash,
@@ -79,18 +79,18 @@ func (s *sessionRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.
 
 	return &session, nil
 }
+
+const getSessionByRefreshToken = `
+SELECT id, user_id, refresh_token_hash, created_at, expires_at, revoked_at, version
+FROM sessions
+WHERE refresh_token_hash = $1
+`
 
 func (s *sessionRepository) GetByRefreshToken(ctx context.Context, refreshTokenHash string) (*domain.Session, error) {
-	query := `
-    SELECT id, user_id, refresh_token_hash, created_at, expires_at, revoked_at, version
-    FROM sessions
-    WHERE refresh_token_hash = $1
-	`
-
 	querier := s.getQuerier(ctx)
 
 	var session domain.Session
-	err := querier.QueryRow(ctx, query, refreshTokenHash).Scan(
+	err := querier.QueryRow(ctx, getSessionByRefreshToken, refreshTokenHash).Scan(
 		&session.ID,
 		&session.UserID,
 		&session.RefreshTokenHash,
@@ -109,15 +109,16 @@ func (s *sessionRepository) GetByRefreshToken(ctx context.Context, refreshTokenH
 	return &session, nil
 }
 
-func (s *sessionRepository) Revoke(ctx context.Context, session *domain.Session) error {
-	query := `
-    UPDATE sessions
-    SET revoked_at = $1, version = version + 1
-    WHERE id = $2 AND revoked_at IS NULL
-    `
+const revokeSession = `
+UPDATE sessions
+SET revoked_at = $1, version = version + 1
+WHERE id = $2 AND revoked_at IS NULL
+`
 
+func (s *sessionRepository) Revoke(ctx context.Context, session *domain.Session) error {
 	querier := s.getQuerier(ctx)
-	cmdTag, err := querier.Exec(ctx, query, session.RevokedAt, session.ID)
+
+	cmdTag, err := querier.Exec(ctx, revokeSession, session.RevokedAt, session.ID)
 	if err != nil {
 		return err
 	}
@@ -129,15 +130,15 @@ func (s *sessionRepository) Revoke(ctx context.Context, session *domain.Session)
 	return nil
 }
 
-func (s *sessionRepository) RevokeAll(ctx context.Context, userID uuid.UUID) error {
-	query := `
-    UPDATE sessions
-    SET revoked_at = NOW(), version = version + 1
-    WHERE user_id = $1 AND revoked_at IS NULL
-    `
+const revokeAllSessions = `
+UPDATE sessions
+SET revoked_at = NOW(), version = version + 1
+WHERE user_id = $1 AND revoked_at IS NULL
+`
 
+func (s *sessionRepository) RevokeAll(ctx context.Context, userID uuid.UUID) error {
 	querier := s.getQuerier(ctx)
-	_, err := querier.Exec(ctx, query, userID)
+	_, err := querier.Exec(ctx, revokeAllSessions, userID)
 	return err
 }
 
