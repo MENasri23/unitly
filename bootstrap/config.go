@@ -134,16 +134,18 @@ func newCacheConfig(env *Env) *cacheConfig {
 }
 
 type tokenConfig struct {
-	accessTokenSecret  string
-	accessTokenExpiry  time.Duration
-	refreshTokenExpiry time.Duration
+	accessTokenSecret        string
+	accessTokenExpiry        time.Duration
+	refreshTokenExpiry       time.Duration
+	resetPasswordTokenExpiry time.Duration
 }
 
 func newTokenConfig(env *Env) *tokenConfig {
 	return &tokenConfig{
-		accessTokenSecret: env.AccessTokenSecret,
-		accessTokenExpiry: env.AccessTokenExpiry,
-		refreshTokenExpiry: env.RefreshTokenExpiry,
+		accessTokenSecret:        env.AccessTokenSecret,
+		accessTokenExpiry:        env.AccessTokenExpiry,
+		refreshTokenExpiry:       env.RefreshTokenExpiry,
+		resetPasswordTokenExpiry: env.ResetPasswordTokenExpiry,
 	}
 }
 

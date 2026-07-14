@@ -84,7 +84,7 @@ func main() {
 		tokenService,
 		txManager,
 		app.GetRefreshTokenExpiry(),
-		5*time.Minute,
+		app.GetResetPasswordTokenExpiry(),
 	)
 	otpService := otpsvc.NewOTPService(
 		otpRepository,

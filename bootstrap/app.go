@@ -56,6 +56,14 @@ func (app *Application) GetRefreshTokenExpiry() time.Duration {
 	return app.config.token.refreshTokenExpiry
 }
 
+func (app *Application) GetResetPasswordTokenExpiry() time.Duration {
+	expiry := app.config.token.resetPasswordTokenExpiry
+	if expiry == 0 {
+		return 5 * time.Minute
+	}
+	return expiry
+}
+
 func (app *Application) GetSmsUsername() string {
 	return app.config.otp.SmsConfig.Username
 }
