@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 	"strings"
-	"unitly/internal/client"
 	"unitly/internal/domain"
+	apphttp "unitly/internal/http"
 	"unitly/internal/http/header"
 	"unitly/pkg/jsonutil"
 
@@ -34,10 +34,9 @@ func NewAuthMiddleware(
 
 func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) {
-		platform := header.GetClientPlatform(r)
 		var token string
-
-		if platform == client.WebPlatform {
+		
+		if apphttp.IsWebPlatform(r) {
 			atCookie, err := r.Cookie("access_token")
 			if err != nil {
 				jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)

@@ -3,9 +3,8 @@ package controller
 import (
 	"net/http"
 	"time"
-	"unitly/internal/client"
 	"unitly/internal/domain"
-	"unitly/internal/http/header"
+	apphttp "unitly/internal/http"
 	"unitly/internal/service/auth"
 	"unitly/pkg/jsonutil"
 
@@ -103,9 +102,8 @@ func (c *AccountController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Reque
 	}
 
 	tokens := TokensDTO{}
-	platform := header.GetClientPlatform(r)
-
-	if platform == client.WebPlatform {
+	
+	if apphttp.IsWebPlatform(r) {
 		c.setRefreshTokenCookie(w, result.RefreshToken)
 		c.setAccessTokenCookie(w, result.AccessToken)
 	} else {
@@ -239,9 +237,8 @@ func (c *AccountController) FinalizeResetPasswordByOTP(w http.ResponseWriter, r 
 
 func (c *AccountController) RefreshByToken(w http.ResponseWriter, r *http.Request) {
 	var req refreshRequest
-	platform := header.GetClientPlatform(r)
 
-	if platform == client.WebPlatform {
+	if apphttp.IsWebPlatform(r) {
 		rtCookie, err := r.Cookie("refresh_token")
 		if err != nil {
 			jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
