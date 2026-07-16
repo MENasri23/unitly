@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 	"unitly/internal/domain"
+	"unitly/internal/http/header"
 	"unitly/pkg/jsonutil"
 
 	"github.com/google/uuid"
@@ -32,7 +33,7 @@ func NewAuthMiddleware(
 
 func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
+		authHeader := r.Header.Get(header.Authorization)
 
 		if !startWithBearer(authHeader) {
 			unauthorized(w)

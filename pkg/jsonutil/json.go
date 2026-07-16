@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"unitly/internal/domain"
+	"unitly/internal/http/header"
 )
 
 // errorResponse defines the standard structure used for all JSON error responses.
@@ -58,7 +59,7 @@ func WriteJSON(
 	statusCode int,
 	data any,
 ) error {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(header.ContentType, "application/json")
 	w.WriteHeader(statusCode)
 	return json.NewEncoder(w).Encode(data)
 }
