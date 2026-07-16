@@ -13,6 +13,7 @@ type config struct {
 	ReadTimeout       time.Duration
 	ReadHeaderTimeout time.Duration
 	IdleTimeout       time.Duration
+	AllowedOrigins    []string
 	db                *dbConfig
 	cache             *cacheConfig
 	token             *tokenConfig
@@ -27,6 +28,7 @@ func newConfig(env *Env) *config {
 		ReadTimeout:       env.ReadTimeout,
 		ReadHeaderTimeout: env.ReadHeaderTimeout,
 		IdleTimeout:       env.IdleTimeout,
+		AllowedOrigins:    env.AllowedOrigins,
 		db:                newDbConfig(env),
 		cache:             newCacheConfig(env),
 		token:             newTokenConfig(env),

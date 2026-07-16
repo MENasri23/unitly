@@ -24,6 +24,7 @@ type Env struct {
 	ReadHeaderTimeout time.Duration `mapstructure:"READ_HEADER_TIMEOUT"`
 	IdleTimeout       time.Duration `mapstructure:"IDLE_TIMEOUT"`
 	ContextTimeout    time.Duration `mapstructure:"CONTEXT_TIMEOUT"`
+	AllowedOrigins    []string      `mapstructure:"ALLOWED_ORIGINS"`
 
 	DBHost string `mapstructure:"DB_HOST"`
 	DBPort string `mapstructure:"DB_PORT"`
@@ -62,6 +63,8 @@ func NewEnv() (*Env, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Environment can't be loaded: %v", err)
 	}
+
+	fmt.Println("origins:", env.AllowedOrigins)
 
 	return &env, nil
 }

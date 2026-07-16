@@ -3,12 +3,14 @@ package main
 import (
 	"fmt"
 	"log/slog"
+	"net/http"
 	"time"
 	"unitly/bootstrap"
 	"unitly/internal/cache"
 	"unitly/internal/controller"
 	"unitly/internal/db"
 	"unitly/internal/domain"
+	"unitly/internal/http/header"
 	"unitly/internal/log"
 	"unitly/internal/repository"
 	otprepo "unitly/internal/repository/otp"
@@ -22,6 +24,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -106,6 +109,25 @@ func main() {
 	)
 
 	r := chi.NewRouter()
+
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins: app.AllowedOrigins(),
+		AllowedMethods: []string{
+			http.MethodGet,
+			http.MethodPost,
+			http.MethodPut,
+			http.MethodDelete,
+			http.MethodOptions,
+		},
+		AllowedHeaders: []string{
+			header.Accept,
+			header.Authorization,
+			header.ContentType,
+			header.ClientPlatform,
+		},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
 
 	r.Use(middleware.RequestID)
 	r.Use(middleware.ClientIPFromRemoteAddr)

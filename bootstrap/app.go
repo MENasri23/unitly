@@ -84,6 +84,10 @@ func (app *Application) GetOtpRateLimit() time.Duration {
 	return app.config.otp.RateLimit
 }
 
+func (app *Application) AllowedOrigins() []string {
+	return app.config.AllowedOrigins
+}
+
 func (app *Application) NewServer(mux http.Handler) *http.Server {
 	cfg := app.config
 	return &http.Server{
