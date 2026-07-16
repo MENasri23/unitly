@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"unitly/internal/client"
 	"unitly/internal/domain"
 	"unitly/internal/http/header"
 	"unitly/pkg/jsonutil"
@@ -33,14 +34,24 @@ func NewAuthMiddleware(
 
 func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get(header.Authorization)
+		platform := header.GetClientPlatform(r)
+		var token string
 
-		if !startWithBearer(authHeader) {
-			unauthorized(w)
-			return
+		if platform == client.WebPlatfom {
+			atCookie, err := r.Cookie("access_token")
+			if err != nil {
+				jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
+				return
+			}
+			token = atCookie.Value
+		} else {
+			authHeader := r.Header.Get(header.Authorization)
+			if !startWithBearer(authHeader) {
+				unauthorized(w)
+				return
+			}
+			token = trimBearer(authHeader)
 		}
-
-		token := trimBearer(authHeader)
 
 		claims, err := m.tokenValidator.ValidateAccessToken(r.Context(), token)
 		if err != nil {

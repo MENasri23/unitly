@@ -2,7 +2,10 @@ package controller
 
 import (
 	"net/http"
+	"time"
+	"unitly/internal/client"
 	"unitly/internal/domain"
+	"unitly/internal/http/header"
 	"unitly/internal/service/auth"
 	"unitly/pkg/jsonutil"
 
@@ -10,7 +13,10 @@ import (
 )
 
 type AccountController struct {
-	authSvc *auth.AuthService
+	authSvc            *auth.AuthService
+	refreshTokenExpiry time.Duration
+	accessTokenExpiry  time.Duration
+	debugMode          bool
 }
 
 type requestOTPRequest struct {
@@ -37,13 +43,21 @@ type refreshRequest struct {
 }
 
 type TokensDTO struct {
-	AccessToken  string `json:"access-token"`
-	RefreshToken string `json:"refresh-token"`
+	AccessToken  string `json:"access-token,omitempty"`
+	RefreshToken string `json:"refresh-token,omitempty"`
 }
 
-func NewAccountController(authSvc *auth.AuthService) *AccountController {
+func NewAccountController(
+	authSvc *auth.AuthService,
+	refreshTokenExpiry time.Duration,
+	accessTokenExpiry time.Duration,
+	debugMode bool,
+) *AccountController {
 	return &AccountController{
-		authSvc: authSvc,
+		authSvc:            authSvc,
+		refreshTokenExpiry: refreshTokenExpiry,
+		accessTokenExpiry:  accessTokenExpiry,
+		debugMode:          debugMode,
 	}
 }
 
@@ -88,13 +102,44 @@ func (c *AccountController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	tokens := TokensDTO{
-		AccessToken:  result.AccessToken,
-		RefreshToken: result.RefreshToken,
+	tokens := TokensDTO{}
+	platform := header.GetClientPlatform(r)
+
+	if platform == client.WebPlatfom {
+		c.setRefreshTokenCookie(w, result.RefreshToken)
+		c.setAccessTokenCookie(w, result.AccessToken)
+	} else {
+		tokens.AccessToken = result.AccessToken
+		tokens.RefreshToken = result.RefreshToken
 	}
+
 	if err = jsonutil.WriteJSON(w, http.StatusOK, tokens); err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, domain.NewError(domain.ErrorCode("WRITE_RESPONSE_FAILED"), "failed to write response"))
 	}
+}
+
+func (c *AccountController) setAccessTokenCookie(w http.ResponseWriter, accessToken string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
+		Path:     "/",
+		Value:    accessToken,
+		MaxAge:   int(c.accessTokenExpiry.Seconds()),
+		HttpOnly: true,
+		Secure:   !c.debugMode,
+		SameSite: http.SameSiteStrictMode,
+	})
+}
+
+func (c *AccountController) setRefreshTokenCookie(w http.ResponseWriter, refreshToken string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Path:     "api/v1/accounts/auth/refresh",
+		Value:    refreshToken,
+		MaxAge:   int(c.refreshTokenExpiry.Seconds()),
+		HttpOnly: true,
+		Secure:   !c.debugMode,
+		SameSite: http.SameSiteStrictMode,
+	})
 }
 
 func (c *AccountController) AuthenticateByPassword(w http.ResponseWriter, r *http.Request) {
@@ -194,9 +239,20 @@ func (c *AccountController) FinalizeResetPasswordByOTP(w http.ResponseWriter, r 
 
 func (c *AccountController) RefreshByToken(w http.ResponseWriter, r *http.Request) {
 	var req refreshRequest
-	if err := jsonutil.ReadJSON(r, &req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
-		return
+	platform := header.GetClientPlatform(r)
+
+	if platform == client.WebPlatfom {
+		rtCookie, err := r.Cookie("refresh_token")
+		if err != nil {
+			jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
+			return
+		}
+		req.RefreshToken = rtCookie.Value
+	} else {
+		if err := jsonutil.ReadJSON(r, &req); err != nil {
+			jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+			return
+		}
 	}
 
 	if err := validateStruct(req); err != nil {
@@ -222,8 +278,16 @@ func (c *AccountController) RefreshByToken(w http.ResponseWriter, r *http.Reques
 func SetupAccountRoutes(
 	r chi.Router,
 	authService *auth.AuthService,
+	refreshTokenExpiry time.Duration,
+	accessTokenExpiry time.Duration,
+	isDebug bool,
 ) {
-	accountController := NewAccountController(authService)
+	accountController := NewAccountController(
+		authService,
+		refreshTokenExpiry,
+		accessTokenExpiry,
+		isDebug,
+	)
 
 	r.Route("/accounts", func(r chi.Router) {
 		r.Route("/auth", func(r chi.Router) {

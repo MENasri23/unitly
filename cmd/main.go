@@ -125,7 +125,7 @@ func main() {
 			header.ContentType,
 			header.ClientPlatform,
 		},
-		AllowCredentials: false,
+		AllowCredentials: true,
 		MaxAge:           300,
 	}))
 
@@ -138,7 +138,7 @@ func main() {
 
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/v1", func(r chi.Router) {
-			controller.SetupAccountRoutes(r, authService)
+			controller.SetupAccountRoutes(r, authService, app.GetRefreshTokenExpiry(), app.GetAccessTokenExpiry(), app.DebugMode())
 
 			r.Group(func(r chi.Router) {
 				r.Use(authMiddleware.RequireAuth)
