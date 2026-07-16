@@ -2,12 +2,14 @@ module unitly
 
 go 1.25.0
 
-require github.com/spf13/viper v1.21.0
+require (
+	github.com/go-chi/cors v1.2.2
+	github.com/spf13/viper v1.21.0
+)
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
-	github.com/go-chi/cors v1.2.2 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
