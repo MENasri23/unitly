@@ -37,7 +37,7 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 		platform := header.GetClientPlatform(r)
 		var token string
 
-		if platform == client.WebPlatfom {
+		if platform == client.WebPlatform {
 			atCookie, err := r.Cookie("access_token")
 			if err != nil {
 				jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)

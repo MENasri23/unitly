@@ -105,7 +105,7 @@ func (c *AccountController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Reque
 	tokens := TokensDTO{}
 	platform := header.GetClientPlatform(r)
 
-	if platform == client.WebPlatfom {
+	if platform == client.WebPlatform {
 		c.setRefreshTokenCookie(w, result.RefreshToken)
 		c.setAccessTokenCookie(w, result.AccessToken)
 	} else {
@@ -241,7 +241,7 @@ func (c *AccountController) RefreshByToken(w http.ResponseWriter, r *http.Reques
 	var req refreshRequest
 	platform := header.GetClientPlatform(r)
 
-	if platform == client.WebPlatfom {
+	if platform == client.WebPlatform {
 		rtCookie, err := r.Cookie("refresh_token")
 		if err != nil {
 			jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)

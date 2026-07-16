@@ -1,7 +1,7 @@
 package client
 
 const (
-	WebPlatfom      ClientPlatform = "WebClient"
+	WebPlatform     ClientPlatform = "WebClient"
 	AndroidPlatform ClientPlatform = "AndroidClient"
 	UnknownPlatform ClientPlatform = "Unknown"
 )
