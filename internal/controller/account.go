@@ -5,6 +5,7 @@ import (
 	"time"
 	"unitly/internal/domain"
 	apphttp "unitly/internal/http"
+	"unitly/internal/log"
 	"unitly/internal/service/auth"
 	"unitly/pkg/jsonutil"
 
@@ -13,6 +14,7 @@ import (
 
 type AccountController struct {
 	authSvc            *auth.AuthService
+	logger             log.Logger
 	refreshTokenExpiry time.Duration
 	accessTokenExpiry  time.Duration
 	debugMode          bool
@@ -48,12 +50,14 @@ type TokensDTO struct {
 
 func NewAccountController(
 	authSvc *auth.AuthService,
+	logger log.Logger,
 	refreshTokenExpiry time.Duration,
 	accessTokenExpiry time.Duration,
 	debugMode bool,
 ) *AccountController {
 	return &AccountController{
 		authSvc:            authSvc,
+		logger:             logger,
 		refreshTokenExpiry: refreshTokenExpiry,
 		accessTokenExpiry:  accessTokenExpiry,
 		debugMode:          debugMode,
@@ -101,43 +105,20 @@ func (c *AccountController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	tokens := TokensDTO{}
-	
 	if apphttp.IsWebPlatform(r) {
-		c.setRefreshTokenCookie(w, result.RefreshToken)
 		c.setAccessTokenCookie(w, result.AccessToken)
-	} else {
-		tokens.AccessToken = result.AccessToken
-		tokens.RefreshToken = result.RefreshToken
+		c.setRefreshTokenCookie(w, result.RefreshToken)
+		w.WriteHeader(http.StatusOK)
+		return
 	}
 
+	tokens := TokensDTO{
+		AccessToken:  result.AccessToken,
+		RefreshToken: result.RefreshToken,
+	}
 	if err = jsonutil.WriteJSON(w, http.StatusOK, tokens); err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, domain.NewError(domain.ErrorCode("WRITE_RESPONSE_FAILED"), "failed to write response"))
 	}
-}
-
-func (c *AccountController) setAccessTokenCookie(w http.ResponseWriter, accessToken string) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     "access_token",
-		Path:     "/",
-		Value:    accessToken,
-		MaxAge:   int(c.accessTokenExpiry.Seconds()),
-		HttpOnly: true,
-		Secure:   !c.debugMode,
-		SameSite: http.SameSiteStrictMode,
-	})
-}
-
-func (c *AccountController) setRefreshTokenCookie(w http.ResponseWriter, refreshToken string) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     "refresh_token",
-		Path:     "api/v1/accounts/auth/refresh",
-		Value:    refreshToken,
-		MaxAge:   int(c.refreshTokenExpiry.Seconds()),
-		HttpOnly: true,
-		Secure:   !c.debugMode,
-		SameSite: http.SameSiteStrictMode,
-	})
 }
 
 func (c *AccountController) AuthenticateByPassword(w http.ResponseWriter, r *http.Request) {
@@ -158,10 +139,18 @@ func (c *AccountController) AuthenticateByPassword(w http.ResponseWriter, r *htt
 		return
 	}
 
+	if apphttp.IsWebPlatform(r) {
+		c.setAccessTokenCookie(w, result.AccessToken)
+		c.setRefreshTokenCookie(w, result.RefreshToken)
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	tokens := TokensDTO{
 		AccessToken:  result.AccessToken,
 		RefreshToken: result.RefreshToken,
 	}
+
 	if err = jsonutil.WriteJSON(w, http.StatusOK, tokens); err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, domain.NewError(domain.ErrorCode("WRITE_RESPONSE_FAILED"), "failed to write response"))
 	}
@@ -263,27 +252,61 @@ func (c *AccountController) RefreshByToken(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	if apphttp.IsWebPlatform(r) {
+		c.setAccessTokenCookie(w, result.AccessToken)
+		c.setRefreshTokenCookie(w, result.RefreshToken)
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	tokens := TokensDTO{
 		AccessToken:  result.AccessToken,
 		RefreshToken: result.RefreshToken,
 	}
+
 	if err = jsonutil.WriteJSON(w, http.StatusOK, tokens); err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, domain.NewError(domain.ErrorCode("WRITE_RESPONSE_FAILED"), "failed to write response"))
 	}
 }
 
+func (c *AccountController) setAccessTokenCookie(w http.ResponseWriter, accessToken string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
+		Path:     "/",
+		Value:    accessToken,
+		MaxAge:   int(c.accessTokenExpiry.Seconds()),
+		HttpOnly: true,
+		Secure:   !c.debugMode,
+		SameSite: http.SameSiteStrictMode,
+	})
+}
+
+func (c *AccountController) setRefreshTokenCookie(w http.ResponseWriter, refreshToken string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Path:     "/api/v1/accounts/auth/refresh",
+		Value:    refreshToken,
+		MaxAge:   int(c.refreshTokenExpiry.Seconds()),
+		HttpOnly: true,
+		Secure:   !c.debugMode,
+		SameSite: http.SameSiteStrictMode,
+	})
+}
+
 func SetupAccountRoutes(
 	r chi.Router,
 	authService *auth.AuthService,
+	logger log.Logger,
 	refreshTokenExpiry time.Duration,
 	accessTokenExpiry time.Duration,
-	isDebug bool,
+	debugMode bool,
 ) {
 	accountController := NewAccountController(
 		authService,
+		logger,
 		refreshTokenExpiry,
 		accessTokenExpiry,
-		isDebug,
+		debugMode,
 	)
 
 	r.Route("/accounts", func(r chi.Router) {

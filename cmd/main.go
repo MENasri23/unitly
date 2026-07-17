@@ -138,7 +138,14 @@ func main() {
 
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/v1", func(r chi.Router) {
-			controller.SetupAccountRoutes(r, authService, app.GetRefreshTokenExpiry(), app.GetAccessTokenExpiry(), app.DebugMode())
+			controller.SetupAccountRoutes(
+				r,
+				authService,
+				logger,
+				app.GetRefreshTokenExpiry(),
+				app.GetAccessTokenExpiry(),
+				app.DebugMode(),
+			)
 
 			r.Group(func(r chi.Router) {
 				r.Use(authMiddleware.RequireAuth)
