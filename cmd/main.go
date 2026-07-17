@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	// defalut timeout which signals to to the request
+	// default timeout which signals to to the request
 	requestTimeout = 60 * time.Second
 
 	// maxReadBytes defines the maximum allowed size of a JSON request body.
@@ -45,7 +45,7 @@ func main() {
 	logOptions := &slog.HandlerOptions{Level: logLevel}
 	logger := sloglogger.NewSlogLogger(logOptions)
 
-	app, err := bootstrap.CreateAppliaction()
+	app, err := bootstrap.CreateApplication()
 	if err != nil {
 		logger.Error(fmt.Sprintf("initialize application failed: %v", err))
 		return

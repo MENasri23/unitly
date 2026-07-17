@@ -9,7 +9,7 @@ type Application struct {
 	config *config
 }
 
-func CreateAppliaction() (*Application, error) {
+func CreateApplication() (*Application, error) {
 	env, err := NewEnv()
 	if err != nil {
 		return nil, err
