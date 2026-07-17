@@ -15,8 +15,8 @@ const (
 func GetClientPlatform(r *http.Request) client.ClientPlatform {
 	p := client.ClientPlatform(r.Header.Get(ClientPlatform))
 	switch p {
-	case client.WebPlatform:
-	case client.AndroidPlatform:
+	case client.WebPlatform,
+		client.AndroidPlatform:
 		return p
 	}
 	return client.UnknownPlatform
