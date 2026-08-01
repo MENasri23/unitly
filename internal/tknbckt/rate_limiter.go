@@ -101,10 +101,11 @@ func NewTokenBucketLimiter(client redis.Cmdable, cfg Config) (*TokenBucketLimite
 	// Calculate default TTL if not supplied: twice the time needed to fill an empty bucket
 	if cfg.TTL <= 0 {
 		timeToFullSec := cfg.Capacity / cfg.RefillRate
-		cfg.TTL = time.Duration(math.Ceil(timeToFullSec*2)) * time.Second
-		if cfg.TTL < 10*time.Second {
-			cfg.TTL = 10 * time.Second // Minimum safety floor
-		}
+		cfg.TTL = max(
+			time.Duration(math.Ceil(timeToFullSec*2))*time.Second,
+			// Minimum safety floor
+			10*time.Second,
+		)
 	}
 
 	return &TokenBucketLimiter{
