@@ -15,6 +15,7 @@ import (
 	"unitly/internal/repository"
 	otprepo "unitly/internal/repository/otp"
 	"unitly/internal/service/auth"
+	identitysvc "unitly/internal/service/identity"
 	otpsvc "unitly/internal/service/otp"
 	sessionsvc "unitly/internal/service/session"
 	"unitly/internal/service/sms"
@@ -94,9 +95,10 @@ func main() {
 		smsSvc,
 		otpRateLimiter,
 	)
+	identityService := identitysvc.NewIdentityService(userRepository)
 	authService := auth.NewAuthService(
 		otpService,
-		userRepository,
+		identityService,
 		sessionService,
 		smsSvc,
 		tokenService,

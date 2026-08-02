@@ -2,14 +2,9 @@ package auth
 
 import (
 	"context"
-	"errors"
-	"unicode"
 	"unitly/internal/domain"
-	"unitly/internal/util/eql"
-	"unitly/internal/util/hash"
+	identitysvc "unitly/internal/service/identity"
 	"unitly/internal/util/validate"
-
-	"github.com/google/uuid"
 )
 
 var (
@@ -23,29 +18,29 @@ type AuthResult struct {
 }
 
 type AuthService struct {
-	otpService     domain.OTPService
-	userRepo       domain.UserRepository
-	sessionService domain.SessionService
-	smsService     domain.SmsService
-	tokenService   domain.TokenService
-	uow            domain.UnitOfWork
+	otpService      domain.OTPService
+	identityService identitysvc.IdentityService
+	sessionService  domain.SessionService
+	smsService      domain.SmsService
+	tokenService    domain.TokenService
+	uow             domain.UnitOfWork
 }
 
 func NewAuthService(
 	otpSvc domain.OTPService,
-	userRepo domain.UserRepository,
-	sesSvc domain.SessionService,
+	identityService identitysvc.IdentityService,
+	sessionService domain.SessionService,
 	smsService domain.SmsService,
 	tokenService domain.TokenService,
 	uow domain.UnitOfWork,
 ) *AuthService {
 	return &AuthService{
-		otpService:     otpSvc,
-		userRepo:       userRepo,
-		sessionService: sesSvc,
-		smsService:     smsService,
-		tokenService:   tokenService,
-		uow:            uow,
+		otpService:      otpSvc,
+		identityService: identityService,
+		sessionService:  sessionService,
+		smsService:      smsService,
+		tokenService:    tokenService,
+		uow:             uow,
 	}
 }
 
@@ -66,31 +61,20 @@ func (s *AuthService) VerifyAuthByOTP(
 		return nil, err
 	}
 
-	user, err := s.userRepo.GetByPhone(ctx, phone)
+	user, err := s.identityService.GetOrCreateUser(ctx, phone)
 	if err != nil {
-		if !isUserNotFound(err) {
-			return nil, err
-		}
-
-		user, err = s.registerUser(ctx, phone)
-		if err != nil {
-			return nil, err
-		}
+		return nil, err
 	}
 
-	if user != nil {
-		accessToken, refreshToken, err := s.sessionService.CreateSession(ctx, user.GUID)
-		if err != nil {
-			return nil, err
-		}
-
-		return &AuthResult{
-			AccessToken:  accessToken,
-			RefreshToken: refreshToken,
-		}, nil
+	accessToken, refreshToken, err := s.sessionService.CreateSession(ctx, user.GUID)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, domain.ErrInternal
+	return &AuthResult{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
 }
 
 func (s *AuthService) AuthenticateByPassword(
@@ -106,20 +90,9 @@ func (s *AuthService) AuthenticateByPassword(
 		return nil, domain.ErrInvalidCredentials
 	}
 
-	user, err := s.userRepo.GetByPhone(ctx, phone)
+	user, err := s.identityService.Authenticate(ctx, phone, password)
 	if err != nil {
-		if isUserNotFound(err) {
-			return nil, domain.ErrInvalidCredentials
-		}
 		return nil, err
-	}
-
-	if !user.IsActive || user.HashedPassword == nil || *user.HashedPassword == "" {
-		return nil, domain.ErrInvalidCredentials
-	}
-
-	if !eql.IsEqual(hash.SHA256(password), *user.HashedPassword) {
-		return nil, domain.ErrInvalidCredentials
 	}
 
 	accessToken, refreshToken, err := s.sessionService.CreateSession(ctx, user.GUID)
@@ -145,7 +118,7 @@ func (s *AuthService) RequestResetPasswordByOTP(
 		return "", err
 	}
 
-	userExists, err := s.userRepo.ExistsByPhone(ctx, phone)
+	userExists, err := s.identityService.ExistsByPhone(ctx, phone)
 	if err != nil {
 		return "", err
 	}
@@ -163,7 +136,7 @@ func (s *AuthService) VerifyResetPasswordByOTP(
 		return "", err
 	}
 
-	user, err := s.userRepo.GetByPhone(ctx, phone)
+	user, err := s.identityService.GetByPhone(ctx, phone)
 	if err != nil || !user.IsActive {
 		return "", domain.ErrInvalidOTP
 	}
@@ -190,98 +163,19 @@ func (s *AuthService) isValidPhone(phone string) bool {
 	return validate.IsValidPhone(phone)
 }
 
-func isUserNotFound(err error) bool {
-	return errors.Is(err, domain.ErrUserNotFound)
-}
-
-func (s *AuthService) registerUser(ctx context.Context, phone string) (*domain.User, error) {
-	user, err := s.createUser(ctx, phone)
-	if err == nil {
-		return user, nil
-	}
-
-	// Possible race condition: user may have been created by another goroutine.
-	// Attempt to retrieve the user. If successful, proceed; otherwise return original error.
-	if errors.Is(err, domain.ErrAlreadyExist) {
-		user, lookupErr := s.userRepo.GetByPhone(ctx, phone)
-		if lookupErr == nil {
-			return user, nil
-		}
-	}
-
-	return nil, err
-}
-
-func (s *AuthService) createUser(ctx context.Context, phone string) (*domain.User, error) {
-	guid, err := uuid.NewUUID()
-	if err != nil {
-		return nil, err
-	}
-	user := &domain.User{
-		GUID:     guid,
-		Phone:    phone,
-		IsActive: true,
-	}
-
-	if err = s.userRepo.Create(ctx, user); err != nil {
-		return nil, err
-	}
-
-	return user, nil
-}
-
 func (s *AuthService) FinalizeResetPasswordByOTP(
 	ctx context.Context, sign, newPassword string,
 ) error {
-	if err := validatePassword(newPassword); err != nil {
-		return err
-	}
-
 	userUUID, err := s.sessionService.ValidateResetToken(ctx, sign)
 	if err != nil {
 		return err
 	}
 
 	return s.uow.Do(ctx, func(txCtx context.Context) error {
-		if err := s.userRepo.UpdatePassword(txCtx, userUUID, newPassword); err != nil {
+		if err := s.identityService.UpdatePassword(txCtx, userUUID, newPassword); err != nil {
 			return err
 		}
 
 		return s.sessionService.RevokeAllSessions(txCtx, userUUID)
 	})
-}
-
-func validatePassword(password string) error {
-	const (
-		minPassLength = 8
-		maxPassLength = 64
-	)
-
-	if len(password) < minPassLength || len(password) > maxPassLength {
-		return domain.ErrInvalidPassword
-	}
-
-	hasUpper := false
-	hasLower := false
-	hasDigit := false
-	hasSymbol := false
-
-	for _, r := range password {
-		switch {
-		case unicode.IsUpper(r):
-			hasUpper = true
-		case unicode.IsLower(r):
-			hasLower = true
-		case unicode.IsDigit(r):
-			hasDigit = true
-		case unicode.IsPunct(r) || unicode.IsSymbol(r):
-			hasSymbol = true
-		}
-	}
-
-	if !hasUpper || !hasLower || !hasDigit || !hasSymbol {
-		return domain.ErrInvalidPassword
-	}
-
-	return nil
 }
