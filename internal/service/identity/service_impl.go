@@ -23,8 +23,16 @@ func (s *identityService) GetByPhone(ctx context.Context, phone string) (*domain
 	return s.userRepo.GetByPhone(ctx, phone)
 }
 
-func (s *identityService) ExistsByPhone(ctx context.Context, phone string) (bool, error) {
-	return s.userRepo.ExistsByPhone(ctx, phone)
+func (s *identityService) HasPassword(ctx context.Context, phone string) (bool, error) {
+	user, err := s.GetByPhone(ctx, phone)
+	if err != nil {
+		if errors.Is(err, domain.ErrUserNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return user.IsActive && user.IsPasswordSet(), nil
 }
 
 func (s *identityService) GetOrCreateUser(ctx context.Context, phone string) (*domain.User, error) {

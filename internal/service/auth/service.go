@@ -118,12 +118,12 @@ func (s *AuthService) RequestResetPasswordByOTP(
 		return "", err
 	}
 
-	userExists, err := s.identityService.ExistsByPhone(ctx, phone)
+	hasPassword, err := s.identityService.HasPassword(ctx, phone)
 	if err != nil {
 		return "", err
 	}
 
-	return s.otpService.RequestOTP(ctx, phone, resetPassPurpose, userExists)
+	return s.otpService.RequestOTP(ctx, phone, resetPassPurpose, hasPassword)
 }
 
 func (s *AuthService) VerifyResetPasswordByOTP(
