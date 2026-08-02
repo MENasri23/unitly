@@ -20,6 +20,10 @@ type User struct {
 	CreatedAt      time.Time
 }
 
+func (u *User) IsPasswordSet() bool {
+	return u.HashedPassword != nil && *u.HashedPassword != ""
+}
+
 type UserRepository interface {
 	Create(ctx context.Context, user *User) error
 	GetByID(ctx context.Context, userID int64) (*User, error)
