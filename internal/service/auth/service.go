@@ -145,12 +145,8 @@ func (s *AuthService) RequestResetPasswordByOTP(
 		return "", err
 	}
 
-	_, err := s.userRepo.GetActiveUserIDByPhone(ctx, phone)
-	userExists := err == nil
-
-	// If the phone is not associated with an active user, do not reveal that fact.
-	// Create an OTP record so timing/behaviour is consistent, but do not send an SMS.
-	if err != nil && !isUserNotFound(err) {
+	userExists, err := s.userRepo.ExistsByPhone(ctx, phone)
+	if err != nil {
 		return "", err
 	}
 

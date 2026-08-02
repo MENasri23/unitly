@@ -112,28 +112,6 @@ func (u *userRepository) getBy(ctx context.Context, column string, value any) (*
 	return &user, nil
 }
 
-func (u *userRepository) GetUserIDByPhone(ctx context.Context, phone string) (int64, error) {
-	return u.getUserIDBy(ctx, phone, false)
-}
-
-func (u *userRepository) GetActiveUserIDByPhone(ctx context.Context, phone string) (int64, error) {
-	return u.getUserIDBy(ctx, phone, true)
-}
-
-func (u *userRepository) getUserIDBy(ctx context.Context, phone string, isActive bool) (int64, error) {
-	query := "SELECT id from users WHERE phone = $1 AND active = $2"
-
-	querier := u.getQuerier(ctx)
-
-	var userID int64
-	err := querier.QueryRow(ctx, query, phone, isActive).Scan(&userID)
-	if err != nil {
-		return -1, mapDBError(err)
-	}
-
-	return userID, nil
-}
-
 const updateUserPassword = `
 UPDATE users 
 SET password_hash = $1 
@@ -154,6 +132,24 @@ func (u *userRepository) UpdatePassword(ctx context.Context, userGUID uuid.UUID,
 	}
 
 	return nil
+}
+
+const existsUserByPhone = `
+SELECT EXISTS(
+    SELECT 1 FROM users WHERE phone = $1
+)
+`
+
+func (u *userRepository) ExistsByPhone(ctx context.Context, phone string) (bool, error) {
+	querier := u.getQuerier(ctx)
+
+	var exists bool
+	err := querier.QueryRow(ctx, existsUserByPhone, phone).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
 }
 
 func mapDBError(err error) error {
