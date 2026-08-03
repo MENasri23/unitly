@@ -31,4 +31,5 @@ type UserRepository interface {
 	GetByGUID(ctx context.Context, guid uuid.UUID) (*User, error)
 	ExistsByPhone(ctx context.Context, phone string) (bool, error)
 	UpdatePassword(ctx context.Context, userGUID uuid.UUID, password string) error
+	UpdateFullName(ctx context.Context, user *User) error
 }

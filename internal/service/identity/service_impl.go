@@ -1,8 +1,9 @@
-package identitysvc
+package identity
 
 import (
 	"context"
 	"errors"
+	"strings"
 	"unicode"
 	"unitly/internal/domain"
 	"unitly/internal/util/eql"
@@ -113,4 +114,29 @@ func (s *identityService) validatePasswordComplexity(password string) error {
 	}
 
 	return nil
+}
+
+func (s *identityService) UpdateFullName(ctx context.Context, user *domain.User) error {
+	trimString(user.FirstName)
+	trimString(user.LastName)
+
+	if isFullNameMissing(user) {
+		return ErrEmptyFullName
+	}
+
+	return s.userRepo.UpdateFullName(ctx, user)
+}
+
+func trimString(s *string) {
+	if s != nil {
+		*s = strings.TrimSpace(*s)
+	}
+}
+
+func isFullNameMissing(user *domain.User) bool {
+	return isEmpty(user.FirstName) && isEmpty(user.LastName)
+}
+
+func isEmpty(s *string) bool {
+	return s == nil || *s == ""
 }

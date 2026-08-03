@@ -1,10 +1,13 @@
-package identitysvc
+package identity
 
 import (
 	"context"
-	"github.com/google/uuid"
 	"unitly/internal/domain"
+
+	"github.com/google/uuid"
 )
+
+var ErrEmptyFullName = domain.NewError("EMPTY_FULLNAME", "first name and last name cannot both be empty")
 
 // IdentityService manages user accounts, credentials, and profile state.
 type IdentityService interface {
@@ -15,4 +18,5 @@ type IdentityService interface {
 	Authenticate(ctx context.Context, phone, password string) (*domain.User, error)
 
 	UpdatePassword(ctx context.Context, userID uuid.UUID, newPassword string) error
+	UpdateFullName(ctx context.Context, user *domain.User) error
 }

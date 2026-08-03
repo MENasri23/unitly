@@ -152,6 +152,28 @@ func (u *userRepository) ExistsByPhone(ctx context.Context, phone string) (bool,
 	return exists, nil
 }
 
+const updateUserFullName = `
+UPDATE users
+SET
+    first_name = COALESCE(NULLIF($1, ''), first_name),
+    last_name  = COALESCE(NULLIF($2, ''), last_name)
+WHERE id = $3
+`
+
+func (u *userRepository) UpdateFullName(ctx context.Context, user *domain.User) error {
+	querier := u.getQuerier(ctx)
+	cmdTag, err := querier.Exec(ctx, updateUserFullName, user.FirstName, user.LastName, user.ID)
+	if err != nil {
+		return err
+	}
+
+	if cmdTag.RowsAffected() == 0 {
+		return domain.ErrUserNotFound
+	}
+
+	return nil
+}
+
 func mapDBError(err error) error {
 	if err == nil {
 		return nil

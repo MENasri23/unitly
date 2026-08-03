@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 	"unitly/internal/domain"
+	"unitly/internal/service/identity"
 )
 
 var errToStatusCode = map[error]int{
@@ -14,6 +15,7 @@ var errToStatusCode = map[error]int{
 	domain.ErrInvalidToken:       http.StatusUnauthorized,
 	domain.ErrInvalidPhone:       http.StatusBadRequest,
 	domain.ErrInvalidCredentials: http.StatusUnauthorized,
+	identity.ErrEmptyFullName:    http.StatusBadRequest,
 
 	domain.ErrRateLimit:      http.StatusTooManyRequests,
 	domain.ErrOTPAlreadyUsed: http.StatusBadRequest,

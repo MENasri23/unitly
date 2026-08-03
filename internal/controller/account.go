@@ -3,10 +3,12 @@ package controller
 import (
 	"net/http"
 	"time"
+	"unitly/internal/controller/middleware"
 	"unitly/internal/domain"
 	apphttp "unitly/internal/http"
 	"unitly/internal/log"
 	"unitly/internal/service/auth"
+	"unitly/internal/service/identity"
 	"unitly/pkg/jsonutil"
 
 	"github.com/go-chi/chi/v5"
@@ -14,6 +16,7 @@ import (
 
 type AccountController struct {
 	authSvc            *auth.AuthService
+	identitySvc        identity.IdentityService
 	logger             log.Logger
 	refreshTokenExpiry time.Duration
 	accessTokenExpiry  time.Duration
@@ -39,6 +42,11 @@ type finalizeResetPasswordRequest struct {
 	NewPassword string `json:"password" validate:"required,min=8,max=64"`
 }
 
+type updateFullNameRequest struct {
+	FirstName *string `json:"first-name" validate:"omitzero,profile_name"`
+	LastName  *string `json:"last-name" validate:"omitzero,profile_name"`
+}
+
 type refreshRequest struct {
 	RefreshToken string `json:"refresh-token" validate:"required,base64rawurl,max=256"`
 }
@@ -50,6 +58,7 @@ type TokensDTO struct {
 
 func NewAccountController(
 	authSvc *auth.AuthService,
+	identitySvc identity.IdentityService,
 	logger log.Logger,
 	refreshTokenExpiry time.Duration,
 	accessTokenExpiry time.Duration,
@@ -57,6 +66,7 @@ func NewAccountController(
 ) *AccountController {
 	return &AccountController{
 		authSvc:            authSvc,
+		identitySvc:        identitySvc,
 		logger:             logger,
 		refreshTokenExpiry: refreshTokenExpiry,
 		accessTokenExpiry:  accessTokenExpiry,
@@ -293,9 +303,34 @@ func (c *AccountController) setRefreshTokenCookie(w http.ResponseWriter, refresh
 	})
 }
 
+func (c *AccountController) updateFullName(w http.ResponseWriter, r *http.Request) {
+	var req updateFullNameRequest
+	if err := jsonutil.ReadJSON(r, &req); err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err := validateStruct(&req); err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		return
+	}
+	user := middleware.GetUserFromCtx(r.Context())
+	user.FirstName = req.FirstName
+	user.LastName = req.LastName
+
+	if err := c.identitySvc.UpdateFullName(r.Context(), user); err != nil {
+		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func SetupAccountRoutes(
 	r chi.Router,
 	authService *auth.AuthService,
+	identityService identity.IdentityService,
+	authMiddleware *middleware.AuthMiddleware,
 	logger log.Logger,
 	refreshTokenExpiry time.Duration,
 	accessTokenExpiry time.Duration,
@@ -303,6 +338,7 @@ func SetupAccountRoutes(
 ) {
 	accountController := NewAccountController(
 		authService,
+		identityService,
 		logger,
 		refreshTokenExpiry,
 		accessTokenExpiry,
@@ -325,6 +361,11 @@ func SetupAccountRoutes(
 				r.Post("/verify", accountController.VerifyResetPasswordByOTP)
 				r.Post("/finalize", accountController.FinalizeResetPasswordByOTP)
 			})
+		})
+
+		r.Route("/profiles", func(r chi.Router) {
+			r.Use(authMiddleware.RequireAuth)
+			r.Patch("/change-fullname", accountController.updateFullName)
 		})
 
 	})

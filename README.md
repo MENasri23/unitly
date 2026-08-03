@@ -214,6 +214,34 @@ The HTTP API is mounted at `/api/v1`.
 - Success response: `true`
 - Behavior: validates the reset token, updates the user password, and revokes all sessions.
 
+#### Update Full Name
+
+- Method: `PATCH`
+- Path: `/api/v1/accounts/profiles/change-fullname`
+- Authentication: `Bearer <access-token>`
+- Request body:
+  ```json
+  {
+    "first_name": "John",
+    "last_name": "Doe"
+  }
+  ```
+
+  All fields are optional. Any field omitted or set to `null` or an empty string (`""`) is left unchanged.
+
+- Success response:
+  - Status: `204 No Content`
+  - Response body: *(empty)*
+
+- Validation:
+  - At least one of `first_name` or `last_name` must be provided.
+  - `first_name` must be 2–20 characters long.
+  - `last_name` must be 2–20 characters long.
+
+- Behavior:
+  - Updates only the provided fields.
+  - The authenticated user is identified from the access token.
+
 ## Request Validation
 
 The controller validates input using `go-playground/validator` and strict JSON decoding.

@@ -143,6 +143,8 @@ func main() {
 			controller.SetupAccountRoutes(
 				r,
 				authService,
+				identityService,
+				authMiddleware,
 				logger,
 				app.GetRefreshTokenExpiry(),
 				app.GetAccessTokenExpiry(),
