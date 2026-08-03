@@ -108,7 +108,7 @@ func (c *AccountController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Reque
 	if apphttp.IsWebPlatform(r) {
 		c.setAccessTokenCookie(w, result.AccessToken)
 		c.setRefreshTokenCookie(w, result.RefreshToken)
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
@@ -142,7 +142,7 @@ func (c *AccountController) AuthenticateByPassword(w http.ResponseWriter, r *htt
 	if apphttp.IsWebPlatform(r) {
 		c.setAccessTokenCookie(w, result.AccessToken)
 		c.setRefreshTokenCookie(w, result.RefreshToken)
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
@@ -255,7 +255,7 @@ func (c *AccountController) RefreshByToken(w http.ResponseWriter, r *http.Reques
 	if apphttp.IsWebPlatform(r) {
 		c.setAccessTokenCookie(w, result.AccessToken)
 		c.setRefreshTokenCookie(w, result.RefreshToken)
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
