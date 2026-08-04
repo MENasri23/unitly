@@ -9,7 +9,7 @@ import (
 )
 
 type FixedWindowLimiter struct {
-	client    domain.Cache
+	cache    domain.Cache
 	limit     int64
 	window    time.Duration
 	clock     domain.Clock
@@ -48,7 +48,7 @@ func NewFixedWindowLimiter(
 	}
 
 	return &FixedWindowLimiter{
-		client:    client,
+		cache:    client,
 		limit:     limit,
 		window:    window,
 		clock:     clock,
@@ -63,7 +63,7 @@ func (l *FixedWindowLimiter) Allow(ctx context.Context, key string) (bool, error
 	}
 
 	windowKey := l.formatWindowKey(key)
-	count, err := l.client.Incr(ctx, windowKey)
+	count, err := l.cache.Incr(ctx, windowKey)
 	if err != nil {
 		return false, fmt.Errorf("redis incr failed: %w", err)
 	}
@@ -71,7 +71,7 @@ func (l *FixedWindowLimiter) Allow(ctx context.Context, key string) (bool, error
 	if count == 1 {
 		// Add small buffer to prevent key expiring prematurely during micro clock drift
 		ttl := l.window + (2 * time.Second)
-		if _, err := l.client.Expire(ctx, windowKey, ttl); err != nil {
+		if _, err := l.cache.Expire(ctx, windowKey, ttl); err != nil {
 			return false, fmt.Errorf("redis expire failed: %w", err)
 		}
 	}
@@ -88,7 +88,7 @@ func (l *FixedWindowLimiter) Reset(ctx context.Context, key string) (bool, error
 
 	windowKey := l.formatWindowKey(key)
 
-	deleted, err := l.client.Delete(ctx, windowKey)
+	deleted, err := l.cache.Delete(ctx, windowKey)
 	if err != nil {
 		return false, fmt.Errorf("redis del failed: %w", err)
 	}
