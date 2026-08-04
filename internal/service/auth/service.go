@@ -48,6 +48,11 @@ func (s *AuthService) RequestAuthByOTP(ctx context.Context, phone string) (strin
 	if !validate.IsValidPhone(phone) {
 		return "", domain.ErrInvalidPhone
 	}
+
+	if err := s.otpService.EnsureAllowed(ctx, phone, authPurpose); err != nil {
+		return "", err
+	}
+
 	return s.otpService.RequestOTP(ctx, phone, authPurpose, true)
 }
 
