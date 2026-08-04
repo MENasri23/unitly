@@ -131,7 +131,12 @@ func (r *TokenBucketLimiter) Allow(ctx context.Context, key string) (bool, error
 		return false, fmt.Errorf("rate limiter script execution failed: %w", err)
 	}
 
-	return res == 1, nil
+	resInt, ok := res.(int64)
+	if !ok {
+		return false, fmt.Errorf("rate limiter script returned non-integer result: %T", res)
+	}
+
+	return resInt == 1, nil
 }
 
 // Reset clears the bucket state for a specific key in Redis.
