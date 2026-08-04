@@ -77,7 +77,11 @@ func main() {
 	sessionRepository := repository.NewSessionRepository(pgxDb)
 
 	// rate limiters
-	otpRateLimiter, err := ratelimit.DefaultFixedWindowLimiter(cache, 1, app.GetOtpRateLimit())
+	otpRateLimiter, err := ratelimit.NewTokenBucketLimiter(cache, ratelimit.Config{
+		Capacity: 1,
+		RefillRate: 1 / app.GetOtpRateLimit().Seconds(),
+		TTL: app.GetOtpRateLimit(),
+	})
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to create OTP rate limiter: %v", err))
 		return
