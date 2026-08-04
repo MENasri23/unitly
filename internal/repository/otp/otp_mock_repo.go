@@ -2,7 +2,6 @@ package otprepo
 
 import (
 	"context"
-	"unitly/internal/cache"
 	"unitly/internal/domain"
 )
 
@@ -10,7 +9,7 @@ type otpMockRepo struct {
 	originalRepo *otpRepository
 }
 
-func NewOTPMockRepo(cache *cache.Cache, secret string) domain.OTPRepository {
+func NewOTPMockRepo(cache domain.Cache, secret string) domain.OTPRepository {
 	return &otpMockRepo{
 		originalRepo: NewOtpRepository(cache, secret).(*otpRepository),
 	}

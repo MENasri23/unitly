@@ -3,15 +3,15 @@ package otprepo
 import (
 	"context"
 	"time"
-	"unitly/internal/cache"
+	"unitly/internal/domain"
 )
 
 type OtpRateLimiter struct {
-	catch  *cache.Cache
+	catch  domain.Cache
 	window time.Duration
 }
 
-func NewOtpRateLimiter(catch *cache.Cache, window time.Duration) *OtpRateLimiter {
+func NewOtpRateLimiter(catch domain.Cache, window time.Duration) *OtpRateLimiter {
 	return &OtpRateLimiter{
 		catch:  catch,
 		window: window,

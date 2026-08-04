@@ -187,7 +187,7 @@ func newPostgresDB(app *bootstrap.Application) (*pgxpool.Pool, error) {
 	)
 }
 
-func newCacheClient(app *bootstrap.Application) (*cache.Cache, error) {
+func newCacheClient(app *bootstrap.Application) (domain.Cache, error) {
 	return cache.Default(
 		app.GetCacheAddress(),
 		app.GetCacheUsername(),
@@ -196,7 +196,7 @@ func newCacheClient(app *bootstrap.Application) (*cache.Cache, error) {
 	)
 }
 
-func newOtpRepository(app *bootstrap.Application, cache *cache.Cache) domain.OTPRepository {
+func newOtpRepository(app *bootstrap.Application, cache domain.Cache) domain.OTPRepository {
 	var otpRepo domain.OTPRepository
 	if app.DebugMode() {
 		otpRepo = otprepo.NewOTPMockRepo(cache, app.GetOtpSecret())

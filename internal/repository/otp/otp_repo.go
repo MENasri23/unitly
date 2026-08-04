@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"time"
-	"unitly/internal/cache"
 	"unitly/internal/domain"
 	"unitly/internal/util/eql"
 	"unitly/internal/util/hash"
@@ -19,11 +18,11 @@ var (
 )
 
 type otpRepository struct {
-	cache      *cache.Cache
+	cache      domain.Cache
 	hmacSecret []byte
 }
 
-func NewOtpRepository(cache *cache.Cache, secret string) domain.OTPRepository {
+func NewOtpRepository(cache domain.Cache, secret string) domain.OTPRepository {
 	return &otpRepository{
 		cache:      cache,
 		hmacSecret: []byte(secret),
@@ -58,7 +57,7 @@ func (o *otpRepository) storeOTP(ctx context.Context, req *domain.CreateOTPReq, 
 	tokenHash := hash.SHA256(req.Token)
 	sessionKey := sessionKey(tokenHash, req.Purpose)
 
-	pipe := o.cache.Client.TxPipeline()
+	pipe := o.cache.TxPipeline()
 	pipe.HSet(
 		ctx,
 		sessionKey,
@@ -66,7 +65,7 @@ func (o *otpRepository) storeOTP(ctx context.Context, req *domain.CreateOTPReq, 
 	)
 	pipe.Expire(ctx, sessionKey, otpExpiry)
 
-	if _, err := pipe.Exec(ctx); err != nil {
+	if err := pipe.Exec(ctx); err != nil {
 		log.Printf("failed to create OTP session: %v", err)
 		return err
 	}

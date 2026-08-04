@@ -5,12 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"time"
-	"unitly/internal/cache"
 	"unitly/internal/domain"
 )
 
 type FixedWindowLimiter struct {
-	client    *cache.Cache
+	client    domain.Cache
 	limit     int64
 	window    time.Duration
 	clock     domain.Clock
@@ -18,7 +17,7 @@ type FixedWindowLimiter struct {
 }
 
 func DefaultFixedWindowLimiter(
-	client *cache.Cache,
+	client domain.Cache,
 	limit int64,
 	window time.Duration,
 ) (*FixedWindowLimiter, error) {
@@ -26,7 +25,7 @@ func DefaultFixedWindowLimiter(
 }
 
 func NewFixedWindowLimiter(
-	client *cache.Cache,
+	client domain.Cache,
 	limit int64,
 	window time.Duration,
 	clock domain.Clock,
