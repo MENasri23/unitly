@@ -12,6 +12,7 @@ import (
 	"unitly/internal/domain"
 	"unitly/internal/http/header"
 	"unitly/internal/log"
+	"unitly/internal/ratelimit"
 	"unitly/internal/repository"
 	otprepo "unitly/internal/repository/otp"
 	"unitly/internal/service/auth"
@@ -76,7 +77,11 @@ func main() {
 	sessionRepository := repository.NewSessionRepository(pgxDb)
 
 	// rate limiters
-	otpRateLimiter := otprepo.NewOtpRateLimiter(cache, app.GetOtpRateLimit())
+	otpRateLimiter, err := ratelimit.DefaultFixedWindowLimiter(cache, 1, app.GetOtpRateLimit())
+	if err != nil {
+		logger.Error(fmt.Sprintf("failed to create OTP rate limiter: %v", err))
+		return
+	}
 
 	txManager := db.NewSqlTxManager(pgxDb)
 
