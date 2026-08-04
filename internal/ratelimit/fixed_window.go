@@ -9,7 +9,7 @@ import (
 )
 
 type FixedWindowLimiter struct {
-	cache    domain.Cache
+	cache     domain.Cache
 	limit     int64
 	window    time.Duration
 	clock     domain.Clock
@@ -17,22 +17,22 @@ type FixedWindowLimiter struct {
 }
 
 func DefaultFixedWindowLimiter(
-	client domain.Cache,
+	cache domain.Cache,
 	limit int64,
 	window time.Duration,
 ) (*FixedWindowLimiter, error) {
-	return NewFixedWindowLimiter(client, limit, window, nil, "")
+	return NewFixedWindowLimiter(cache, limit, window, nil, "")
 }
 
 func NewFixedWindowLimiter(
-	client domain.Cache,
+	cache domain.Cache,
 	limit int64,
 	window time.Duration,
 	clock domain.Clock,
 	keyPrefix string,
 ) (*FixedWindowLimiter, error) {
-	if client == nil {
-		return nil, errors.New("redis client cannot be nil")
+	if cache == nil {
+		return nil, errors.New("cache client cannot be nil")
 	}
 	if limit <= 0 {
 		return nil, errors.New("limit must be greater than 0")
@@ -48,7 +48,7 @@ func NewFixedWindowLimiter(
 	}
 
 	return &FixedWindowLimiter{
-		cache:    client,
+		cache:     cache,
 		limit:     limit,
 		window:    window,
 		clock:     clock,
@@ -62,17 +62,25 @@ func (l *FixedWindowLimiter) Allow(ctx context.Context, key string) (bool, error
 		return false, errors.New("key cannot be empty")
 	}
 
-	windowKey := l.formatWindowKey(key)
+	now := l.clock.Now()
+	windowKey := l.formatWindowKeyAt(key, now)
+
 	count, err := l.cache.Incr(ctx, windowKey)
 	if err != nil {
-		return false, fmt.Errorf("redis incr failed: %w", err)
+		return false, fmt.Errorf("cache incr failed: %w", err)
 	}
 
 	if count == 1 {
-		// Add small buffer to prevent key expiring prematurely during micro clock drift
-		ttl := l.window + (2 * time.Second)
+		// Calculate remaining time in the window + clock drift buffer
+		windowStart := now.Truncate(l.window)
+		windowEnd := windowStart.Add(l.window)
+		ttl := windowEnd.Sub(now) + (2 * time.Second)
+
 		if _, err := l.cache.Expire(ctx, windowKey, ttl); err != nil {
-			return false, fmt.Errorf("redis expire failed: %w", err)
+			// Best-effort cleanup using background context so context cancellation
+			// does not leave a key leaking permanently without a TTL.
+			_, _ = l.cache.Delete(context.Background(), windowKey)
+			return false, fmt.Errorf("cache expire failed: %w", err)
 		}
 	}
 
@@ -80,25 +88,30 @@ func (l *FixedWindowLimiter) Allow(ctx context.Context, key string) (bool, error
 }
 
 // Reset clears the current window for the key.
-// Returns true if the key was actively tracked and cleared (Option A).
+// Returns true if the key was actively tracked and cleared.
 func (l *FixedWindowLimiter) Reset(ctx context.Context, key string) (bool, error) {
 	if key == "" {
 		return false, errors.New("key cannot be empty")
 	}
 
-	windowKey := l.formatWindowKey(key)
+	now := l.clock.Now()
+	windowKey := l.formatWindowKeyAt(key, now)
 
 	deleted, err := l.cache.Delete(ctx, windowKey)
 	if err != nil {
-		return false, fmt.Errorf("redis del failed: %w", err)
+		return false, fmt.Errorf("cache del failed: %w", err)
 	}
 
 	return deleted, nil
 }
 
-// formatWindowKey truncates current time to window boundaries to construct a deterministic key:
-// e.g., "rl:otp:user_123:1700000000"
+// formatWindowKey truncates current time to window boundaries to construct a deterministic key.
 func (l *FixedWindowLimiter) formatWindowKey(key string) string {
-	now := l.clock.Now().Truncate(l.window)
-	return fmt.Sprintf("%s:%s:%d", l.keyPrefix, key, now.Unix())
+	return l.formatWindowKeyAt(key, l.clock.Now())
+}
+
+// formatWindowKeyAt constructs the deterministic window key for a explicit timestamp.
+func (l *FixedWindowLimiter) formatWindowKeyAt(key string, now time.Time) string {
+	windowStart := now.Truncate(l.window)
+	return fmt.Sprintf("%s:%s:%d", l.keyPrefix, key, windowStart.Unix())
 }
