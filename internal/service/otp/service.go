@@ -65,7 +65,7 @@ func (s *otpService) RequestOTP(ctx context.Context, phone string, purpose domai
 }
 
 func ratelimitKey(phone string, purpose domain.OTPPurpose) string {
-	return fmt.Sprintf("auth:%s:otp:ratelimit:%s", purpose, phone)
+	return fmt.Sprintf("auth:%s:otp:%s", purpose, phone)
 }
 
 func (s *otpService) VerifyOTP(ctx context.Context, token, inputOTP string, purpose domain.OTPPurpose) (string, error) {
