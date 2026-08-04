@@ -105,3 +105,7 @@ func (c *Cache) GetMap(ctx context.Context, key string) (map[string]string, erro
 func (c *Cache) HIncrBy(ctx context.Context, key, field string, increment int64) (int64, error) {
 	return c.Client.HIncrBy(ctx, key, field, increment).Result()
 }
+
+func (c *Cache) Expire(ctx context.Context, key string, expiration time.Duration) (bool, error) {
+	return c.Client.Expire(ctx, key, expiration).Result()
+}
