@@ -6,8 +6,6 @@ import (
 	"math"
 	"time"
 	"unitly/internal/domain"
-
-	"github.com/redis/go-redis/v9"
 )
 
 // Config defines the rate limiter settings.
@@ -31,13 +29,13 @@ type Config struct {
 
 // TokenBucketLimiter implements RateLimiter using Redis and Lua.
 type TokenBucketLimiter struct {
-	client    redis.Cmdable
-	cfg       Config
-	luaScript *redis.Script
+	cache  domain.Cache
+	cfg    Config
+	script *domain.Script
 }
 
 // Atomic Lua Script for Token Bucket Calculation
-const tokenBucketScript = `
+const LuaScriptSrc = `	
 local key = KEYS[1]
 local capacity = tonumber(ARGV[1])
 local refill_rate = tonumber(ARGV[2]) -- Tokens per millisecond
@@ -79,8 +77,8 @@ return allowed
 `
 
 // NewTokenBucketLimiter initializes and validates the rate limiter.
-func NewTokenBucketLimiter(client redis.Cmdable, cfg Config) (*TokenBucketLimiter, error) {
-	if client == nil {
+func NewTokenBucketLimiter(cache domain.Cache, cfg Config) (*TokenBucketLimiter, error) {
+	if cache == nil {
 		return nil, fmt.Errorf("redis client cannot be nil")
 	}
 	if cfg.Capacity <= 0 {
@@ -109,9 +107,9 @@ func NewTokenBucketLimiter(client redis.Cmdable, cfg Config) (*TokenBucketLimite
 	}
 
 	return &TokenBucketLimiter{
-		client:    client,
-		cfg:       cfg,
-		luaScript: redis.NewScript(tokenBucketScript),
+		cache:  cache,
+		cfg:    cfg,
+		script: domain.NewScript(LuaScriptSrc),
 	}, nil
 }
 
@@ -122,14 +120,13 @@ func (r *TokenBucketLimiter) Allow(ctx context.Context, key string) (bool, error
 	refillPerMs := r.cfg.RefillRate / 1000.0
 	ttlSeconds := int64(r.cfg.TTL.Seconds())
 
-	res, err := r.luaScript.Run(ctx, r.client, []string{fullKey},
+	res, err := r.cache.RunScript(ctx, r.script, []string{fullKey},
 		r.cfg.Capacity,
 		refillPerMs,
 		1, // Consume 1 token per request
 		nowMs,
 		ttlSeconds,
-	).Int()
-
+	)
 	if err != nil {
 		return false, fmt.Errorf("rate limiter script execution failed: %w", err)
 	}
@@ -140,10 +137,10 @@ func (r *TokenBucketLimiter) Allow(ctx context.Context, key string) (bool, error
 // Reset clears the bucket state for a specific key in Redis.
 func (r *TokenBucketLimiter) Reset(ctx context.Context, key string) (bool, error) {
 	fullKey := r.cfg.KeyPrefix + key
-	deleted, err := r.client.Del(ctx, fullKey).Result()
+	deleted, err := r.cache.Delete(ctx, fullKey)
 	if err != nil {
 		return false, fmt.Errorf("failed to reset rate limit key %s: %w", fullKey, err)
 	}
 
-	return deleted > 0, nil
+	return deleted, nil
 }
