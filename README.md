@@ -217,7 +217,7 @@ The HTTP API is mounted at `/api/v1`.
 #### Update Full Name
 
 - Method: `PATCH`
-- Path: `/api/v1/profiles/change-fullname`
+- Path: `/api/v1/profiles/change-name`
 - Authentication: `Bearer <access-token>`
 - Request body:
   ```json

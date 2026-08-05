@@ -60,6 +60,6 @@ func SetupProfileRoutes(
 
 	r.Route("/profiles", func(r chi.Router) {
 		r.Use(authMiddleware.RequireAuth)
-		r.Patch("/change-fullname", controller.updateFullName)
+		r.Patch("/change-name", controller.updateFullName)
 	})
 }
