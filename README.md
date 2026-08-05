@@ -217,7 +217,7 @@ The HTTP API is mounted at `/api/v1`.
 #### Update Full Name
 
 - Method: `PATCH`
-- Path: `/api/v1/accounts/profiles/change-fullname`
+- Path: `/api/v1/profiles/change-fullname`
 - Authentication: `Bearer <access-token>`
 - Request body:
   ```json
@@ -280,6 +280,7 @@ Example:
 - `INVALID_TOKEN` — invalid or expired JWT / reset token
 - `VALIDATION_ERROR` — request validation failed
 - `INVALID_JSON` — malformed JSON request
+- `EMPTY_FULLNAME` - both first name and last name are empty
 - `INTERNAL` — generic server error
 
 ### HTTP status codes

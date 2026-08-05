@@ -160,6 +160,14 @@ func main() {
 				app.DebugMode(),
 			)
 
+			controller.SetupProfileRoutes(
+				r,
+				authService,
+				identityService,
+				authMiddleware,
+				logger,
+			)
+
 			r.Group(func(r chi.Router) {
 				r.Use(authMiddleware.RequireAuth)
 				r.Get("/healthcheck", controller.HealthCheck)
