@@ -6,6 +6,7 @@ import (
 	"unitly/internal/cache"
 	"unitly/internal/db"
 	otpsvc "unitly/internal/service/otp"
+	"unitly/internal/service/sms"
 	"unitly/internal/token"
 )
 
@@ -21,7 +22,7 @@ type config struct {
 	cache             *cache.CacheConfig
 	token             *token.TokenConfig
 	otp               *otpsvc.OtpConfig
-	sms               *smsConfig
+	sms               *sms.SmsConfig
 }
 
 func newConfig(env *Env) *config {
@@ -80,13 +81,8 @@ func newTokenConfig(env *Env) *token.TokenConfig {
 	}
 }
 
-type smsConfig struct {
-	Username string
-	ApiKey   string
-}
-
-func newSmsConfig(env *Env) *smsConfig {
-	return &smsConfig{
+func newSmsConfig(env *Env) *sms.SmsConfig {
+	return &sms.SmsConfig{
 		Username: env.SmsUsername,
 		ApiKey:   env.SmsApiKey,
 	}
