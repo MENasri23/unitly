@@ -2,8 +2,8 @@ package bootstrap
 
 import (
 	"fmt"
-	"strings"
 	"time"
+	"unitly/internal/db"
 )
 
 type config struct {
@@ -14,7 +14,7 @@ type config struct {
 	ReadHeaderTimeout time.Duration
 	IdleTimeout       time.Duration
 	AllowedOrigins    []string
-	db                *dbConfig
+	db                *db.DBConfig
 	cache             *cacheConfig
 	token             *tokenConfig
 	otp               *otpConfig
@@ -52,13 +52,13 @@ type dbConfig struct {
 	Args     Args
 }
 
-func newDbConfig(env *Env) *dbConfig {
-	args := Args{}
+func newDbConfig(env *Env) *db.DBConfig {
+	args := db.Args{}
 	if env.AppEnv == Development {
 		args["sslmode"] = "disable"
 	}
 
-	return &dbConfig{
+	return &db.DBConfig{
 		Driver:   "postgres",
 		Name:     env.DBName,
 		Host:     env.DBHost,
@@ -67,52 +67,6 @@ func newDbConfig(env *Env) *dbConfig {
 		Password: env.DBPass,
 		Args:     args,
 	}
-}
-
-func (c *dbConfig) GetURL() string {
-	var sb strings.Builder
-
-	sb.WriteString(c.Driver)
-	sb.WriteString("://")
-
-	if len(c.Username) > 0 || len(c.Password) > 0 {
-		sb.WriteString(c.Username)
-		if len(c.Password) > 0 {
-			sb.WriteRune(':')
-			sb.WriteString(c.Password)
-		}
-		sb.WriteRune('@')
-	}
-
-	sb.WriteString(c.Host)
-
-	if len(c.Port) > 0 {
-		sb.WriteRune(':')
-		sb.WriteString(c.Port)
-	}
-
-	sb.WriteRune('/')
-	sb.WriteString(c.Name)
-
-	if len(c.Args) > 0 {
-		sb.WriteRune('?')
-		first := true
-		for key, val := range c.Args {
-			if !first {
-				sb.WriteRune('&')
-			}
-
-			sb.WriteString(key)
-			sb.WriteRune('=')
-			sb.WriteString(val)
-
-			if first {
-				first = false
-			}
-		}
-	}
-
-	return sb.String()
 }
 
 type cacheConfig struct {
