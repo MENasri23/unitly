@@ -2,10 +2,10 @@ package token
 
 import (
 	"crypto/rand"
-	"encoding/base64"
+	"encoding/hex"
 )
 
-const defaultTokenBytes = 48
+const defaultTokenBytes = 32
 
 func GenerateDefaultToken() (string, error) {
 	return GenerateToken(defaultTokenBytes)
@@ -16,5 +16,5 @@ func GenerateToken(nBytes int) (string, error) {
 	if _, err := rand.Read(b); err != nil {
 		return "", err
 	}
-	return base64.RawURLEncoding.EncodeToString(b), nil
+	return hex.EncodeToString(b), nil
 }
