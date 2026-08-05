@@ -1,4 +1,4 @@
-package rand
+package token
 
 import (
 	"crypto/rand"
@@ -7,7 +7,7 @@ import (
 
 const defaultTokenBytes = 48
 
-func GenereteDefaultToken() (string, error) {
+func GenerateDefaultToken() (string, error) {
 	return GenerateToken(defaultTokenBytes)
 }
 

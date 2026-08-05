@@ -5,6 +5,7 @@ import (
 	"time"
 	"unitly/internal/cache"
 	"unitly/internal/db"
+	"unitly/internal/token"
 )
 
 type config struct {
@@ -17,7 +18,7 @@ type config struct {
 	AllowedOrigins    []string
 	db                *db.DBConfig
 	cache             *cache.CacheConfig
-	token             *tokenConfig
+	token             *token.TokenConfig
 	otp               *otpConfig
 }
 
@@ -67,19 +68,12 @@ func newCacheConfig(env *Env) *cache.CacheConfig {
 	}
 }
 
-type tokenConfig struct {
-	accessTokenSecret        string
-	accessTokenExpiry        time.Duration
-	refreshTokenExpiry       time.Duration
-	resetPasswordTokenExpiry time.Duration
-}
-
-func newTokenConfig(env *Env) *tokenConfig {
-	return &tokenConfig{
-		accessTokenSecret:        env.AccessTokenSecret,
-		accessTokenExpiry:        env.AccessTokenExpiry,
-		refreshTokenExpiry:       env.RefreshTokenExpiry,
-		resetPasswordTokenExpiry: env.ResetPasswordTokenExpiry,
+func newTokenConfig(env *Env) *token.TokenConfig {
+	return &token.TokenConfig{
+		AccessTokenSecret:        env.AccessTokenSecret,
+		AccessTokenExpiry:        env.AccessTokenExpiry,
+		RefreshTokenExpiry:       env.RefreshTokenExpiry,
+		ResetPasswordTokenExpiry: env.ResetPasswordTokenExpiry,
 	}
 }
 

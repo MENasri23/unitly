@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"unitly/internal/domain"
-	"unitly/internal/util/rand"
+	"unitly/internal/token"
 )
 
 type otpService struct {
@@ -31,7 +31,7 @@ func (s *otpService) EnsureAllowed(ctx context.Context, phone string, purpose do
 	if err != nil || blocked {
 		return domain.ErrTooManyAttempts
 	}
-	
+
 	key := ratelimitKey(phone, purpose)
 	allowed, err := s.otpRateLimiter.Allow(ctx, key)
 	if err != nil || !allowed {
@@ -42,7 +42,7 @@ func (s *otpService) EnsureAllowed(ctx context.Context, phone string, purpose do
 }
 
 func (s *otpService) RequestOTP(ctx context.Context, phone string, purpose domain.OTPPurpose, executeDelivery bool) (string, error) {
-	token, err := rand.GenereteDefaultToken()
+	token, err := token.GenerateDefaultToken()
 	if err != nil {
 		return "", err
 	}

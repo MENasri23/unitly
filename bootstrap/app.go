@@ -45,19 +45,19 @@ func (app *Application) GetCachePassword() string {
 }
 
 func (app *Application) GetAccessTokenSecret() string {
-	return app.config.token.accessTokenSecret
+	return app.config.token.AccessTokenSecret
 }
 
 func (app *Application) GetAccessTokenExpiry() time.Duration {
-	return app.config.token.accessTokenExpiry
+	return app.config.token.AccessTokenExpiry
 }
 
 func (app *Application) GetRefreshTokenExpiry() time.Duration {
-	return app.config.token.refreshTokenExpiry
+	return app.config.token.RefreshTokenExpiry
 }
 
 func (app *Application) GetResetPasswordTokenExpiry() time.Duration {
-	expiry := app.config.token.resetPasswordTokenExpiry
+	expiry := app.config.token.ResetPasswordTokenExpiry
 	if expiry == 0 {
 		return 5 * time.Minute
 	}

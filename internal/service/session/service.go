@@ -5,10 +5,11 @@ import (
 	"errors"
 	"time"
 
-	"github.com/google/uuid"
 	"unitly/internal/domain"
+	"unitly/internal/token"
 	"unitly/internal/util/hash"
-	"unitly/internal/util/rand"
+
+	"github.com/google/uuid"
 )
 
 type sessionService struct {
@@ -39,7 +40,7 @@ func NewSessionService(
 }
 
 func (s *sessionService) CreateSession(ctx context.Context, userID uuid.UUID) (string, string, error) {
-	refreshToken, err := rand.GenereteDefaultToken()
+	refreshToken, err := token.GenerateDefaultToken()
 	if err != nil {
 		return "", "", err
 	}
@@ -96,7 +97,7 @@ func (s *sessionService) RefreshSession(ctx context.Context, oldRefreshToken str
 			return err
 		}
 
-		newRefreshToken, err = rand.GenereteDefaultToken()
+		newRefreshToken, err = token.GenerateDefaultToken()
 		if err != nil {
 			return err
 		}
