@@ -42,7 +42,6 @@ type Env struct {
 	RefreshTokenExpiry       time.Duration `mapstructure:"REFRESH_TOKEN_EXPIRY"`
 	ResetPasswordTokenExpiry time.Duration `mapstructure:"RESET_PASS_TOKEN_EXPIRY"`
 
-	OtpSecret     string        `mapstructure:"OTP_SECRET"`
 	OtpTemplateID string        `mapstructure:"OTP_TEMPLATE_ID"`
 	OtpRateLimit  time.Duration `mapstructure:"OTP_RATE_LIMIT"`
 

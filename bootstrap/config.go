@@ -94,7 +94,6 @@ func newSmsConfig(env *Env) *smsConfig {
 
 func newOtpConfig(env *Env) *otpsvc.OtpConfig {
 	return &otpsvc.OtpConfig{
-		Secret:    env.OtpSecret,
 		TempID:    env.OtpTemplateID,
 		RequestLimit: 1,
 		Window: env.OtpRateLimit,

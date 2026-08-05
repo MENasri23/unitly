@@ -79,9 +79,9 @@ func main() {
 	// rate limiters
 	otpCfg := app.GetOtpConfig()
 	otpRateLimiter, err := ratelimit.NewTokenBucketLimiter(cache, ratelimit.Config{
-		Capacity: float64(otpCfg.RequestLimit),
+		Capacity:   float64(otpCfg.RequestLimit),
 		RefillRate: float64(otpCfg.RequestLimit) / otpCfg.Window.Seconds(),
-		TTL: otpCfg.Window,
+		TTL:        otpCfg.Window,
 	})
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to create OTP rate limiter: %v", err))
@@ -217,9 +217,9 @@ func newCacheClient(app *bootstrap.Application) (domain.Cache, error) {
 func newOtpRepository(app *bootstrap.Application, cache domain.Cache) domain.OTPRepository {
 	var otpRepo domain.OTPRepository
 	if app.DebugMode() {
-		otpRepo = otprepo.NewOTPMockRepo(cache, app.GetOtpSecret())
+		otpRepo = otprepo.NewOTPMockRepo(cache)
 	} else {
-		otpRepo = otprepo.NewOtpRepository(cache, app.GetOtpSecret())
+		otpRepo = otprepo.NewOtpRepository(cache)
 	}
 
 	return otpRepo
@@ -233,7 +233,7 @@ func newSmsService(app *bootstrap.Application, logger log.Logger) domain.SmsServ
 	return sms.NewMeliPayamakService(
 		app.GetSmsUsername(),
 		app.GetSmsApiKey(),
-		app.GetOtpTemplateID(),
+		app.GetOtpConfig().TempID,
 		logger,
 	)
 }

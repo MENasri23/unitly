@@ -73,14 +73,6 @@ func (app *Application) GetSmsApiKey() string {
 	return app.config.sms.ApiKey
 }
 
-func (app *Application) GetOtpSecret() string {
-	return app.config.otp.Secret
-}
-
-func (app *Application) GetOtpTemplateID() string {
-	return app.config.otp.TempID
-}
-
 func (app *Application) GetOtpConfig() *otpsvc.OtpConfig {
 	return app.config.otp
 }

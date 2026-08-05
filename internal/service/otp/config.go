@@ -3,7 +3,6 @@ package otpsvc
 import "time"
 
 type OtpConfig struct {
-	Secret    string
 	TempID    string
 	// RequestLimit is the maximum number of OTP requests allowed in the Window
 	RequestLimit int64

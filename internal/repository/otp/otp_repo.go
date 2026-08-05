@@ -19,13 +19,11 @@ var (
 
 type otpRepository struct {
 	cache      domain.Cache
-	hmacSecret []byte
 }
 
-func NewOtpRepository(cache domain.Cache, secret string) domain.OTPRepository {
+func NewOtpRepository(cache domain.Cache) domain.OTPRepository {
 	return &otpRepository{
 		cache:      cache,
-		hmacSecret: []byte(secret),
 	}
 }
 

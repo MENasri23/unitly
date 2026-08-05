@@ -9,9 +9,9 @@ type otpMockRepo struct {
 	originalRepo *otpRepository
 }
 
-func NewOTPMockRepo(cache domain.Cache, secret string) domain.OTPRepository {
+func NewOTPMockRepo(cache domain.Cache) domain.OTPRepository {
 	return &otpMockRepo{
-		originalRepo: NewOtpRepository(cache, secret).(*otpRepository),
+		originalRepo: NewOtpRepository(cache).(*otpRepository),
 	}
 }
 
