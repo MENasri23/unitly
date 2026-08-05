@@ -20,6 +20,7 @@ type config struct {
 	cache             *cache.CacheConfig
 	token             *token.TokenConfig
 	otp               *otpConfig
+	sms               *smsConfig
 }
 
 func newConfig(env *Env) *config {
@@ -34,7 +35,8 @@ func newConfig(env *Env) *config {
 		db:                newDbConfig(env),
 		cache:             newCacheConfig(env),
 		token:             newTokenConfig(env),
-		otp:               newOtpConfig(env, newSmsConfig(env)),
+		otp:               newOtpConfig(env),
+		sms:               newSmsConfig(env),
 	}
 }
 
@@ -93,14 +95,12 @@ type otpConfig struct {
 	Secret    string
 	TempID    string
 	RateLimit time.Duration
-	SmsConfig *smsConfig
 }
 
-func newOtpConfig(env *Env, smsCfg *smsConfig) *otpConfig {
+func newOtpConfig(env *Env) *otpConfig {
 	return &otpConfig{
 		Secret:    env.OtpSecret,
 		TempID:    env.OtpTemplateID,
 		RateLimit: env.OtpRateLimit,
-		SmsConfig: smsCfg,
 	}
 }

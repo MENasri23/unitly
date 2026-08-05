@@ -65,11 +65,11 @@ func (app *Application) GetResetPasswordTokenExpiry() time.Duration {
 }
 
 func (app *Application) GetSmsUsername() string {
-	return app.config.otp.SmsConfig.Username
+	return app.config.sms.Username
 }
 
 func (app *Application) GetSmsApiKey() string {
-	return app.config.otp.SmsConfig.ApiKey
+	return app.config.sms.ApiKey
 }
 
 func (app *Application) GetOtpSecret() string {
