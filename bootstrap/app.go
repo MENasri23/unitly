@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"net/http"
 	"time"
+	otpsvc "unitly/internal/service/otp"
 )
 
 type Application struct {
@@ -80,8 +81,8 @@ func (app *Application) GetOtpTemplateID() string {
 	return app.config.otp.TempID
 }
 
-func (app *Application) GetOtpRateLimit() time.Duration {
-	return app.config.otp.RateLimit
+func (app *Application) GetOtpConfig() *otpsvc.OtpConfig {
+	return app.config.otp
 }
 
 func (app *Application) AllowedOrigins() []string {

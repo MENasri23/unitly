@@ -5,6 +5,7 @@ import (
 	"time"
 	"unitly/internal/cache"
 	"unitly/internal/db"
+	otpsvc "unitly/internal/service/otp"
 	"unitly/internal/token"
 )
 
@@ -19,7 +20,7 @@ type config struct {
 	db                *db.DBConfig
 	cache             *cache.CacheConfig
 	token             *token.TokenConfig
-	otp               *otpConfig
+	otp               *otpsvc.OtpConfig
 	sms               *smsConfig
 }
 
@@ -91,16 +92,11 @@ func newSmsConfig(env *Env) *smsConfig {
 	}
 }
 
-type otpConfig struct {
-	Secret    string
-	TempID    string
-	RateLimit time.Duration
-}
-
-func newOtpConfig(env *Env) *otpConfig {
-	return &otpConfig{
+func newOtpConfig(env *Env) *otpsvc.OtpConfig {
+	return &otpsvc.OtpConfig{
 		Secret:    env.OtpSecret,
 		TempID:    env.OtpTemplateID,
-		RateLimit: env.OtpRateLimit,
+		RequestLimit: 1,
+		Window: env.OtpRateLimit,
 	}
 }
