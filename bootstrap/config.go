@@ -40,18 +40,6 @@ func serverAddress(env *Env) string {
 	return fmt.Sprintf("%s:%s", env.ServerHost, env.ServerPort)
 }
 
-type Args map[string]string
-
-type dbConfig struct {
-	Name     string
-	Host     string
-	Port     string
-	Username string
-	Password string
-	Driver   string
-	Args     Args
-}
-
 func newDbConfig(env *Env) *db.DBConfig {
 	args := db.Args{}
 	if env.AppEnv == Development {
