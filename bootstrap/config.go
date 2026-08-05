@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"fmt"
 	"time"
+	"unitly/internal/cache"
 	"unitly/internal/db"
 )
 
@@ -15,7 +16,7 @@ type config struct {
 	IdleTimeout       time.Duration
 	AllowedOrigins    []string
 	db                *db.DBConfig
-	cache             *cacheConfig
+	cache             *cache.CacheConfig
 	token             *tokenConfig
 	otp               *otpConfig
 }
@@ -57,19 +58,8 @@ func newDbConfig(env *Env) *db.DBConfig {
 	}
 }
 
-type cacheConfig struct {
-	Host     string
-	Username string
-	Password string
-	Port     string
-}
-
-func (c *cacheConfig) GetAddress() string {
-	return fmt.Sprintf("%s:%s", c.Host, c.Port)
-}
-
-func newCacheConfig(env *Env) *cacheConfig {
-	return &cacheConfig{
+func newCacheConfig(env *Env) *cache.CacheConfig {
+	return &cache.CacheConfig{
 		Host:     env.RedisHost,
 		Port:     env.RedisPort,
 		Username: env.RedisUser,
