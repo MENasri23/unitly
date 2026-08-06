@@ -221,8 +221,8 @@ The HTTP API is mounted at `/api/v1`.
 - Request body:
   ```json
   {
-    "first_name": "John",
-    "last_name": "Doe"
+    "first-name": "John",
+    "last-name": "Doe"
   }
   ```
 
@@ -233,9 +233,9 @@ The HTTP API is mounted at `/api/v1`.
   - Response body: *(empty)*
 
 - Validation:
-  - At least one of `first_name` or `last_name` must be provided.
-  - `first_name` must be 2–20 characters long.
-  - `last_name` must be 2–20 characters long.
+  - At least one of `first-name` or `last-name` must be provided.
+  - `first-name` must be 2–20 characters long.
+  - `last-name` must be 2–20 characters long.
 
 - Behavior:
   - Updates only the provided fields.
