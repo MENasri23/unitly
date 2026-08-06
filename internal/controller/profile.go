@@ -22,6 +22,13 @@ type updateFullNameRequest struct {
 	LastName  *string `json:"last-name" validate:"omitzero,profile_name"`
 }
 
+type profileInfoDTO struct {
+	FirstName   *string `json:"first-name"`
+	LastName    *string `json:"last-name"`
+	HasPassword bool    `json:"has-password"`
+	Phone       string  `json:"phone"`
+}
+
 func (c *profileController) updateFullName(w http.ResponseWriter, r *http.Request) {
 	var req updateFullNameRequest
 	if err := jsonutil.ReadJSON(r, &req); err != nil {
@@ -45,6 +52,21 @@ func (c *profileController) updateFullName(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (c *profileController) getProfileInfo(w http.ResponseWriter, r *http.Request) {
+	user := middleware.GetUserFromCtx(r.Context())
+
+	dto := profileInfoDTO{
+		FirstName:   user.FirstName,
+		LastName:    user.LastName,
+		HasPassword: user.IsPasswordSet(),
+		Phone:       user.Phone,
+	}
+
+	if err := jsonutil.WriteJSON(w, http.StatusOK, dto); err != nil {
+		c.logger.Error("failed to write response", "error", err)
+	}
+}
+
 func SetupProfileRoutes(
 	r chi.Router,
 	authService *auth.AuthService,
@@ -60,6 +82,7 @@ func SetupProfileRoutes(
 
 	r.Route("/profiles", func(r chi.Router) {
 		r.Use(authMiddleware.RequireAuth)
+		r.Get("/info", controller.getProfileInfo)
 		r.Patch("/change-name", controller.updateFullName)
 	})
 }

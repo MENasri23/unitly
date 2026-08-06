@@ -241,6 +241,30 @@ The HTTP API is mounted at `/api/v1`.
   - Updates only the provided fields.
   - The authenticated user is identified from the access token.
 
+  #### Get Profile Info
+
+  - Method: `GET`
+  - Path: `/api/v1/profiles/info`
+  - Authentication: `Bearer <access-token>`
+  - Success response:
+    - Status: `200 OK`
+    - Response body:
+      ```json
+      {
+        "first-name": "John",      
+        "last-name": "Doe",
+        "has-password": true,
+        "phone": "+1234567890"
+      }
+      ```
+
+  - Behavior:
+    - Returns the authenticated user's profile information.
+    - `first-name` and `last-name` may be `null` if not set.
+    - `has-password` indicates whether a password is set for the account.
+
+
+
 ## Request Validation
 
 The controller validates input using `go-playground/validator` and strict JSON decoding.
