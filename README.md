@@ -221,8 +221,8 @@ The HTTP API is mounted at `/api/v1`.
 - Request body:
   ```json
   {
-    "first-name": "John",
-    "last-name": "Doe"
+    "first_name": "John",
+    "last_name": "Doe"
   }
   ```
 
@@ -233,9 +233,9 @@ The HTTP API is mounted at `/api/v1`.
   - Response body: *(empty)*
 
 - Validation:
-  - At least one of `first-name` or `last-name` must be provided.
-  - `first-name` must be 2–20 characters long.
-  - `last-name` must be 2–20 characters long.
+  - At least one of `first_name` or `last_name` must be provided.
+  - `first_name` must be 2–20 characters long.
+  - `last_name` must be 2–20 characters long.
 
 - Behavior:
   - Updates only the provided fields.
@@ -251,17 +251,17 @@ The HTTP API is mounted at `/api/v1`.
     - Response body:
       ```json
       {
-        "first-name": "John",      
-        "last-name": "Doe",
-        "has-password": true,
+        "first_name": "John",      
+        "last_name": "Doe",
+        "has_password": true,
         "phone": "+1234567890"
       }
       ```
 
   - Behavior:
     - Returns the authenticated user's profile information.
-    - `first-name` and `last-name` may be `null` if not set.
-    - `has-password` indicates whether a password is set for the account.
+    - `first_name` and `last_name` may be `null` if not set.
+    - `has_password` indicates whether a password is set for the account.
 
 
 

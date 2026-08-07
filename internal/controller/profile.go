@@ -18,14 +18,14 @@ type profileController struct {
 }
 
 type updateFullNameRequest struct {
-	FirstName *string `json:"first-name" validate:"omitzero,profile_name"`
-	LastName  *string `json:"last-name" validate:"omitzero,profile_name"`
+	FirstName *string `json:"first_name" validate:"omitzero,profile_name"`
+	LastName  *string `json:"last_name" validate:"omitzero,profile_name"`
 }
 
 type profileInfoDTO struct {
-	FirstName   *string `json:"first-name"`
-	LastName    *string `json:"last-name"`
-	HasPassword bool    `json:"has-password"`
+	FirstName   *string `json:"first_name"`
+	LastName    *string `json:"last_name"`
+	HasPassword bool    `json:"has_password"`
 	Phone       string  `json:"phone"`
 }
 
