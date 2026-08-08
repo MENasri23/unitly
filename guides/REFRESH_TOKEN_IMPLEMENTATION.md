@@ -1,16 +1,19 @@
 # Refresh Token Endpoint Implementation Summary
 
 ## Overview
+
 Implemented a complete token refresh endpoint that follows security best practices and integrates seamlessly with the existing authentication system.
 
 ## Endpoint Details
 
 ### Route
+
 ```
 POST /api/v1/accounts/auth/refresh
 ```
 
 ### Request
+
 ```json
 {
   "refresh-token": "<opaque-token>"
@@ -18,9 +21,11 @@ POST /api/v1/accounts/auth/refresh
 ```
 
 **Validation:**
+
 - `refresh-token`: Required, must be a valid base64url-encoded string
 
 ### Response (Success - 200 OK)
+
 ```json
 {
   "access-token": "<new-jwt-token>",
@@ -30,32 +35,36 @@ POST /api/v1/accounts/auth/refresh
 
 ### Error Responses
 
-| Status | Condition |
-|--------|-----------|
-| 400 Bad Request | Invalid JSON, missing field, or validation failure |
-| 401 Unauthorized | Token not found, expired, revoked, or user inactive |
-| 500 Internal Server Error | Database or service error |
+| Status                    | Condition                                           |
+| ------------------------- | --------------------------------------------------- |
+| 400 Bad Request           | Invalid JSON, missing field, or validation failure  |
+| 401 Unauthorized          | Token not found, expired, revoked, or user inactive |
+| 500 Internal Server Error | Database or service error                           |
 
 ## Security Implementation
 
 ### Token Generation
+
 - **Algorithm**: Cryptographically secure random generation using `crypto/rand`
 - **Size**: 48 bytes for sufficient entropy
 - **Encoding**: Base64 URL-safe encoding for safe transmission
 - **Format**: Opaque token (no structured data exposed)
 
 ### Token Storage
+
 - **Mechanism**: SHA256 hashing before database storage
 - **Lookup**: Hash-based query prevents reverse lookups
 - **Plaintext**: Never stored in database (only hash)
 
 ### Token Lifecycle Management
+
 1. **Old Token Revocation**: Previous session revoked immediately after new token generation
 2. **Atomic Operation**: Revocation and new session creation wrapped in transaction
 3. **Expiration Tracking**: Session expiry set to 7 days from creation
 4. **Status Validation**: User must be active to refresh
 
 ### Validation Chain
+
 ```
 Request → Format Validation
    ↓
@@ -83,6 +92,7 @@ Return New Tokens
 ## Implementation Flow
 
 ### Request Processing
+
 1. **Controller** (`RefreshByToken` handler):
    - Reads JSON request
    - Validates request structure (base64rawurl format)
@@ -105,16 +115,18 @@ Return New Tokens
 
 ## Code Changes
 
-### File: [internal/controller/account.go](../internal/controller/account.go)
+### File: [internal/controller/auth.go](../internal/controller/auth.go)
 
 #### 1. New Request Struct
+
 ```go
 type refreshRequest struct {
-    RefreshToken string `json:"refresh-token" validate:"required,base64rawurl"`
+    RefreshToken string `json:"refresh_token" validate:"required,base64rawurl"`
 }
 ```
 
 #### 2. New Handler Method
+
 ```go
 func (c *AccountController) RefreshByToken(w http.ResponseWriter, r *http.Request) {
     var req refreshRequest
@@ -122,60 +134,60 @@ func (c *AccountController) RefreshByToken(w http.ResponseWriter, r *http.Reques
         jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
         return
     }
-    
+
     if err := validateStruct(req); err != nil {
         jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
         return
     }
-    
+
     result, err := c.authSvc.RefreshAuthByToken(r.Context(), req.RefreshToken)
     if err != nil {
         jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
         return
     }
-    
+
     envelope := struct {
-        AccessToken  string `json:"access-token"`
-        RefreshToken string `json:"refresh-token"`
+        AccessToken  string `json:"access_token"`
+        RefreshToken string `json:"refresh_token"`
     }{
         AccessToken:  result.AccessToken,
         RefreshToken: result.RefreshToken,
     }
     if err = jsonutil.WriteJSON(w, http.StatusOK, envelope); err != nil {
-        jsonutil.WriteErrJSON(w, http.StatusInternalServerError, 
-            domain.NewError(domain.ErrorCode("WRITE_RESPONSE_FAILED"), 
+        jsonutil.WriteErrJSON(w, http.StatusInternalServerError,
+            domain.NewError(domain.ErrorCode("WRITE_RESPONSE_FAILED"),
             "failed to write response"))
     }
 }
 ```
 
 #### 3. New Route Registration
+
 ```go
 func SetupAccountRoutes(r chi.Router, authService *auth.AuthService) {
     accountController := NewAccountController(authService)
-    
-    r.Route("/accounts", func(r chi.Router) {
-        r.Route("/auth", func(r chi.Router) {
+
+    r.Route("/auth", func(r chi.Router) {
             r.Route("/by-otp", func(r chi.Router) {
                 r.Post("/request", accountController.RequestAuthByOTP)
                 r.Post("/verify", accountController.VerifyAuthByOTP)
             })
             r.Post("/refresh", accountController.RefreshByToken)  // ← NEW
         })
-        // ... rest of routes
-    })
 }
 ```
 
 ## Architecture & Design Patterns
 
 ### Layers Involved
+
 1. **HTTP Controller Layer**: Request/response handling and validation
 2. **Service Layer**: Business logic and orchestration
 3. **Repository Layer**: Data access and persistence
 4. **Domain Layer**: Models and interfaces
 
 ### Design Principles Applied
+
 - **Single Responsibility**: Each component has one clear purpose
 - **Dependency Injection**: All dependencies passed to service constructor
 - **Transaction Safety**: Atomic revoke + create operation
@@ -186,24 +198,26 @@ func SetupAccountRoutes(r chi.Router, authService *auth.AuthService) {
 ## Token Revocation Strategy
 
 The implementation uses a **timestamp-based revocation** strategy:
+
 - **Approach**: Sets `revoked_at` timestamp when revoking
 - **Query Impact**: Lookup queries check `revoked_at IS NULL`
-- **Benefits**: 
+- **Benefits**:
   - Audit trail (can see when token was revoked)
   - No data deletion (complies with retention policies)
   - Atomic with new session creation
 
 ## Error Handling Map
 
-| Error | HTTP Status | Meaning |
-|-------|------------|---------|
-| `ErrInvalidToken` | 401 Unauthorized | Token invalid, expired, revoked, or user doesn't exist/inactive |
-| `ErrNotFound` | 401 Unauthorized | Session not found (mapped as ErrInvalidToken) |
-| `ErrInternal` | 500 Internal Server Error | Database or system error |
+| Error             | HTTP Status               | Meaning                                                         |
+| ----------------- | ------------------------- | --------------------------------------------------------------- |
+| `ErrInvalidToken` | 401 Unauthorized          | Token invalid, expired, revoked, or user doesn't exist/inactive |
+| `ErrNotFound`     | 401 Unauthorized          | Session not found (mapped as ErrInvalidToken)                   |
+| `ErrInternal`     | 500 Internal Server Error | Database or system error                                        |
 
 ## Existing Service Layer
 
 The service implementation (`AuthService.RefreshAuthByToken()`) was already correctly implemented with:
+
 - ✅ Secure token generation
 - ✅ SHA256 hashing
 - ✅ Proper revocation logic
@@ -216,14 +230,16 @@ The service implementation (`AuthService.RefreshAuthByToken()`) was already corr
 ## Testing Recommendations
 
 ### Happy Path
+
 ```bash
 1. Login to get initial refresh-token
-2. Call POST /api/v1/accounts/auth/refresh with refresh-token
-3. Verify response contains new access-token and refresh-token
+2. Call POST /api/v1/auth/refresh with refresh-token
+3. Verify response contains new access_token and refresh_token
 4. Verify old refresh-token no longer works
 ```
 
 ### Edge Cases
+
 - Empty refresh-token → 400 Bad Request
 - Invalid/malformed token → 401 Unauthorized
 - Expired token → 401 Unauthorized

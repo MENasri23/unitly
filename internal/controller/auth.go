@@ -29,7 +29,7 @@ type requestOTPRequest struct {
 }
 
 type verifyOTPRequest struct {
-	Sign string `json:"sign" validate:"required,base64rawurl,max=256"`
+	Sign string `json:"sign" validate:"required,max=256"`
 	Otp  string `json:"otp" validate:"required,number,len=6"`
 }
 
@@ -44,7 +44,7 @@ type finalizeResetPasswordRequest struct {
 }
 
 type refreshRequest struct {
-	RefreshToken string `json:"refresh_token" validate:"required,base64rawurl,max=256"`
+	RefreshToken string `json:"refresh_token" validate:"required,max=256"`
 }
 
 type TokensDTO struct {
