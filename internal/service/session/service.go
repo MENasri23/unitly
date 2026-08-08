@@ -77,13 +77,17 @@ func (s *sessionService) RefreshSession(ctx context.Context, oldRefreshToken str
 			return domain.ErrInvalidToken
 		}
 
-		if session.IsExpired() || session.IsRevoked() {
+		if session.IsExpired() {
 			return domain.ErrInvalidToken
 		}
 
 		if session.IsCompromised() {
 			activeUserID = session.UserID
 			return domain.ErrSessionCompromised
+		}
+
+		if session.IsRevoked() {
+			return domain.ErrInvalidToken
 		}
 
 		user, err := s.userRepo.GetByGUID(txCtx, session.UserID)
@@ -118,7 +122,7 @@ func (s *sessionService) RefreshSession(ctx context.Context, oldRefreshToken str
 	})
 
 	if errors.Is(err, domain.ErrSessionCompromised) && activeUserID != uuid.Nil {
-		_ = s.sessionRepo.RevokeAll(ctx, activeUserID)
+		_ = s.RevokeAllSessions(ctx, activeUserID)
 		return "", "", domain.ErrInvalidToken
 	}
 
