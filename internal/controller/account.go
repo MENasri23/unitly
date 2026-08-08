@@ -77,7 +77,7 @@ func (c *AccountController) RequestAuthByOTP(w http.ResponseWriter, r *http.Requ
 	}
 
 	if err := validateStruct(req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, domain.ErrInvalidPassword)
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, domain.ErrInvalidPhone)
 		return
 	}
 
