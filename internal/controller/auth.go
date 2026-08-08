@@ -3,7 +3,6 @@ package controller
 import (
 	"net/http"
 	"time"
-	"unitly/internal/controller/middleware"
 	"unitly/internal/domain"
 	apphttp "unitly/internal/http"
 	"unitly/internal/log"
@@ -14,9 +13,9 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-const authCookiePath = "/api/v1/accounts/auth"
+const authCookiePath = "/api/v1/auth"
 
-type AccountController struct {
+type AuthController struct {
 	authSvc            *auth.AuthService
 	identitySvc        identity.IdentityService
 	logger             log.Logger
@@ -53,11 +52,11 @@ type TokensDTO struct {
 	RefreshToken string `json:"refresh_token,omitempty"`
 }
 
-func (c *AccountController) writeJSON(w http.ResponseWriter, status int, v any) {
+func (c *AuthController) writeJSON(w http.ResponseWriter, status int, v any) {
 	writeJSON(w, status, v, c.logger)
 }
 
-func (c *AccountController) buildCookie(name, value, path string, maxAge int) *http.Cookie {
+func (c *AuthController) buildCookie(name, value, path string, maxAge int) *http.Cookie {
 	return &http.Cookie{
 		Name:     name,
 		Path:     path,
@@ -69,19 +68,19 @@ func (c *AccountController) buildCookie(name, value, path string, maxAge int) *h
 	}
 }
 
-func (c *AccountController) setAuthCookies(w http.ResponseWriter, accessToken, refreshToken string) {
+func (c *AuthController) setAuthCookies(w http.ResponseWriter, accessToken, refreshToken string) {
 	http.SetCookie(w, c.buildCookie("access_token", accessToken, "/", int(c.accessTokenExpiry.Seconds())))
 	http.SetCookie(w, c.buildCookie("refresh_token", refreshToken, authCookiePath, int(c.refreshTokenExpiry.Seconds())))
 }
 
-func (c *AccountController) clearAuthCookies(w http.ResponseWriter) {
+func (c *AuthController) clearAuthCookies(w http.ResponseWriter) {
 	http.SetCookie(w, c.buildCookie("access_token", "", "/", -1))
 	http.SetCookie(w, c.buildCookie("refresh_token", "", authCookiePath, -1))
 }
 
 // respondTokens consolidates the "web client gets cookies, native client
 // gets a JSON body" branch that was repeated in four handlers.
-func (c *AccountController) respondTokens(w http.ResponseWriter, r *http.Request, accessToken, refreshToken string) {
+func (c *AuthController) respondTokens(w http.ResponseWriter, r *http.Request, accessToken, refreshToken string) {
 	if apphttp.IsWebPlatform(r) {
 		c.setAuthCookies(w, accessToken, refreshToken)
 		w.WriteHeader(http.StatusNoContent)
@@ -114,7 +113,7 @@ func refreshTokenFromRequest(r *http.Request) (refreshRequest, error) {
 	return req, nil
 }
 
-func (c *AccountController) RequestAuthByOTP(w http.ResponseWriter, r *http.Request) {
+func (c *AuthController) RequestAuthByOTP(w http.ResponseWriter, r *http.Request) {
 	req, err := bindAndValidate[requestOTPRequest](r)
 	if err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
@@ -130,7 +129,7 @@ func (c *AccountController) RequestAuthByOTP(w http.ResponseWriter, r *http.Requ
 	c.writeJSON(w, http.StatusOK, token)
 }
 
-func (c *AccountController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Request) {
+func (c *AuthController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Request) {
 	req, err := bindAndValidate[verifyOTPRequest](r)
 	if err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
@@ -146,7 +145,7 @@ func (c *AccountController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Reque
 	c.respondTokens(w, r, result.AccessToken, result.RefreshToken)
 }
 
-func (c *AccountController) AuthenticateByPassword(w http.ResponseWriter, r *http.Request) {
+func (c *AuthController) AuthenticateByPassword(w http.ResponseWriter, r *http.Request) {
 	req, err := bindAndValidate[authByPasswordRequest](r)
 	if err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
@@ -162,7 +161,7 @@ func (c *AccountController) AuthenticateByPassword(w http.ResponseWriter, r *htt
 	c.respondTokens(w, r, result.AccessToken, result.RefreshToken)
 }
 
-func (c *AccountController) RequestResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
+func (c *AuthController) RequestResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
 	req, err := bindAndValidate[requestOTPRequest](r)
 	if err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
@@ -178,7 +177,7 @@ func (c *AccountController) RequestResetPasswordByOTP(w http.ResponseWriter, r *
 	c.writeJSON(w, http.StatusOK, token)
 }
 
-func (c *AccountController) VerifyResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
+func (c *AuthController) VerifyResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
 	req, err := bindAndValidate[verifyOTPRequest](r)
 	if err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
@@ -194,7 +193,7 @@ func (c *AccountController) VerifyResetPasswordByOTP(w http.ResponseWriter, r *h
 	c.writeJSON(w, http.StatusOK, token)
 }
 
-func (c *AccountController) FinalizeResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
+func (c *AuthController) FinalizeResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
 	req, err := bindAndValidate[finalizeResetPasswordRequest](r)
 	if err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
@@ -209,7 +208,7 @@ func (c *AccountController) FinalizeResetPasswordByOTP(w http.ResponseWriter, r 
 	c.writeJSON(w, http.StatusOK, true)
 }
 
-func (c *AccountController) RefreshByToken(w http.ResponseWriter, r *http.Request) {
+func (c *AuthController) RefreshByToken(w http.ResponseWriter, r *http.Request) {
 	req, err := refreshTokenFromRequest(r)
 	if err != nil {
 		status := http.StatusBadRequest
@@ -234,7 +233,7 @@ func (c *AccountController) RefreshByToken(w http.ResponseWriter, r *http.Reques
 	c.respondTokens(w, r, result.AccessToken, result.RefreshToken)
 }
 
-func (c *AccountController) Logout(w http.ResponseWriter, r *http.Request) {
+func (c *AuthController) Logout(w http.ResponseWriter, r *http.Request) {
 	req, err := refreshTokenFromRequest(r)
 	if err != nil {
 		status := http.StatusBadRequest
@@ -264,17 +263,16 @@ func (c *AccountController) Logout(w http.ResponseWriter, r *http.Request) {
 	c.writeJSON(w, http.StatusOK, true)
 }
 
-func SetupAccountRoutes(
+func SetupAuthRoutes(
 	r chi.Router,
 	authService *auth.AuthService,
 	identityService identity.IdentityService,
-	authMiddleware *middleware.AuthMiddleware,
 	logger log.Logger,
 	refreshTokenExpiry time.Duration,
 	accessTokenExpiry time.Duration,
 	debugMode bool,
 ) {
-	accountController := &AccountController{
+	authController := &AuthController{
 		authSvc:            authService,
 		identitySvc:        identityService,
 		logger:             logger,
@@ -283,25 +281,23 @@ func SetupAccountRoutes(
 		debugMode:          debugMode,
 	}
 
-	r.Route("/accounts", func(r chi.Router) {
-		r.Route("/auth", func(r chi.Router) {
-			r.Route("/by-otp", func(r chi.Router) {
-				r.Post("/request", accountController.RequestAuthByOTP)
-				r.Post("/verify", accountController.VerifyAuthByOTP)
-			})
-			r.Post("/by-password", accountController.AuthenticateByPassword)
-			r.Post("/refresh", accountController.RefreshByToken)
-			r.Post("/logout", accountController.Logout)
+	r.Route("/auth", func(r chi.Router) {
+		r.Route("/by-otp", func(r chi.Router) {
+			r.Post("/request", authController.RequestAuthByOTP)
+			r.Post("/verify", authController.VerifyAuthByOTP)
 		})
-
+		
 		r.Route("/reset-password", func(r chi.Router) {
 			r.Route("/by-otp", func(r chi.Router) {
-				r.Post("/request", accountController.RequestResetPasswordByOTP)
-				r.Post("/verify", accountController.VerifyResetPasswordByOTP)
-				r.Post("/finalize", accountController.FinalizeResetPasswordByOTP)
+				r.Post("/request", authController.RequestResetPasswordByOTP)
+				r.Post("/verify", authController.VerifyResetPasswordByOTP)
+				r.Post("/finalize", authController.FinalizeResetPasswordByOTP)
 			})
 		})
-
+		
+		r.Post("/by-password", authController.AuthenticateByPassword)
+		r.Post("/refresh", authController.RefreshByToken)
+		r.Post("/logout", authController.Logout)
 	})
 
 }

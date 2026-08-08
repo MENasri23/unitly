@@ -150,11 +150,10 @@ func main() {
 
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/v1", func(r chi.Router) {
-			controller.SetupAccountRoutes(
+			controller.SetupAuthRoutes(
 				r,
 				authService,
 				identityService,
-				authMiddleware,
 				logger,
 				app.GetRefreshTokenExpiry(),
 				app.GetAccessTokenExpiry(),
