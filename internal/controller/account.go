@@ -14,6 +14,8 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+const refreshTokenCookiePath = "/api/v1/accounts/auth/refresh"
+
 type AccountController struct {
 	authSvc            *auth.AuthService
 	identitySvc        identity.IdentityService
@@ -51,33 +53,29 @@ type TokensDTO struct {
 	RefreshToken string `json:"refresh_token,omitempty"`
 }
 
-func NewAccountController(
-	authSvc *auth.AuthService,
-	identitySvc identity.IdentityService,
-	logger log.Logger,
-	refreshTokenExpiry time.Duration,
-	accessTokenExpiry time.Duration,
-	debugMode bool,
-) *AccountController {
-	return &AccountController{
-		authSvc:            authSvc,
-		identitySvc:        identitySvc,
-		logger:             logger,
-		refreshTokenExpiry: refreshTokenExpiry,
-		accessTokenExpiry:  accessTokenExpiry,
-		debugMode:          debugMode,
+func (c *AccountController) writeJSON(w http.ResponseWriter, status int, v any) {
+	writeJSON(w, status, v, c.logger)
+}
+
+// respondTokens consolidates the "web client gets cookies, native client
+// gets a JSON body" branch that was repeated in four handlers.
+func (c *AccountController) respondTokens(w http.ResponseWriter, r *http.Request, accessToken, refreshToken string) {
+	if apphttp.IsWebPlatform(r) {
+		c.setAccessTokenCookie(w, accessToken)
+		c.setRefreshTokenCookie(w, refreshToken)
+		w.WriteHeader(http.StatusNoContent)
+		return
 	}
+	c.writeJSON(w, http.StatusOK, TokensDTO{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	})
 }
 
 func (c *AccountController) RequestAuthByOTP(w http.ResponseWriter, r *http.Request) {
-	var req requestOTPRequest
-	if err := jsonutil.ReadJSON(r, &req); err != nil {
+	req, err := bindAndValidate[requestOTPRequest](r)
+	if err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
-		return
-	}
-
-	if err := validateStruct(req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, domain.ErrInvalidPhone)
 		return
 	}
 
@@ -87,19 +85,12 @@ func (c *AccountController) RequestAuthByOTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if err = jsonutil.WriteJSON(w, http.StatusOK, token); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, domain.NewError(domain.ErrorCode("WRITE_RESPONSE_FAILED"), "failed to write response"))
-	}
+	c.writeJSON(w, http.StatusOK, token)
 }
 
 func (c *AccountController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Request) {
-	var req verifyOTPRequest
-	if err := jsonutil.ReadJSON(r, &req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
-		return
-	}
-
-	if err := validateStruct(req); err != nil {
+	req, err := bindAndValidate[verifyOTPRequest](r)
+	if err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
@@ -110,30 +101,12 @@ func (c *AccountController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if apphttp.IsWebPlatform(r) {
-		c.setAccessTokenCookie(w, result.AccessToken)
-		c.setRefreshTokenCookie(w, result.RefreshToken)
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	tokens := TokensDTO{
-		AccessToken:  result.AccessToken,
-		RefreshToken: result.RefreshToken,
-	}
-	if err = jsonutil.WriteJSON(w, http.StatusOK, tokens); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, domain.NewError(domain.ErrorCode("WRITE_RESPONSE_FAILED"), "failed to write response"))
-	}
+	c.respondTokens(w, r, result.AccessToken, result.RefreshToken)
 }
 
 func (c *AccountController) AuthenticateByPassword(w http.ResponseWriter, r *http.Request) {
-	var req authByPasswordRequest
-	if err := jsonutil.ReadJSON(r, &req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
-		return
-	}
-
-	if err := validateStruct(req); err != nil {
+	req, err := bindAndValidate[authByPasswordRequest](r)
+	if err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
@@ -144,31 +117,12 @@ func (c *AccountController) AuthenticateByPassword(w http.ResponseWriter, r *htt
 		return
 	}
 
-	if apphttp.IsWebPlatform(r) {
-		c.setAccessTokenCookie(w, result.AccessToken)
-		c.setRefreshTokenCookie(w, result.RefreshToken)
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	tokens := TokensDTO{
-		AccessToken:  result.AccessToken,
-		RefreshToken: result.RefreshToken,
-	}
-
-	if err = jsonutil.WriteJSON(w, http.StatusOK, tokens); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, domain.NewError(domain.ErrorCode("WRITE_RESPONSE_FAILED"), "failed to write response"))
-	}
+	c.respondTokens(w, r, result.AccessToken, result.RefreshToken)
 }
 
 func (c *AccountController) RequestResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
-	var req requestOTPRequest
-	if err := jsonutil.ReadJSON(r, &req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
-		return
-	}
-
-	if err := validateStruct(req); err != nil {
+	req, err := bindAndValidate[requestOTPRequest](r)
+	if err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
@@ -179,19 +133,12 @@ func (c *AccountController) RequestResetPasswordByOTP(w http.ResponseWriter, r *
 		return
 	}
 
-	if err = jsonutil.WriteJSON(w, http.StatusOK, token); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, domain.NewError(domain.ErrorCode("WRITE_RESPONSE_FAILED"), "failed to write response"))
-	}
+	c.writeJSON(w, http.StatusOK, token)
 }
 
 func (c *AccountController) VerifyResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
-	var req verifyOTPRequest
-	if err := jsonutil.ReadJSON(r, &req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
-		return
-	}
-
-	if err := validateStruct(req); err != nil {
+	req, err := bindAndValidate[verifyOTPRequest](r)
+	if err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
@@ -202,19 +149,12 @@ func (c *AccountController) VerifyResetPasswordByOTP(w http.ResponseWriter, r *h
 		return
 	}
 
-	if err = jsonutil.WriteJSON(w, http.StatusOK, token); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, domain.NewError(domain.ErrorCode("WRITE_RESPONSE_FAILED"), "failed to write response"))
-	}
+	c.writeJSON(w, http.StatusOK, token)
 }
 
 func (c *AccountController) FinalizeResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
-	var req finalizeResetPasswordRequest
-	if err := jsonutil.ReadJSON(r, &req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
-		return
-	}
-
-	if err := validateStruct(req); err != nil {
+	req, err := bindAndValidate[finalizeResetPasswordRequest](r)
+	if err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
@@ -224,9 +164,7 @@ func (c *AccountController) FinalizeResetPasswordByOTP(w http.ResponseWriter, r 
 		return
 	}
 
-	if err := jsonutil.WriteJSON(w, http.StatusOK, true); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, domain.NewError(domain.ErrorCode("WRITE_RESPONSE_FAILED"), "failed to write response"))
-	}
+	c.writeJSON(w, http.StatusOK, true)
 }
 
 func (c *AccountController) RefreshByToken(w http.ResponseWriter, r *http.Request) {
@@ -239,11 +177,9 @@ func (c *AccountController) RefreshByToken(w http.ResponseWriter, r *http.Reques
 			return
 		}
 		req.RefreshToken = rtCookie.Value
-	} else {
-		if err := jsonutil.ReadJSON(r, &req); err != nil {
-			jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
-			return
-		}
+	} else if err := jsonutil.ReadJSON(r, &req); err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		return
 	}
 
 	if err := validateStruct(req); err != nil {
@@ -257,21 +193,7 @@ func (c *AccountController) RefreshByToken(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if apphttp.IsWebPlatform(r) {
-		c.setAccessTokenCookie(w, result.AccessToken)
-		c.setRefreshTokenCookie(w, result.RefreshToken)
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	tokens := TokensDTO{
-		AccessToken:  result.AccessToken,
-		RefreshToken: result.RefreshToken,
-	}
-
-	if err = jsonutil.WriteJSON(w, http.StatusOK, tokens); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusInternalServerError, domain.NewError(domain.ErrorCode("WRITE_RESPONSE_FAILED"), "failed to write response"))
-	}
+	c.respondTokens(w, r, result.AccessToken, result.RefreshToken)
 }
 
 func (c *AccountController) setAccessTokenCookie(w http.ResponseWriter, accessToken string) {
@@ -289,7 +211,7 @@ func (c *AccountController) setAccessTokenCookie(w http.ResponseWriter, accessTo
 func (c *AccountController) setRefreshTokenCookie(w http.ResponseWriter, refreshToken string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
-		Path:     "/api/v1/accounts/auth/refresh",
+		Path:     refreshTokenCookiePath,
 		Value:    refreshToken,
 		MaxAge:   int(c.refreshTokenExpiry.Seconds()),
 		HttpOnly: true,
@@ -308,14 +230,14 @@ func SetupAccountRoutes(
 	accessTokenExpiry time.Duration,
 	debugMode bool,
 ) {
-	accountController := NewAccountController(
-		authService,
-		identityService,
-		logger,
-		refreshTokenExpiry,
-		accessTokenExpiry,
-		debugMode,
-	)
+	accountController := &AccountController{
+		authSvc:            authService,
+		identitySvc:        identityService,
+		logger:             logger,
+		refreshTokenExpiry: refreshTokenExpiry,
+		accessTokenExpiry:  accessTokenExpiry,
+		debugMode:          debugMode,
+	}
 
 	r.Route("/accounts", func(r chi.Router) {
 		r.Route("/auth", func(r chi.Router) {
