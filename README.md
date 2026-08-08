@@ -129,8 +129,8 @@ The HTTP API is mounted at `/api/v1`.
 - Success response:
   ```json
   {
-    "access-token": "<jwt-access-token>",
-    "refresh-token": "<opaque-refresh-token>"
+    "access_token": "<jwt-access-token>",
+    "refresh_token": "<opaque-refresh-token>"
   }
   ```
 - Behavior:
@@ -154,14 +154,14 @@ The HTTP API is mounted at `/api/v1`.
 - Request body:
   ```json
   {
-    "refresh-token": "<opaque-refresh-token>"
+    "refresh_token": "<opaque-refresh-token>"
   }
   ```
 - Success response:
   ```json
   {
-    "access-token": "<new-jwt-access-token>",
-    "refresh-token": "<new-opaque-refresh-token>"
+    "access_token": "<new-jwt-access-token>",
+    "refresh_token": "<new-opaque-refresh-token>"
   }
   ```
 - Behavior: 

@@ -43,12 +43,12 @@ type finalizeResetPasswordRequest struct {
 }
 
 type refreshRequest struct {
-	RefreshToken string `json:"refresh-token" validate:"required,base64rawurl,max=256"`
+	RefreshToken string `json:"refresh_token" validate:"required,base64rawurl,max=256"`
 }
 
 type TokensDTO struct {
-	AccessToken  string `json:"access-token,omitempty"`
-	RefreshToken string `json:"refresh-token,omitempty"`
+	AccessToken  string `json:"access_token,omitempty"`
+	RefreshToken string `json:"refresh_token,omitempty"`
 }
 
 func NewAccountController(
