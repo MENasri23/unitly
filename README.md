@@ -170,6 +170,27 @@ The HTTP API is mounted at `/api/v1`.
   - Returns new access token and refresh token
   - Fails with `401 Unauthorized` if token is invalid, expired, or user is inactive
 
+### Logout
+
+#### Logout User
+
+- Method: `POST`
+- Path: `/api/v1/accounts/auth/logout`
+- Request body (native clients):
+  ```json
+  {
+    "refresh_token": "<opaque-refresh-token>"
+  }
+  ```
+- Authentication: uses refresh token from request body for native clients or from the `refresh_token` cookie for web clients
+- Success response:
+  - Web clients: `204 No Content` and auth cookies cleared
+  - Native clients: `200 OK` with body `true`
+- Behavior:
+  - Revokes the refresh token session via the session service
+  - Clears auth cookies for web clients
+  - Treats already-invalidated refresh tokens as logged out without error
+
 ### Password Reset by OTP
 
 #### Request Reset OTP
