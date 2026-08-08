@@ -83,7 +83,7 @@ The HTTP API is mounted at `/api/v1`.
 #### Request OTP
 
 - Method: `POST`
-- Path: `/api/v1/accounts/auth/by-otp/request`
+- Path: `/api/v1/auth/by-otp/request`
 - Request body:
   ```json
   {
@@ -96,7 +96,7 @@ The HTTP API is mounted at `/api/v1`.
 #### Verify OTP
 
 - Method: `POST`
-- Path: `/api/v1/accounts/auth/by-otp/verify`
+- Path: `/api/v1/auth/by-otp/verify`
 - Request body:
   ```json
   {
@@ -118,7 +118,7 @@ The HTTP API is mounted at `/api/v1`.
 #### Authenticate with phone and password
 
 - Method: `POST`
-- Path: `/api/v1/accounts/auth/by-password`
+- Path: `/api/v1/auth/by-password`
 - Request body:
   ```json
   {
@@ -150,7 +150,7 @@ The HTTP API is mounted at `/api/v1`.
 #### Refresh Access Token
 
 - Method: `POST`
-- Path: `/api/v1/accounts/auth/refresh`
+- Path: `/api/v1/auth/refresh`
 - Request body:
   ```json
   {
@@ -175,7 +175,7 @@ The HTTP API is mounted at `/api/v1`.
 #### Logout User
 
 - Method: `POST`
-- Path: `/api/v1/accounts/auth/logout`
+- Path: `/api/v1/auth/logout`
 - Request body (native clients):
   ```json
   {
@@ -196,7 +196,7 @@ The HTTP API is mounted at `/api/v1`.
 #### Request Reset OTP
 
 - Method: `POST`
-- Path: `/api/v1/accounts/reset-password/by-otp/request`
+- Path: `/api/v1/auth/reset-password/by-otp/request`
 - Request body:
   ```json
   {
@@ -209,7 +209,7 @@ The HTTP API is mounted at `/api/v1`.
 #### Verify Reset OTP
 
 - Method: `POST`
-- Path: `/api/v1/accounts/reset-password/by-otp/verify`
+- Path: `/api/v1/auth/reset-password/by-otp/verify`
 - Request body:
   ```json
   {
@@ -223,7 +223,7 @@ The HTTP API is mounted at `/api/v1`.
 #### Finalize Password Reset
 
 - Method: `POST`
-- Path: `/api/v1/accounts/reset-password/by-otp/finalize`
+- Path: `/api/v1/auth/reset-password/by-otp/finalize`
 - Request body:
   ```json
   {
