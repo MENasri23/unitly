@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"unitly/internal/domain"
 	identitysvc "unitly/internal/service/identity"
 	"unitly/internal/util/validate"
@@ -162,6 +163,19 @@ func (s *AuthService) RefreshAuthByToken(
 		AccessToken:  accessToken,
 		RefreshToken: newRefreshToken,
 	}, nil
+}
+
+func (s *AuthService) Logout(ctx context.Context, refreshToken string) error {
+	if refreshToken == "" {
+		return domain.ErrInvalidToken
+	}
+
+	err := s.sessionService.RevokeSession(ctx, refreshToken)
+	if err != nil && !errors.Is(err, domain.ErrInvalidToken) {
+		return err
+	}
+
+	return nil
 }
 
 func (s *AuthService) isValidPhone(phone string) bool {

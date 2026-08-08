@@ -59,4 +59,5 @@ type SessionService interface {
 	RevokeAllSessions(ctx context.Context, userID uuid.UUID) error
 	GenerateResetToken(ctx context.Context, userID uuid.UUID) (string, error)
 	ValidateResetToken(ctx context.Context, token string) (uuid.UUID, error)
+	RevokeSession(ctx context.Context, refreshToken string) error
 }

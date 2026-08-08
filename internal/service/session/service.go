@@ -157,3 +157,23 @@ func (s *sessionService) ValidateResetToken(ctx context.Context, token string) (
 	}
 	return uuid.Parse(claims.UserID)
 }
+
+func (s *sessionService) RevokeSession(ctx context.Context, refreshToken string) error {
+	if refreshToken == "" {
+		return domain.ErrInvalidToken
+	}
+
+	tokenHash := hash.SHA256(refreshToken)
+	session, err := s.sessionRepo.GetByRefreshToken(ctx, tokenHash)
+	if err != nil {
+		return domain.ErrInvalidToken
+	}
+
+	if session.IsExpired() || session.IsRevoked() {
+		return nil
+	}
+
+	revokedAt := time.Now()
+	session.RevokedAt = &revokedAt
+	return s.sessionRepo.Revoke(ctx, session)
+}

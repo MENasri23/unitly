@@ -14,7 +14,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-const refreshTokenCookiePath = "/api/v1/accounts/auth/refresh"
+const authCookiePath = "/api/v1/accounts/auth"
 
 type AccountController struct {
 	authSvc            *auth.AuthService
@@ -57,12 +57,33 @@ func (c *AccountController) writeJSON(w http.ResponseWriter, status int, v any) 
 	writeJSON(w, status, v, c.logger)
 }
 
+func (c *AccountController) buildCookie(name, value, path string, maxAge int) *http.Cookie {
+	return &http.Cookie{
+		Name:     name,
+		Path:     path,
+		Value:    value,
+		MaxAge:   maxAge,
+		HttpOnly: true,
+		Secure:   !c.debugMode,
+		SameSite: http.SameSiteStrictMode,
+	}
+}
+
+func (c *AccountController) setAuthCookies(w http.ResponseWriter, accessToken, refreshToken string) {
+	http.SetCookie(w, c.buildCookie("access_token", accessToken, "/", int(c.accessTokenExpiry.Seconds())))
+	http.SetCookie(w, c.buildCookie("refresh_token", refreshToken, authCookiePath, int(c.refreshTokenExpiry.Seconds())))
+}
+
+func (c *AccountController) clearAuthCookies(w http.ResponseWriter) {
+	http.SetCookie(w, c.buildCookie("access_token", "", "/", -1))
+	http.SetCookie(w, c.buildCookie("refresh_token", "", authCookiePath, -1))
+}
+
 // respondTokens consolidates the "web client gets cookies, native client
 // gets a JSON body" branch that was repeated in four handlers.
 func (c *AccountController) respondTokens(w http.ResponseWriter, r *http.Request, accessToken, refreshToken string) {
 	if apphttp.IsWebPlatform(r) {
-		c.setAccessTokenCookie(w, accessToken)
-		c.setRefreshTokenCookie(w, refreshToken)
+		c.setAuthCookies(w, accessToken, refreshToken)
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
@@ -70,6 +91,27 @@ func (c *AccountController) respondTokens(w http.ResponseWriter, r *http.Request
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	})
+}
+
+// refreshTokenFromWeb reads the refresh token from the cookie for web
+// clients, mirroring how RefreshByToken already sources it. Used by both
+// RefreshByToken and Logout since they need the same input.
+func refreshTokenFromRequest(r *http.Request) (refreshRequest, error) {
+	var req refreshRequest
+
+	if apphttp.IsWebPlatform(r) {
+		rtCookie, err := r.Cookie("refresh_token")
+		if err != nil {
+			return req, domain.ErrInvalidToken
+		}
+		req.RefreshToken = rtCookie.Value
+		return req, nil
+	}
+
+	if err := jsonutil.ReadJSON(r, &req); err != nil {
+		return req, err
+	}
+	return req, nil
 }
 
 func (c *AccountController) RequestAuthByOTP(w http.ResponseWriter, r *http.Request) {
@@ -168,17 +210,13 @@ func (c *AccountController) FinalizeResetPasswordByOTP(w http.ResponseWriter, r 
 }
 
 func (c *AccountController) RefreshByToken(w http.ResponseWriter, r *http.Request) {
-	var req refreshRequest
-
-	if apphttp.IsWebPlatform(r) {
-		rtCookie, err := r.Cookie("refresh_token")
-		if err != nil {
-			jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
-			return
+	req, err := refreshTokenFromRequest(r)
+	if err != nil {
+		status := http.StatusBadRequest
+		if err == domain.ErrInvalidToken {
+			status = http.StatusUnauthorized
 		}
-		req.RefreshToken = rtCookie.Value
-	} else if err := jsonutil.ReadJSON(r, &req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		jsonutil.WriteErrJSON(w, status, err)
 		return
 	}
 
@@ -196,28 +234,34 @@ func (c *AccountController) RefreshByToken(w http.ResponseWriter, r *http.Reques
 	c.respondTokens(w, r, result.AccessToken, result.RefreshToken)
 }
 
-func (c *AccountController) setAccessTokenCookie(w http.ResponseWriter, accessToken string) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     "access_token",
-		Path:     "/",
-		Value:    accessToken,
-		MaxAge:   int(c.accessTokenExpiry.Seconds()),
-		HttpOnly: true,
-		Secure:   !c.debugMode,
-		SameSite: http.SameSiteStrictMode,
-	})
-}
+func (c *AccountController) Logout(w http.ResponseWriter, r *http.Request) {
+	req, err := refreshTokenFromRequest(r)
+	if err != nil {
+		status := http.StatusBadRequest
+		if err == domain.ErrInvalidToken {
+			status = http.StatusUnauthorized
+		}
+		jsonutil.WriteErrJSON(w, status, err)
+		return
+	}
 
-func (c *AccountController) setRefreshTokenCookie(w http.ResponseWriter, refreshToken string) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     "refresh_token",
-		Path:     refreshTokenCookiePath,
-		Value:    refreshToken,
-		MaxAge:   int(c.refreshTokenExpiry.Seconds()),
-		HttpOnly: true,
-		Secure:   !c.debugMode,
-		SameSite: http.SameSiteStrictMode,
-	})
+	if err := validateStruct(req); err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err := c.authSvc.Logout(r.Context(), req.RefreshToken); err != nil {
+		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
+		return
+	}
+
+	if apphttp.IsWebPlatform(r) {
+		c.clearAuthCookies(w)
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	c.writeJSON(w, http.StatusOK, true)
 }
 
 func SetupAccountRoutes(
@@ -247,6 +291,7 @@ func SetupAccountRoutes(
 			})
 			r.Post("/by-password", accountController.AuthenticateByPassword)
 			r.Post("/refresh", accountController.RefreshByToken)
+			r.Post("/logout", accountController.Logout)
 		})
 
 		r.Route("/reset-password", func(r chi.Router) {
