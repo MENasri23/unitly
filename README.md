@@ -5,6 +5,7 @@ Unitly is a Go-based authentication service focused on OTP-based sign-in and pas
 ## Overview
 
 This repository implements:
+
 - OTP request and verification for login/registration
 - Password-based authentication for existing active users
 - OTP-based password reset flow with secure reset token handling
@@ -17,10 +18,11 @@ This repository implements:
 ## Architecture
 
 Key packages:
+
 - `cmd/main.go` - application bootstrap and route registration
 - `bootstrap/` - configuration and environment loading
 - `internal/controller/` - HTTP controllers and request validation
-- `internal/service/auth/` - business logic for auth flows
+- `internal/service/` - business logic and services
 - `internal/repository/` - database and cache repositories
 - `internal/domain/` - domain models, error definitions, and repository interfaces
 - `pkg/jsonutil/` - JSON request/response helpers
@@ -164,7 +166,7 @@ The HTTP API is mounted at `/api/v1`.
     "refresh_token": "<new-opaque-refresh-token>"
   }
   ```
-- Behavior: 
+- Behavior:
   - Validates the refresh token and user status
   - Revokes the old refresh token (prevents reuse)
   - Returns new access token and refresh token
@@ -240,6 +242,7 @@ The HTTP API is mounted at `/api/v1`.
 - Path: `/api/v1/profiles/change-name`
 - Authentication: `Bearer <access-token>`
 - Request body:
+
   ```json
   {
     "first_name": "John",
@@ -251,7 +254,7 @@ The HTTP API is mounted at `/api/v1`.
 
 - Success response:
   - Status: `204 No Content`
-  - Response body: *(empty)*
+  - Response body: _(empty)_
 
 - Validation:
   - At least one of `first_name` or `last_name` must be provided.
@@ -262,66 +265,55 @@ The HTTP API is mounted at `/api/v1`.
   - Updates only the provided fields.
   - The authenticated user is identified from the access token.
 
+#### Get Profile Info
 
-
-  #### Get Profile Info
-
-  - Method: `GET`
-  - Path: `/api/v1/profiles/info`
-  - Authentication: `Bearer <access-token>`
-  - Success response:
-    - Status: `200 OK`
-    - Response body:
-      ```json
-      {
-        "first_name": "John",      
-        "last_name": "Doe",
-        "has_password": true,
-        "phone": "+1234567890"
-      }
-      ```
-
-  - Behavior:
-    - Returns the authenticated user's profile information.
-    - `first_name` and `last_name` may be `null` if not set.
-    - `has_password` indicates whether a password is set for the account.
-
-  #### Update Password
-
-  - Method: `PATCH`
-  - Path: `/api/v1/profiles/change-password`
-  - Authentication: `Bearer <access-token>`
-  - Request body:
+- Method: `GET`
+- Path: `/api/v1/profiles/info`
+- Authentication: `Bearer <access-token>`
+- Success response:
+  - Status: `200 OK`
+  - Response body:
     ```json
     {
-      "old_password": "CurrentP@ssw0rd!",
-      "new_password": "NewP@ssw0rd!"
+      "first_name": "John",
+      "last_name": "Doe",
+      "has_password": true,
+      "phone": "+1234567890"
     }
     ```
 
-  - Success response:
-    - Status: `204 No Content`
-    - Response body: *(empty)*
+- Behavior:
+  - Returns the authenticated user's profile information.
+  - `first_name` and `last_name` may be `null` if not set.
+  - `has_password` indicates whether a password is set for the account.
 
-  - Validation:
-    - `old_password` must be 8–64 characters long.
-    - `new_password` must be 8–64 characters long with uppercase, lowercase, digit, and symbol.
-    - returns `INCORRECT_PASSWORD` when `old_password` is incorrect.
+#### Update Password
 
-  - Behavior:
-    - Updates the authenticated user's password.
-    - Requires the current password for verification.
-    - The authenticated user is identified from the access token.
+- Method: `PATCH`
+- Path: `/api/v1/profiles/change-password`
+- Authentication: `Bearer <access-token>`
+- Request body:
 
+  ```json
+  {
+    "old_password": "CurrentP@ssw0rd!",
+    "new_password": "NewP@ssw0rd!"
+  }
+  ```
 
-## Request Validation
+- Success response:
+  - Status: `204 No Content`
+  - Response body: _(empty)_
 
-The controller validates input using `go-playground/validator` and strict JSON decoding.
+- Validation:
+  - `old_password` must be 8–64 characters long.
+  - `new_password` must be 8–64 characters long with uppercase, lowercase, digit, and symbol.
+  - returns `INCORRECT_PASSWORD` when `old_password` is incorrect.
 
-- `phone` must conform to E.164 format
-- `otp` must be a 6-digit numeric string
-- `sign` must be a valid base64url or JWT string depending on the endpoint
-- `password` must be 8-64 characters with uppercase, lowercase, digit, and symbol
+- Behavior:
+  - Updates the authenticated user's password.
+  - Requires the current password for verification.
+  - The authenticated user is identified from the access token.
 
 ## Error Handling
 
