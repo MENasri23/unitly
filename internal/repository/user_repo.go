@@ -39,7 +39,7 @@ const createUser = `
 INSERT INTO users (phone, public_id, active) 
 VALUES ($1, $2, $3)
 ON CONFLICT (phone) DO NOTHING
-RETURNING id, created_at
+RETURNING id, created_at, version
 `
 
 func (u *userRepository) Create(ctx context.Context, user *domain.User) error {
@@ -53,6 +53,7 @@ func (u *userRepository) Create(ctx context.Context, user *domain.User) error {
 	).Scan(
 		&user.ID,
 		&user.CreatedAt,
+		&user.Version,
 	)
 
 	if err == pgx.ErrNoRows {
@@ -76,7 +77,7 @@ func (u *userRepository) GetByPhone(ctx context.Context, phone string) (*domain.
 
 func (u *userRepository) getBy(ctx context.Context, column string, value any) (*domain.User, error) {
 	query := fmt.Sprintf(`
-	SELECT id, public_id, phone, first_name, last_name, active, password_hash, created_at
+	SELECT id, public_id, phone, first_name, last_name, active, password_hash, created_at, version
 	FROM users
 	WHERE %s = $1
 	`, column,
@@ -99,6 +100,7 @@ func (u *userRepository) getBy(ctx context.Context, column string, value any) (*
 		&user.IsActive,
 		&passwordHash,
 		&user.CreatedAt,
+		&user.Version,
 	)
 
 	if passwordHash.Valid {
@@ -114,15 +116,15 @@ func (u *userRepository) getBy(ctx context.Context, column string, value any) (*
 
 const updateUserPassword = `
 UPDATE users 
-SET password_hash = $1 
-WHERE public_id = $2
+SET password_hash = $1 AND version = version + 1
+WHERE id = $2 AND version = $3
 `
 
-func (u *userRepository) UpdatePassword(ctx context.Context, userGUID uuid.UUID, password string) error {
+func (u *userRepository) UpdatePassword(ctx context.Context, user *domain.User, password string) error {
 	passwordHash := hash.SHA256(password)
 	querier := u.getQuerier(ctx)
 
-	cmdTag, err := querier.Exec(ctx, updateUserPassword, passwordHash, userGUID)
+	cmdTag, err := querier.Exec(ctx, updateUserPassword, passwordHash, user.ID, user.Version)
 	if err != nil {
 		return err
 	}
@@ -156,13 +158,21 @@ const updateUserFullName = `
 UPDATE users
 SET
     first_name = COALESCE(NULLIF($1, ''), first_name),
-    last_name  = COALESCE(NULLIF($2, ''), last_name)
-WHERE id = $3
+    last_name  = COALESCE(NULLIF($2, ''), last_name),
+	version = version + 1
+WHERE id = $3 AND version = $4
 `
 
 func (u *userRepository) UpdateFullName(ctx context.Context, user *domain.User) error {
 	querier := u.getQuerier(ctx)
-	cmdTag, err := querier.Exec(ctx, updateUserFullName, user.FirstName, user.LastName, user.ID)
+	cmdTag, err := querier.Exec(
+		ctx,
+		updateUserFullName,
+		user.FirstName,
+		user.LastName,
+		user.ID,
+		user.Version,
+	)
 	if err != nil {
 		return err
 	}

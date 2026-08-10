@@ -190,8 +190,13 @@ func (s *AuthService) FinalizeResetPasswordByOTP(
 		return err
 	}
 
+	user, err := s.identityService.GetByGUID(ctx, userUUID)
+	if err != nil {
+		return err
+	}
+
 	return s.uow.Do(ctx, func(txCtx context.Context) error {
-		if err := s.identityService.ResetPassword(txCtx, userUUID, newPassword); err != nil {
+		if err := s.identityService.ResetPassword(txCtx, user, newPassword); err != nil {
 			return err
 		}
 

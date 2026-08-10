@@ -30,6 +30,10 @@ func (s *identityService) GetByPhone(ctx context.Context, phone string) (*domain
 	return s.userRepo.GetByPhone(ctx, phone)
 }
 
+func (s *identityService) GetByGUID(ctx context.Context, guid uuid.UUID) (*domain.User, error) {
+	return s.userRepo.GetByGUID(ctx, guid)
+}
+
 func (s *identityService) HasPassword(ctx context.Context, phone string) (bool, error) {
 	user, err := s.GetByPhone(ctx, phone)
 	if err != nil {
@@ -90,8 +94,8 @@ func (s *identityService) Authenticate(ctx context.Context, phone, password stri
 	return user, nil
 }
 
-func (s *identityService) ResetPassword(ctx context.Context, userID uuid.UUID, newPassword string) error {
-	return s.userRepo.UpdatePassword(ctx, userID, newPassword)
+func (s *identityService) ResetPassword(ctx context.Context, user *domain.User, newPassword string) error {
+	return s.userRepo.UpdatePassword(ctx, user, newPassword)
 }
 
 func (s *identityService) UpdatePassword(
@@ -113,7 +117,7 @@ func (s *identityService) UpdatePassword(
 		return err
 	}
 
-	if err := s.userRepo.UpdatePassword(ctx, user.GUID, newPassword); err != nil {
+	if err := s.userRepo.UpdatePassword(ctx, user, newPassword); err != nil {
 		return err
 	}
 
