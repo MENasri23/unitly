@@ -116,7 +116,7 @@ func (u *userRepository) getBy(ctx context.Context, column string, value any) (*
 
 const updateUserPassword = `
 UPDATE users 
-SET password_hash = $1 AND version = version + 1
+SET password_hash = $1, version = version + 1
 WHERE id = $2 AND version = $3
 `
 
