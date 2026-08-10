@@ -3,20 +3,15 @@ package token
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"errors"
+	apprand "unitly/internal/util/rand"
 )
 
-const defaultTokenBytes = 32
+const defaultTokenLen = 52 // ⌈log₃₂ 2^256⌉ = 52 chars
 
-func GenerateDefaultToken() (token string, err error) {
-	defer func() {
-		if recover() != nil {
-			err = errors.New("failed to generate token")
-		}
-	}()
+const base32alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 
-	token = rand.Text()
-	return
+func GenerateDefaultToken() (string, error) {
+	return apprand.TextN(defaultTokenLen)
 }
 
 func GenerateToken(nBytes int) (string, error) {
