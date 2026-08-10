@@ -32,7 +32,7 @@ type profileInfoDTO struct {
 }
 
 type updatePasswordRequest struct {
-	OldPassword string `json:"old_password" validate:"required"`
+	OldPassword string `json:"old_password,omitempty"`
 	NewPassword string `json:"new_password" validate:"required"`
 }
 
