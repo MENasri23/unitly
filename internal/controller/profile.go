@@ -3,6 +3,8 @@ package controller
 import (
 	"net/http"
 	"unitly/internal/controller/middleware"
+	"unitly/internal/controller/reqctx"
+	"unitly/internal/domain"
 	"unitly/internal/log"
 	"unitly/internal/service/auth"
 	"unitly/internal/service/identity"
@@ -45,7 +47,7 @@ func (c *profileController) updateFullName(w http.ResponseWriter, r *http.Reques
 		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
-	user := middleware.GetUserFromCtx(r.Context())
+	user := reqctx.GetUser(r.Context())
 	user.FirstName = req.FirstName
 	user.LastName = req.LastName
 
@@ -58,7 +60,7 @@ func (c *profileController) updateFullName(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *profileController) getProfileInfo(w http.ResponseWriter, r *http.Request) {
-	user := middleware.GetUserFromCtx(r.Context())
+	user := reqctx.GetUser(r.Context())
 
 	dto := profileInfoDTO{
 		FirstName:   user.FirstName,
@@ -79,9 +81,14 @@ func (c *profileController) updatePassword(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	user := middleware.GetUserFromCtx(r.Context())
-	sessionId := middleware.GetSessionIdFromCtx(r.Context())
-	if err := c.identitySvc.UpdatePassword(r.Context(), user, sessionId, req.OldPassword, req.NewPassword); err != nil {
+	user := reqctx.GetUser(r.Context())
+	sessionID, ok := reqctx.GetSessionID(r.Context())
+	if !ok {
+		jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
+		return
+	}
+
+	if err := c.identitySvc.UpdatePassword(r.Context(), user, sessionID, req.OldPassword, req.NewPassword); err != nil {
 		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
 		return
 	}

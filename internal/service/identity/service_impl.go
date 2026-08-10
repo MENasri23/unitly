@@ -97,17 +97,12 @@ func (s *identityService) ResetPassword(ctx context.Context, userID uuid.UUID, n
 func (s *identityService) UpdatePassword(
 	ctx context.Context,
 	user *domain.User,
-	sessionId,
+	sessionID uuid.UUID,
 	oldPassword,
 	newPassword string,
 ) error {
 	if user == nil {
 		return domain.ErrUserNotFound
-	}
-
-	sessionUUID, err := uuid.Parse(sessionId)
-	if err != nil {
-		return domain.ErrInvalidToken
 	}
 
 	if user.IsPasswordSet() && !isCurrentPassword(user, oldPassword) {
@@ -122,7 +117,7 @@ func (s *identityService) UpdatePassword(
 		return err
 	}
 
-	return s.sessionService.RevokeAllSessionsExcept(ctx, user.GUID, sessionUUID)
+	return s.sessionService.RevokeAllSessionsExcept(ctx, user.GUID, sessionID)
 }
 
 func (s *identityService) validatePasswordComplexity(password string) error {

@@ -18,6 +18,6 @@ type IdentityService interface {
 	Authenticate(ctx context.Context, phone, password string) (*domain.User, error)
 
 	ResetPassword(ctx context.Context, userID uuid.UUID, newPassword string) error
-	UpdatePassword(ctx context.Context, user *domain.User, sessionId, oldPassword, newPassword string) error
+	UpdatePassword(ctx context.Context, user *domain.User, sessionID uuid.UUID, oldPassword, newPassword string) error
 	UpdateFullName(ctx context.Context, user *domain.User) error
 }

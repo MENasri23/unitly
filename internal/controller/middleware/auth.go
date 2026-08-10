@@ -1,9 +1,9 @@
 package middleware
 
 import (
-	"context"
 	"net/http"
 	"strings"
+	"unitly/internal/controller/reqctx"
 	"unitly/internal/domain"
 	apphttp "unitly/internal/http"
 	"unitly/internal/http/header"
@@ -12,11 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const userCtxKey = contextKey("userCtxKey")
-const sessionCtxKey = contextKey("sessionCtxKey")
 const bearerPrefix = "Bearer "
-
-type contextKey string
 
 type AuthMiddleware struct {
 	tokenValidator domain.TokenValidator
@@ -64,6 +60,11 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 			unauthorized(w)
 			return
 		}
+		sessionID, err := uuid.Parse(claims.SessionID)
+		if err != nil {
+			unauthorized(w)
+			return
+		}
 
 		user, err := m.userRepo.GetByGUID(r.Context(), userID)
 		if err != nil {
@@ -71,8 +72,8 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), userCtxKey, user)
-		ctx = context.WithValue(ctx, sessionCtxKey, claims.SessionID)
+		ctx := reqctx.WithUser(r.Context(), user)
+		ctx = reqctx.WithSessionID(ctx, sessionID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(f)
@@ -88,14 +89,4 @@ func trimBearer(header string) string {
 
 func unauthorized(w http.ResponseWriter) {
 	jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
-}
-
-func GetUserFromCtx(ctx context.Context) *domain.User {
-	user, _ := ctx.Value(userCtxKey).(*domain.User)
-	return user
-}
-
-func GetSessionIdFromCtx(ctx context.Context) string {
-	id, _ := ctx.Value(sessionCtxKey).(string)
-	return id
 }
