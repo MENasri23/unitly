@@ -34,7 +34,7 @@ func (s *sessionRepository) getQuerier(ctx context.Context) db.Querier {
 const createSession = `
 INSERT INTO sessions (id, user_id, refresh_token_hash, expires_at)
 VALUES ($1, $2, $3, $4)
-RETURNING created_at
+RETURNING created_at, version
 `
 
 func (s *sessionRepository) Create(ctx context.Context, session *domain.Session) error {
@@ -46,7 +46,10 @@ func (s *sessionRepository) Create(ctx context.Context, session *domain.Session)
 		session.UserID,
 		session.RefreshTokenHash,
 		session.ExpiresAt,
-	).Scan(&session.CreatedAt)
+	).Scan(
+		&session.CreatedAt, 
+		&session.Version,
+	)
 
 	return err
 }
@@ -112,13 +115,19 @@ func (s *sessionRepository) GetByRefreshToken(ctx context.Context, refreshTokenH
 const revokeSession = `
 UPDATE sessions
 SET revoked_at = $1, version = version + 1
-WHERE id = $2 AND revoked_at IS NULL
+WHERE id = $2 AND version = $3 AND revoked_at IS NULL
 `
 
 func (s *sessionRepository) Revoke(ctx context.Context, session *domain.Session) error {
 	querier := s.getQuerier(ctx)
 
-	cmdTag, err := querier.Exec(ctx, revokeSession, session.RevokedAt, session.ID)
+	cmdTag, err := querier.Exec(
+		ctx, 
+		revokeSession, 
+		session.RevokedAt, 
+		session.ID, 
+		session.Version,
+	)
 	if err != nil {
 		return err
 	}
