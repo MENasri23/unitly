@@ -35,12 +35,12 @@ type verifyOTPRequest struct {
 
 type authByPasswordRequest struct {
 	Phone    string `json:"phone" validate:"required,e164"`
-	Password string `json:"password" validate:"required,min=8,max=64"`
+	Password string `json:"password" validate:"required"`
 }
 
 type finalizeResetPasswordRequest struct {
 	Sign        string `json:"sign" validate:"required,jwt,max=512"`
-	NewPassword string `json:"password" validate:"required,min=8,max=64"`
+	NewPassword string `json:"password" validate:"required"`
 }
 
 type refreshRequest struct {
@@ -205,6 +205,7 @@ func (c *AuthController) FinalizeResetPasswordByOTP(w http.ResponseWriter, r *ht
 		return
 	}
 
+	c.clearAuthCookies(w)
 	c.writeJSON(w, http.StatusOK, true)
 }
 

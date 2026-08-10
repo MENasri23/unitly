@@ -12,12 +12,18 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	minPasswordLength = 8
+	maxPasswordLength = 64
+)
+
 type identityService struct {
 	userRepo domain.UserRepository
+	sessionService domain.SessionService
 }
 
-func NewIdentityService(userRepo domain.UserRepository) IdentityService {
-	return &identityService{userRepo: userRepo}
+func NewIdentityService(userRepo domain.UserRepository, sessionSvc domain.SessionService) IdentityService {
+	return &identityService{userRepo: userRepo, sessionService: sessionSvc}
 }
 
 func (s *identityService) GetByPhone(ctx context.Context, phone string) (*domain.User, error) {
@@ -77,22 +83,50 @@ func (s *identityService) Authenticate(ctx context.Context, phone, password stri
 		return nil, domain.ErrInvalidCredentials
 	}
 
-	if !eql.IsEqual(hash.SHA256(password), *user.HashedPassword) {
+	if !isCurrentPassword(user, password) {
 		return nil, domain.ErrInvalidCredentials
 	}
 
 	return user, nil
 }
 
-func (s *identityService) UpdatePassword(ctx context.Context, userID uuid.UUID, newPassword string) error {
-	if err := s.validatePasswordComplexity(newPassword); err != nil {
-		return err
-	}
+func (s *identityService) ResetPassword(ctx context.Context, userID uuid.UUID, newPassword string) error {
 	return s.userRepo.UpdatePassword(ctx, userID, newPassword)
 }
 
+func (s *identityService) UpdatePassword(
+	ctx context.Context,
+	user *domain.User,
+	sessionId,
+	oldPassword,
+	newPassword string,
+) error {
+	if user == nil {
+		return domain.ErrUserNotFound
+	}
+
+	sessionUUID, err := uuid.Parse(sessionId)
+	if err != nil {
+		return domain.ErrInvalidToken
+	}
+
+	if user.IsPasswordSet() && !isCurrentPassword(user, oldPassword) {
+		return domain.ErrIncorrectPassword
+	}
+
+	if err := s.validatePasswordComplexity(newPassword); err != nil {
+		return err
+	}
+
+	if err := s.userRepo.UpdatePassword(ctx, user.GUID, newPassword); err != nil {
+		return err
+	}
+
+	return s.sessionService.RevokeAllSessionsExcept(ctx, user.GUID, sessionUUID)
+}
+
 func (s *identityService) validatePasswordComplexity(password string) error {
-	if len(password) < 8 || len(password) > 64 {
+	if len(password) < minPasswordLength || len(password) > maxPasswordLength {
 		return domain.ErrInvalidPassword
 	}
 
@@ -114,6 +148,10 @@ func (s *identityService) validatePasswordComplexity(password string) error {
 	}
 
 	return nil
+}
+
+func isCurrentPassword(user *domain.User, password string) bool {
+	return eql.IsEqual(hash.SHA256(password), *user.HashedPassword)
 }
 
 func (s *identityService) UpdateFullName(ctx context.Context, user *domain.User) error {

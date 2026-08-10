@@ -29,6 +29,11 @@ type profileInfoDTO struct {
 	Phone       string  `json:"phone"`
 }
 
+type updatePasswordRequest struct {
+	OldPassword string `json:"old_password" validate:"required"`
+	NewPassword string `json:"new_password" validate:"required"`
+}
+
 func (c *profileController) updateFullName(w http.ResponseWriter, r *http.Request) {
 	var req updateFullNameRequest
 	if err := jsonutil.ReadJSON(r, &req); err != nil {
@@ -67,6 +72,23 @@ func (c *profileController) getProfileInfo(w http.ResponseWriter, r *http.Reques
 	}
 }
 
+func (c *profileController) updatePassword(w http.ResponseWriter, r *http.Request) {
+	req, err := bindAndValidate[updatePasswordRequest](r)
+	if err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		return
+	}
+
+	user := middleware.GetUserFromCtx(r.Context())
+	sessionId := middleware.GetSessionIdFromCtx(r.Context())
+	if err := c.identitySvc.UpdatePassword(r.Context(), user, sessionId, req.OldPassword, req.NewPassword); err != nil {
+		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func SetupProfileRoutes(
 	r chi.Router,
 	authService *auth.AuthService,
@@ -84,5 +106,6 @@ func SetupProfileRoutes(
 		r.Use(authMiddleware.RequireAuth)
 		r.Get("/info", controller.getProfileInfo)
 		r.Patch("/change-name", controller.updateFullName)
+		r.Patch("/change-password", controller.updatePassword)
 	})
 }

@@ -262,6 +262,8 @@ The HTTP API is mounted at `/api/v1`.
   - Updates only the provided fields.
   - The authenticated user is identified from the access token.
 
+
+
   #### Get Profile Info
 
   - Method: `GET`
@@ -284,6 +286,32 @@ The HTTP API is mounted at `/api/v1`.
     - `first_name` and `last_name` may be `null` if not set.
     - `has_password` indicates whether a password is set for the account.
 
+  #### Update Password
+
+  - Method: `PATCH`
+  - Path: `/api/v1/profiles/change-password`
+  - Authentication: `Bearer <access-token>`
+  - Request body:
+    ```json
+    {
+      "old_password": "CurrentP@ssw0rd!",
+      "new_password": "NewP@ssw0rd!"
+    }
+    ```
+
+  - Success response:
+    - Status: `204 No Content`
+    - Response body: *(empty)*
+
+  - Validation:
+    - `old_password` must be 8–64 characters long.
+    - `new_password` must be 8–64 characters long with uppercase, lowercase, digit, and symbol.
+    - returns `INCORRECT_PASSWORD` when `old_password` is incorrect.
+
+  - Behavior:
+    - Updates the authenticated user's password.
+    - Requires the current password for verification.
+    - The authenticated user is identified from the access token.
 
 
 ## Request Validation
@@ -317,6 +345,7 @@ Example:
 
 - `INVALID_PHONE` — invalid phone format
 - `INVALID_PASSWORD` — password failed basic validation rules
+- `INCORRECT_PASSWORD` - current password is incorrect
 - `INVALID_CREDENTIALS` — phone/password credentials are invalid for this account
 - `INVALID_OTP` — OTP is invalid or expired
 - `TOO_MANY_ATTEMPTS` — OTP verification rate limit exceeded

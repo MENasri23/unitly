@@ -142,6 +142,18 @@ func (s *sessionRepository) RevokeAll(ctx context.Context, userID uuid.UUID) err
 	return err
 }
 
+const revokeAllSessionsExcept = `
+UPDATE sessions
+SET revoked_at = NOW(), version = version + 1
+WHERE user_id = $1 AND revoked_at IS NULL AND id != $2 OR $2 IS NULL
+`
+
+func (s *sessionRepository) RevokeAllExcept(ctx context.Context, userID, sessionID uuid.UUID) error {
+	querier := s.getQuerier(ctx)
+	_, err := querier.Exec(ctx, revokeAllSessionsExcept, userID, sessionID)
+	return err
+}
+
 func (s *sessionRepository) CleanupOldSessions(ctx context.Context, expiredThreshold, revokedThreshold time.Duration) (int64, error) {
 	query := `
 		DELETE FROM sessions 

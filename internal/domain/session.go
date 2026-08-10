@@ -47,6 +47,7 @@ type SessionRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*Session, error)
 	Revoke(ctx context.Context, session *Session) error
 	RevokeAll(ctx context.Context, userID uuid.UUID) error
+	RevokeAllExcept(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID) error
 	GetByRefreshToken(ctx context.Context, refreshTokenHash string) (*Session, error)
 	CleanupOldSessions(ctx context.Context, expiredThreshold, revokedThreshold time.Duration) (int64, error)
 }
@@ -57,6 +58,7 @@ type SessionService interface {
 	CreateSession(ctx context.Context, userID uuid.UUID) (accessToken, refreshToken string, err error)
 	RefreshSession(ctx context.Context, oldRefreshToken string) (accessToken, newRefreshToken string, err error)
 	RevokeAllSessions(ctx context.Context, userID uuid.UUID) error
+	RevokeAllSessionsExcept(ctx context.Context, userID, sessionID uuid.UUID) error
 	GenerateResetToken(ctx context.Context, userID uuid.UUID) (string, error)
 	ValidateResetToken(ctx context.Context, token string) (uuid.UUID, error)
 	RevokeSession(ctx context.Context, refreshToken string) error

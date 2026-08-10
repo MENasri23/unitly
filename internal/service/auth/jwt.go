@@ -26,6 +26,7 @@ type JWTService struct {
 
 type accessTokenClaims struct {
 	UserID    string    `json:"user_id"`
+	SessionID string    `json:"session_id,omitempty"`
 	TokenType TokenType `json:"token_type"`
 	jwt.RegisteredClaims
 }
@@ -42,6 +43,7 @@ func NewJWTService(secret string, expiry time.Duration) *JWTService {
 func (s *JWTService) GenerateAccessToken(_ context.Context, claims domain.AccessTokenClaims) (string, error) {
 	jwtClaims := accessTokenClaims{
 		UserID:           claims.UserID,
+		SessionID:        claims.SessionID,
 		TokenType:        tokenTypeAccess,
 		RegisteredClaims: s.registeredClaims(claims.TokenClaims),
 	}
@@ -135,7 +137,8 @@ func (s *JWTService) accessTokenClaims(claims *accessTokenClaims) domain.AccessT
 			Expiry:    expiresAt.Sub(issuedAt),
 			NotBefore: notBefore,
 		},
-		UserID: claims.UserID,
+		UserID:    claims.UserID,
+		SessionID: claims.SessionID,
 	}
 }
 

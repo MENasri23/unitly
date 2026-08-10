@@ -14,6 +14,7 @@ var (
 	ErrInvalidToken       = NewError(ErrorCode("INVALID_TOKEN"), "invalid or expired token")
 	ErrInvalidPhone       = NewError(ErrorCode("INVALID_PHONE"), "invalid phone number")
 	ErrInvalidPassword    = NewError(ErrorCode("INVALID_PASSWORD"), "invalid password")
+	ErrIncorrectPassword  = NewError(ErrorCode("INCORRECT_PASSWORD"), "incorrect password")
 	ErrInvalidCredentials = NewError(ErrorCode("INVALID_CREDENTIALS"), "invalid username or password")
 
 	ErrRateLimit       = NewError(ErrorCode("TOO_MANY_REQUESTS"), "too many request")

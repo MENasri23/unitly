@@ -22,7 +22,8 @@ type TokenClaims struct {
 
 type AccessTokenClaims struct {
 	TokenClaims
-	UserID string
+	UserID    string
+	SessionID string
 }
 
 type TokenService interface {

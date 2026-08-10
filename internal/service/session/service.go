@@ -56,7 +56,10 @@ func (s *sessionService) CreateSession(ctx context.Context, userID uuid.UUID) (s
 		return "", "", err
 	}
 
-	claims := domain.AccessTokenClaims{UserID: userID.String()}
+	claims := domain.AccessTokenClaims{
+		UserID: userID.String(), 
+		SessionID: session.ID.String(),
+	}
 	accessToken, err := s.tokenService.GenerateAccessToken(ctx, claims)
 
 	return accessToken, refreshToken, err
@@ -176,4 +179,8 @@ func (s *sessionService) RevokeSession(ctx context.Context, refreshToken string)
 	revokedAt := time.Now()
 	session.RevokedAt = &revokedAt
 	return s.sessionRepo.Revoke(ctx, session)
+}
+
+func (s *sessionService) RevokeAllSessionsExcept(ctx context.Context, userID, sessionID uuid.UUID) error {
+	return s.sessionRepo.RevokeAllExcept(ctx, userID, sessionID)
 }

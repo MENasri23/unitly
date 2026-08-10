@@ -12,10 +12,11 @@ import (
 	"github.com/google/uuid"
 )
 
-const userCtxKey = userContext("userCtxKey")
+const userCtxKey = contextKey("userCtxKey")
+const sessionCtxKey = contextKey("sessionCtxKey")
 const bearerPrefix = "Bearer "
 
-type userContext string
+type contextKey string
 
 type AuthMiddleware struct {
 	tokenValidator domain.TokenValidator
@@ -35,7 +36,7 @@ func NewAuthMiddleware(
 func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) {
 		var token string
-		
+
 		if apphttp.IsWebPlatform(r) {
 			atCookie, err := r.Cookie("access_token")
 			if err != nil {
@@ -70,8 +71,9 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		r = r.WithContext(context.WithValue(r.Context(), userCtxKey, user))
-		next.ServeHTTP(w, r)
+		ctx := context.WithValue(r.Context(), userCtxKey, user)
+		ctx = context.WithValue(ctx, sessionCtxKey, claims.SessionID)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(f)
 }
@@ -91,4 +93,9 @@ func unauthorized(w http.ResponseWriter) {
 func GetUserFromCtx(ctx context.Context) *domain.User {
 	user, _ := ctx.Value(userCtxKey).(*domain.User)
 	return user
+}
+
+func GetSessionIdFromCtx(ctx context.Context) string {
+	id, _ := ctx.Value(sessionCtxKey).(string)
+	return id
 }
