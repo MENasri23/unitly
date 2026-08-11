@@ -6,19 +6,19 @@ import (
 )
 
 var (
-	ErrInternal     = NewError(ErrorCode("INTERNAL"), "something went wrong")
-	ErrAlreadyExist = NewError(ErrorCode("ALREADY_EXIST"), "record already exist")
+	ErrInternal     = NewError("INTERNAL", "something went wrong")
+	ErrAlreadyExist = NewError("ALREADY_EXIST", "record already exist")
 
 	ErrNotFound = NewNotFoundError("record")
 
-	ErrInvalidToken       = NewError(ErrorCode("INVALID_TOKEN"), "invalid or expired token")
-	ErrInvalidPhone       = NewError(ErrorCode("INVALID_PHONE"), "invalid phone number")
-	ErrInvalidPassword    = NewError(ErrorCode("INVALID_PASSWORD"), "invalid password")
-	ErrIncorrectPassword  = NewError(ErrorCode("INCORRECT_PASSWORD"), "incorrect password")
-	ErrInvalidCredentials = NewError(ErrorCode("INVALID_CREDENTIALS"), "invalid username or password")
+	ErrInvalidToken       = NewError("INVALID_TOKEN", "invalid or expired token")
+	ErrInvalidPhone       = NewError("INVALID_PHONE", "invalid phone number")
+	ErrInvalidPassword    = NewError("INVALID_PASSWORD", "invalid password")
+	ErrIncorrectPassword  = NewError("INCORRECT_PASSWORD", "incorrect password")
+	ErrInvalidCredentials = NewError("INVALID_CREDENTIALS", "invalid username or password")
 
-	ErrRateLimit       = NewError(ErrorCode("TOO_MANY_REQUESTS"), "too many request")
-	ErrTooManyAttempts = NewError(ErrorCode("TOO_MANY_ATTEMPTS"), "too many failed attempts, please try again later")
+	ErrRateLimit       = NewError("TOO_MANY_REQUESTS", "too many request")
+	ErrTooManyAttempts = NewError("TOO_MANY_ATTEMPTS", "too many failed attempts, please try again later")
 )
 
 type ErrorCode string

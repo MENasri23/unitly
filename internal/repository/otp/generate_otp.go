@@ -5,7 +5,7 @@ import (
 	"unitly/internal/util/rand"
 )
 
-var ErrInvalidLength = domain.NewError(domain.ErrorCode("INVALID_LENGTH"), "invalid otp length")
+var ErrInvalidLength = domain.NewError("INVALID_LENGTH", "invalid otp length")
 
 func generateOTP(length int) (string, error) {
 	if length <= 0 {

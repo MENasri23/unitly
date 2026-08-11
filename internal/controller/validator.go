@@ -30,7 +30,7 @@ func validateProfileName(fl validator.FieldLevel) bool {
 
 func validateStruct(s any) error {
 	if err := appValidator.Struct(s); err != nil {
-		return domain.NewError(domain.ErrorCode("VALIDATION_ERROR"), err.Error())
+		return domain.NewError("VALIDATION_ERROR", err.Error())
 	}
 
 	return nil

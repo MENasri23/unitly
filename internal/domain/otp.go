@@ -3,8 +3,8 @@ package domain
 import "context"
 
 var (
-	ErrInvalidOTP     = NewError(ErrorCode("INVALID_OTP"), "invalid or expired OTP")
-	ErrOTPAlreadyUsed = NewError(ErrorCode("OTP_ALREADY_USED"), "OTP has already been used")
+	ErrInvalidOTP     = NewError("INVALID_OTP", "invalid or expired OTP")
+	ErrOTPAlreadyUsed = NewError("OTP_ALREADY_USED", "OTP has already been used")
 )
 
 type OTPPurpose string
