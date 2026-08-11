@@ -184,6 +184,26 @@ func (u *userRepository) UpdateFullName(ctx context.Context, user *domain.User) 
 	return nil
 }
 
+const updatePhone = `
+UPDATE users
+SET phone = $1, version = version + 1
+WHERE id = $2 AND version = $3
+`
+
+func (u *userRepository) UpdatePhone(ctx context.Context, user *domain.User) error {
+	querier := u.getQuerier(ctx)
+	cmdTag, err := querier.Exec(ctx, updatePhone, user.Phone, user.ID, user.Version)
+	if err != nil {
+		return err
+	}
+
+	if cmdTag.RowsAffected() == 0 {
+		return domain.ErrUserNotFound
+	}
+
+	return nil
+}
+
 func mapDBError(err error) error {
 	if err == nil {
 		return nil

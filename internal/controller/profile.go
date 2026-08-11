@@ -36,6 +36,15 @@ type updatePasswordRequest struct {
 	NewPassword string `json:"new_password" validate:"required"`
 }
 
+type updatePhoneRequest struct {
+	Phone string `json:"phone" validate:"required,e164"`
+}
+
+type updatePhoneVerify struct {
+	Sign string `json:"sign" validate:"required,max=256"`
+	Otp  string `json:"otp" validate:"required,number,len=6"`
+}
+
 func (c *profileController) updateFullName(w http.ResponseWriter, r *http.Request) {
 	var req updateFullNameRequest
 	if err := jsonutil.ReadJSON(r, &req); err != nil {
@@ -96,6 +105,39 @@ func (c *profileController) updatePassword(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (c *profileController) updatePhoneRequest(w http.ResponseWriter, r *http.Request) {
+	req, err := bindAndValidate[updatePhoneRequest](r)
+	if err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		return
+	}
+
+	user := reqctx.GetUser(r.Context())
+	token, err := c.identitySvc.UpdatePhoneRequest(r.Context(), user, req.Phone)
+	if err != nil {
+		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, token, c.logger)
+}
+
+func (c *profileController) updatePhoneVerify(w http.ResponseWriter, r *http.Request) {
+	req, err := bindAndValidate[updatePhoneVerify](r)
+	if err != nil {
+		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		return
+	}
+
+	user := reqctx.GetUser(r.Context())
+	if err = c.identitySvc.UpdatePhoneVerify(r.Context(), user, req.Sign, req.Otp); err != nil {
+		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func SetupProfileRoutes(
 	r chi.Router,
 	authService *auth.AuthService,
@@ -114,5 +156,9 @@ func SetupProfileRoutes(
 		r.Get("/info", controller.getProfileInfo)
 		r.Patch("/change-name", controller.updateFullName)
 		r.Patch("/change-password", controller.updatePassword)
+		r.Route("/change-phone", func(r chi.Router) {
+			r.Post("/", controller.updatePhoneRequest)
+			r.Post("/verify", controller.updatePhoneVerify)
+		})
 	})
 }

@@ -39,6 +39,8 @@ var (
 	ErrAlreadyExist       = NewError("ALREADY_EXIST", "record already exist")
 	ErrInvalidToken       = NewError("INVALID_TOKEN", "invalid or expired token")
 	ErrInvalidPhone       = NewError("INVALID_PHONE", "invalid phone number")
+	ErrPhoneUnchanged     = NewError("PHONE_UNCHANGED", "phone number must be different from the current one")
+	ErrPhoneAlreadyInUse  = NewError("PHONE_ALREADY_IN_USE", "this phone number is already in use")
 	ErrInvalidPassword    = NewError("INVALID_PASSWORD", "invalid password")
 	ErrIncorrectPassword  = NewError("INCORRECT_PASSWORD", "incorrect password")
 	ErrInvalidCredentials = NewError("INVALID_CREDENTIALS", "invalid username or password")

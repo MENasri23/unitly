@@ -8,22 +8,33 @@ import (
 	"unitly/internal/domain"
 	"unitly/internal/util/eql"
 	"unitly/internal/util/hash"
+	"unitly/internal/util/validate"
 
 	"github.com/google/uuid"
 )
 
 const (
-	minPasswordLength = 8
-	maxPasswordLength = 64
+	minPasswordLength  = 8
+	maxPasswordLength  = 64
+	updatePhonePurpose = domain.OTPPurpose("update-phone")
 )
 
 type identityService struct {
-	userRepo domain.UserRepository
+	userRepo       domain.UserRepository
 	sessionService domain.SessionService
+	otpService     domain.OTPService
 }
 
-func NewIdentityService(userRepo domain.UserRepository, sessionSvc domain.SessionService) IdentityService {
-	return &identityService{userRepo: userRepo, sessionService: sessionSvc}
+func NewIdentityService(
+	userRepo domain.UserRepository,
+	sessionSvc domain.SessionService,
+	otpSvc domain.OTPService,
+) IdentityService {
+	return &identityService{
+		userRepo:       userRepo,
+		sessionService: sessionSvc,
+		otpService:     otpSvc,
+	}
 }
 
 func (s *identityService) GetByPhone(ctx context.Context, phone string) (*domain.User, error) {
@@ -176,4 +187,52 @@ func isFullNameMissing(user *domain.User) bool {
 
 func isEmpty(s *string) bool {
 	return s == nil || *s == ""
+}
+
+func (s *identityService) UpdatePhoneRequest(ctx context.Context, user *domain.User, newPhone string) (string, error) {
+	if user == nil {
+		return "", domain.ErrInvalidToken
+	}
+
+	if !validate.IsValidPhone(newPhone) {
+		return "", domain.ErrInvalidPhone
+	}
+
+	if user.Phone == newPhone {
+		return "", domain.ErrPhoneUnchanged
+	}
+
+	alreadyUsed, err := s.userRepo.ExistsByPhone(ctx, newPhone)
+	if err != nil {
+		return "", err
+	}
+
+	if alreadyUsed {
+		return "", domain.ErrPhoneAlreadyInUse
+	}
+
+	if err := s.otpService.EnsureAllowed(ctx, newPhone, updatePhonePurpose); err != nil {
+		return "", err
+	}
+
+	token, err := s.otpService.RequestOTP(ctx, newPhone, updatePhonePurpose, true)
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
+}
+
+func (s *identityService) UpdatePhoneVerify(ctx context.Context, user *domain.User, token, inputOTP string) error {
+	phone, err := s.otpService.VerifyOTP(ctx, token, inputOTP, updatePhonePurpose)
+	if err != nil {
+		return err
+	}
+
+	user.Phone = phone
+	if err = s.userRepo.UpdatePhone(ctx, user); err != nil {
+		return err
+	}
+
+	return nil
 }

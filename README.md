@@ -315,6 +315,64 @@ The HTTP API is mounted at `/api/v1`.
   - Requires the current password for verification.
   - The authenticated user is identified from the access token.
 
+#### Update Phone Request
+
+- Method: `POST`
+- Path: `/api/v1/profiles/change-phone`
+- Authentication: `Bearer <access-token>`
+- Request body:
+
+  ```json
+  {
+    "phone": "+1234567890"
+  }
+  ```
+
+- Success response:
+  - Status: `200 OK`
+  - Response body: JSON string token (sign)
+
+- Validation:
+  - `phone` must be in valid E.164 format.
+  - Phone number must be different from the current one.
+  - Phone number must not already be in use by another account.
+
+- Behavior:
+  - Initiates a phone number update request.
+  - Generates an OTP and sends it to the new phone number.
+  - Returns a token (sign) to be used in the verification step.
+  - The authenticated user is identified from the access token.
+
+#### Update Phone Verify
+
+- Method: `POST`
+- Path: `/api/v1/profiles/change-phone/verify`
+- Authentication: `Bearer <access-token>`
+- Request body:
+
+  ```json
+  {
+    "sign": "<token-from-request>",
+    "otp": "123456"
+  }
+  ```
+
+- Success response:
+  - Status: `204 No Content`
+  - Response body: _(empty)_
+
+- Validation:
+  - `sign` must be a valid token from the phone update request.
+  - `otp` must be a 6-digit number.
+  - OTP must not be expired (3 minute window).
+
+- Behavior:
+  - Verifies the OTP sent to the new phone number.
+  - Updates the authenticated user's phone number upon successful verification.
+  - The authenticated user is identified from the access token.
+
+
+
 ## Error Handling
 
 All errors are returned as JSON objects with a `code` and `message` field.
@@ -336,6 +394,8 @@ Example:
 ### Current mapped error codes
 
 - `INVALID_PHONE` — invalid phone format
+- `PHONE_UNCHANGED` — phone number must be different from the current one
+- `PHONE_ALREADY_IN_USE` — this phone number is already in use
 - `INVALID_PASSWORD` — password failed basic validation rules
 - `INCORRECT_PASSWORD` - current password is incorrect
 - `INVALID_CREDENTIALS` — phone/password credentials are invalid for this account

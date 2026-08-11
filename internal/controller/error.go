@@ -14,6 +14,8 @@ var errToStatusCode = map[error]int{
 	domain.ErrInvalidOTP:         http.StatusUnauthorized,
 	domain.ErrInvalidToken:       http.StatusUnauthorized,
 	domain.ErrInvalidPhone:       http.StatusBadRequest,
+	domain.ErrPhoneUnchanged:     http.StatusConflict,
+	domain.ErrPhoneAlreadyInUse:  http.StatusConflict,
 	domain.ErrInvalidCredentials: http.StatusUnauthorized,
 	identity.ErrEmptyFullName:    http.StatusBadRequest,
 	domain.ErrInvalidPassword:    http.StatusBadRequest,

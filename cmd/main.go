@@ -105,7 +105,7 @@ func main() {
 		smsSvc,
 		otpRateLimiter,
 	)
-	identityService := identitysvc.NewIdentityService(userRepository, sessionService)
+	identityService := identitysvc.NewIdentityService(userRepository, sessionService, otpService)
 	authService := auth.NewAuthService(
 		otpService,
 		identityService,

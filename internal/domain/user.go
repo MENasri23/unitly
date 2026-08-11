@@ -33,4 +33,5 @@ type UserRepository interface {
 	ExistsByPhone(ctx context.Context, phone string) (bool, error)
 	UpdatePassword(ctx context.Context, user *User, password string) error
 	UpdateFullName(ctx context.Context, user *User) error
+	UpdatePhone(ctx context.Context, user *User) error
 }
