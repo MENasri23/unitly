@@ -1,4 +1,21 @@
 services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    environment:
+      - DOMAIN_NAME=${DOMAIN_NAME}
+      - SERVER_PORT=${SERVER_PORT}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - backend
+
   db:
     image: postgres:17.4-alpine
     container_name: postgres
@@ -8,7 +25,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: ${DB_NAME}
     ports:
-      - "${DB_PORT}:${DB_PORT}"
+      - "127.0.0.1:${DB_PORT}:5432"
     networks:
       - admin
       - backend
@@ -20,7 +37,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-  
+
   migrations:
     image: migrate/migrate:4
     container_name: migrations
@@ -43,13 +60,13 @@ services:
       --maxmemory 512mb  
       --maxmemory-policy allkeys-lru
     ports:
-      - "${REDIS_PORT}:${REDIS_PORT}"
+      - "127.0.0.1:${REDIS_PORT}:6379"
     networks:
       - admin
       - backend
     volumes:
-       - redis_data:/data
-       - ./users.acl:/usr/local/etc/redis/users.acl:ro
+      - redis_data:/data
+      - ./users.acl:/usr/local/etc/redis/users.acl:ro
     healthcheck:
       test: [ "CMD", "redis-cli", "--user", "${REDIS_USER}", "--pass", "${REDIS_PASS}", "ping" ]
       interval: 10s
@@ -64,7 +81,8 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "5540:5540"
+      # Bound ONLY to local loopback (127.0.0.1) for private SSH tunneling access
+      - "127.0.0.1:5540:5540"
     networks:
       - admin
     volumes:
@@ -79,12 +97,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    ports:
-      - "${SERVER_PORT}:${SERVER_PORT}"
     networks:
       - backend
-    env_file:
-      - .env
+    volumes:
+      # Mount the local .env file into the container as read-only
+      - ./.env:/app/.env:ro
 
 networks:
   backend:
@@ -94,3 +111,5 @@ volumes:
   postgres_data:
   redis_data:
   redisinsight_data:
+  caddy_data:
+  caddy_config:
