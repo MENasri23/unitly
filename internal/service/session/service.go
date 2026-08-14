@@ -116,7 +116,8 @@ func (s *sessionService) RefreshSession(ctx context.Context, oldRefreshToken str
 	})
 
 	if errors.Is(err, domain.ErrSessionCompromised) && activeUserID != uuid.Nil {
-		_ = s.RevokeAllSessions(ctx, activeUserID)
+		context := context.WithoutCancel(ctx)
+		_ = s.RevokeAllSessions(context, activeUserID)
 		return "", "", domain.ErrInvalidToken
 	}
 
