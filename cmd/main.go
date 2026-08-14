@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -12,7 +13,6 @@ import (
 	"unitly/internal/domain"
 	"unitly/internal/http/header"
 	"unitly/internal/log"
-	"unitly/internal/ratelimit"
 	"unitly/internal/repository"
 	otprepo "unitly/internal/repository/otp"
 	"unitly/internal/service/auth"
@@ -77,16 +77,16 @@ func main() {
 	sessionRepository := repository.NewSessionRepository(pgxDb)
 
 	// rate limiters
-	otpCfg := app.GetOtpConfig()
-	otpRateLimiter, err := ratelimit.NewTokenBucketLimiter(cache, ratelimit.Config{
-		Capacity:   float64(otpCfg.RequestLimit),
-		RefillRate: float64(otpCfg.RequestLimit) / otpCfg.Window.Seconds(),
-		TTL:        otpCfg.Window,
-	})
-	if err != nil {
-		logger.Error(fmt.Sprintf("failed to create OTP rate limiter: %v", err))
-		return
-	}
+	// otpCfg := app.GetOtpConfig()
+	// otpRateLimiter, err := ratelimit.NewTokenBucketLimiter(cache, ratelimit.Config{
+	// 	Capacity:   float64(otpCfg.RequestLimit),
+	// 	RefillRate: float64(otpCfg.RequestLimit) / otpCfg.Window.Seconds(),
+	// 	TTL:        otpCfg.Window,
+	// })
+	// if err != nil {
+	// 	logger.Error(fmt.Sprintf("failed to create OTP rate limiter: %v", err))
+	// 	return
+	// }
 
 	txManager := db.NewSqlTxManager(pgxDb)
 
@@ -103,7 +103,7 @@ func main() {
 	otpService := otpsvc.NewOTPService(
 		otpRepository,
 		smsSvc,
-		otpRateLimiter,
+		&rl{},
 	)
 	identityService := identitysvc.NewIdentityService(userRepository, sessionService, otpService)
 	authService := auth.NewAuthService(
@@ -182,6 +182,17 @@ func main() {
 		return
 	}
 
+}
+
+type rl struct {
+}
+
+func (r *rl) Allow(ctx context.Context, key string) (bool, error) {
+	return true, nil
+}
+
+func (r *rl) Reset(ctx context.Context, key string) (bool, error) {
+	return true, nil
 }
 
 func getLogLevel(app *bootstrap.Application) slog.Level {
