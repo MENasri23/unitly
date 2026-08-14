@@ -44,15 +44,16 @@ func (s *sessionService) CreateSession(ctx context.Context, userID uuid.UUID) (s
 		return "", "", err
 	}
 
+	sessionID := uuid.New()
+	now := time.Now()
 	session := &domain.Session{
-		ID:               uuid.New(),
+		ID:               sessionID,
 		UserID:           userID,
+		FamilyID:         sessionID, // Root session sets FamilyID to its own ID
+		ParentSessionID:  nil,       // Root session has no parent
 		RefreshTokenHash: hash.SHA256(refreshToken),
-		ExpiresAt:        time.Now().Add(s.refreshTokenExpiry),
-	}
-
-	if err := s.sessionRepo.Create(ctx, session); err != nil {
-		return "", "", err
+		CreatedAt:        now,
+		ExpiresAt:        now.Add(s.refreshTokenExpiry),
 	}
 
 	claims := domain.AccessTokenClaims{
@@ -60,8 +61,15 @@ func (s *sessionService) CreateSession(ctx context.Context, userID uuid.UUID) (s
 		SessionID: session.ID.String(),
 	}
 	accessToken, err := s.tokenService.GenerateAccessToken(ctx, claims)
+	if err != nil {
+		return "", "", err
+	}
 
-	return accessToken, refreshToken, err
+	if err = s.sessionRepo.Create(ctx, session); err != nil {
+		return "", "", err
+	}
+
+	return accessToken, refreshToken, nil
 }
 
 func (s *sessionService) RefreshSession(ctx context.Context, oldRefreshToken string) (string, string, error) {
@@ -75,10 +83,11 @@ func (s *sessionService) RefreshSession(ctx context.Context, oldRefreshToken str
 		return "", "", domain.ErrInvalidToken
 	}
 
+	// If reuse is detected outside the grace period, revoke the entire family lineage
 	if session.IsCompromised() {
-		context := context.WithoutCancel(ctx)
-		_ = s.RevokeAllSessions(context, session.UserID)
-		return "", "", domain.ErrInvalidToken
+		detachedCtx := context.WithoutCancel(ctx)
+		_ = s.revokeFamily(detachedCtx, session.FamilyID)
+		return "", "", domain.ErrSessionCompromised
 	}
 
 	if session.IsExpired() || session.IsRevoked() {
@@ -94,8 +103,8 @@ func (s *sessionService) RefreshSession(ctx context.Context, oldRefreshToken str
 	var newRefreshToken string
 
 	err = s.uow.Do(ctx, func(txCtx context.Context) error {
-		revokedAt := time.Now()
-		session.RevokedAt = &revokedAt
+		now := time.Now()
+		session.RevokedAt = &now
 		if err = s.sessionRepo.Revoke(txCtx, session); err != nil {
 			return err
 		}
@@ -105,13 +114,18 @@ func (s *sessionService) RefreshSession(ctx context.Context, oldRefreshToken str
 			return err
 		}
 
+		parentID := session.ID
 		newSession := &domain.Session{
 			ID:               uuid.New(),
 			UserID:           session.UserID,
+			FamilyID:         session.FamilyID,
+			ParentSessionID:  &parentID,
 			RefreshTokenHash: hash.SHA256(newRefreshToken),
-			ExpiresAt:        time.Now().Add(s.refreshTokenExpiry),
+			CreatedAt:        now,
+			ExpiresAt:        now.Add(s.refreshTokenExpiry),
 		}
 
+		// Database-level UNIQUE constraint on parent_session_id prevents race conditions
 		if err := s.sessionRepo.Create(txCtx, newSession); err != nil {
 			return err
 		}
@@ -126,8 +140,16 @@ func (s *sessionService) RefreshSession(ctx context.Context, oldRefreshToken str
 	return accessToken, newRefreshToken, nil
 }
 
+func (s *sessionService) revokeFamily(ctx context.Context, familyID uuid.UUID) error {
+	return s.sessionRepo.RevokeFamily(ctx, familyID)
+}
+
 func (s *sessionService) RevokeAllSessions(ctx context.Context, userID uuid.UUID) error {
 	return s.sessionRepo.RevokeAll(ctx, userID)
+}
+
+func (s *sessionService) RevokeAllSessionsExcept(ctx context.Context, userID, sessionID uuid.UUID) error {
+	return s.sessionRepo.RevokeAllExcept(ctx, userID, sessionID)
 }
 
 func (s *sessionService) GenerateResetToken(ctx context.Context, userID uuid.UUID) (string, error) {
@@ -166,8 +188,4 @@ func (s *sessionService) RevokeSession(ctx context.Context, refreshToken string)
 	revokedAt := time.Now()
 	session.RevokedAt = &revokedAt
 	return s.sessionRepo.Revoke(ctx, session)
-}
-
-func (s *sessionService) RevokeAllSessionsExcept(ctx context.Context, userID, sessionID uuid.UUID) error {
-	return s.sessionRepo.RevokeAllExcept(ctx, userID, sessionID)
 }

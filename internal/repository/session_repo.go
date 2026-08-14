@@ -32,9 +32,9 @@ func (s *sessionRepository) getQuerier(ctx context.Context) db.Querier {
 }
 
 const createSession = `
-INSERT INTO sessions (id, user_id, refresh_token_hash, expires_at)
-VALUES ($1, $2, $3, $4)
-RETURNING created_at, version
+INSERT INTO sessions (id, user_id, family_id, parent_session_id, refresh_token_hash, created_at, expires_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING version
 `
 
 func (s *sessionRepository) Create(ctx context.Context, session *domain.Session) error {
@@ -44,10 +44,12 @@ func (s *sessionRepository) Create(ctx context.Context, session *domain.Session)
 		createSession,
 		session.ID,
 		session.UserID,
+		session.FamilyID,
+		session.ParentSessionID,
 		session.RefreshTokenHash,
+		session.CreatedAt,
 		session.ExpiresAt,
 	).Scan(
-		&session.CreatedAt, 
 		&session.Version,
 	)
 
@@ -55,7 +57,7 @@ func (s *sessionRepository) Create(ctx context.Context, session *domain.Session)
 }
 
 const getSessionByID = `
-SELECT id, user_id, refresh_token_hash, created_at, expires_at, revoked_at, version
+SELECT id, user_id, family_id, parent_session_id, refresh_token_hash, created_at, expires_at, revoked_at, version
 FROM sessions
 WHERE id = $1
 `
@@ -67,6 +69,8 @@ func (s *sessionRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.
 	err := querier.QueryRow(ctx, getSessionByID, id).Scan(
 		&session.ID,
 		&session.UserID,
+		&session.FamilyID,
+		&session.ParentSessionID,
 		&session.RefreshTokenHash,
 		&session.CreatedAt,
 		&session.ExpiresAt,
@@ -84,7 +88,7 @@ func (s *sessionRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.
 }
 
 const getSessionByRefreshToken = `
-SELECT id, user_id, refresh_token_hash, created_at, expires_at, revoked_at, version
+SELECT id, user_id, family_id, parent_session_id, refresh_token_hash, created_at, expires_at, revoked_at, version
 FROM sessions
 WHERE refresh_token_hash = $1
 `
@@ -96,6 +100,8 @@ func (s *sessionRepository) GetByRefreshToken(ctx context.Context, refreshTokenH
 	err := querier.QueryRow(ctx, getSessionByRefreshToken, refreshTokenHash).Scan(
 		&session.ID,
 		&session.UserID,
+		&session.FamilyID,
+		&session.ParentSessionID,
 		&session.RefreshTokenHash,
 		&session.CreatedAt,
 		&session.ExpiresAt,
@@ -122,10 +128,10 @@ func (s *sessionRepository) Revoke(ctx context.Context, session *domain.Session)
 	querier := s.getQuerier(ctx)
 
 	cmdTag, err := querier.Exec(
-		ctx, 
-		revokeSession, 
-		session.RevokedAt, 
-		session.ID, 
+		ctx,
+		revokeSession,
+		session.RevokedAt,
+		session.ID,
 		session.Version,
 	)
 	if err != nil {
@@ -139,10 +145,26 @@ func (s *sessionRepository) Revoke(ctx context.Context, session *domain.Session)
 	return nil
 }
 
+const revokeFamilySessions = `
+UPDATE sessions
+SET revoked_at = NOW(), version = version + 1
+WHERE family_id = $1 
+	AND revoked_at IS NULL
+	AND expires_at > NOW()
+`
+
+func (s *sessionRepository) RevokeFamily(ctx context.Context, familyID uuid.UUID) error {
+	querier := s.getQuerier(ctx)
+	_, err := querier.Exec(ctx, revokeFamilySessions, familyID)
+	return err
+}
+
 const revokeAllSessions = `
 UPDATE sessions
 SET revoked_at = NOW(), version = version + 1
-WHERE user_id = $1 AND revoked_at IS NULL
+WHERE user_id = $1 
+	AND revoked_at IS NULL
+	AND expires_at > NOW()
 `
 
 func (s *sessionRepository) RevokeAll(ctx context.Context, userID uuid.UUID) error {
@@ -154,7 +176,10 @@ func (s *sessionRepository) RevokeAll(ctx context.Context, userID uuid.UUID) err
 const revokeAllSessionsExcept = `
 UPDATE sessions
 SET revoked_at = NOW(), version = version + 1
-WHERE user_id = $1 AND revoked_at IS NULL AND id != $2 OR $2 IS NULL
+WHERE user_id = $1 
+	AND revoked_at IS NULL 
+	AND expires_at > NOW()
+	AND id != $2 OR $2 IS NULL
 `
 
 func (s *sessionRepository) RevokeAllExcept(ctx context.Context, userID, sessionID uuid.UUID) error {
