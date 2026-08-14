@@ -15,7 +15,6 @@ type Session struct {
 	UserID          uuid.UUID
 	FamilyID        uuid.UUID
 	ParentSessionID *uuid.UUID
-	Version         int
 
 	RefreshTokenHash string
 
