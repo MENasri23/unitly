@@ -27,16 +27,16 @@ func NewOTPService(otpRepo domain.OTPRepository, smsService domain.SmsService, r
 }
 
 func (s *otpService) EnsureAllowed(ctx context.Context, phone string, purpose domain.OTPPurpose) error {
-	blocked, err := s.otpRepo.IsBlocked(ctx, phone, purpose)
-	if err != nil || blocked {
-		return domain.ErrTooManyAttempts
-	}
+	// blocked, err := s.otpRepo.IsBlocked(ctx, phone, purpose)
+	// if err != nil || blocked {
+	// 	return domain.ErrTooManyAttempts
+	// }
 
-	key := ratelimitKey(phone, purpose)
-	allowed, err := s.otpRateLimiter.Allow(ctx, key)
-	if err != nil || !allowed {
-		return domain.ErrRateLimit
-	}
+	// key := ratelimitKey(phone, purpose)
+	// allowed, err := s.otpRateLimiter.Allow(ctx, key)
+	// if err != nil || !allowed {
+	// 	return domain.ErrRateLimit
+	// }
 
 	return nil
 }
