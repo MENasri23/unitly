@@ -1,3 +1,23 @@
 {$DOMAIN_NAME:http://localhost} {
+    encode gzip zstd
+
     reverse_proxy app:{$SERVER_PORT:8080}
+
+    header {
+        # Security
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+
+        # Hide implementation details
+        -Server
+    }
+
+    log {
+        output stdout
+        format json
+        level INFO
+    }
 }

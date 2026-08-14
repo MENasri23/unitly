@@ -142,8 +142,7 @@ func main() {
 	}))
 
 	r.Use(middleware.RequestID)
-	r.Use(middleware.ClientIPFromRemoteAddr)
-	r.Use(appmiddleware.Logger(logger))
+	r.Use(middleware.ClientIPFromXFFTrustedProxies(1))
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(requestTimeout))
 	r.Use(middleware.RequestSize(maxReadBytes))
