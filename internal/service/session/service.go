@@ -2,7 +2,6 @@ package sessionsvc
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"unitly/internal/domain"
@@ -57,7 +56,7 @@ func (s *sessionService) CreateSession(ctx context.Context, userID uuid.UUID) (s
 	}
 
 	claims := domain.AccessTokenClaims{
-		UserID: userID.String(), 
+		UserID:    userID.String(),
 		SessionID: session.ID.String(),
 	}
 	accessToken, err := s.tokenService.GenerateAccessToken(ctx, claims)
@@ -71,24 +70,30 @@ func (s *sessionService) RefreshSession(ctx context.Context, oldRefreshToken str
 	}
 
 	tokenHash := hash.SHA256(oldRefreshToken)
-	var activeUserID uuid.UUID
+	session, err := s.sessionRepo.GetByRefreshToken(ctx, tokenHash)
+	if err != nil {
+		return "", "", domain.ErrInvalidToken
+	}
+
+	if session.IsCompromised() {
+		context := context.WithoutCancel(ctx)
+		_ = s.RevokeAllSessions(context, session.UserID)
+		return "", "", domain.ErrInvalidToken
+	}
+
+	if session.IsExpired() || session.IsRevoked() {
+		return "", "", domain.ErrInvalidToken
+	}
+
+	claims := domain.AccessTokenClaims{UserID: session.UserID.String()}
+	accessToken, err := s.tokenService.GenerateAccessToken(ctx, claims)
+	if err != nil {
+		return "", "", err
+	}
+
 	var newRefreshToken string
 
-	err := s.uow.Do(ctx, func(txCtx context.Context) error {
-		session, err := s.sessionRepo.GetByRefreshToken(txCtx, tokenHash)
-		if err != nil {
-			return domain.ErrInvalidToken
-		}
-
-		if session.IsCompromised() {
-			activeUserID = session.UserID
-			return domain.ErrSessionCompromised
-		}
-
-		if session.IsExpired() || session.IsRevoked() {
-			return domain.ErrInvalidToken
-		}
-
+	err = s.uow.Do(ctx, func(txCtx context.Context) error {
 		revokedAt := time.Now()
 		session.RevokedAt = &revokedAt
 		if err = s.sessionRepo.Revoke(txCtx, session); err != nil {
@@ -111,24 +116,14 @@ func (s *sessionService) RefreshSession(ctx context.Context, oldRefreshToken str
 			return err
 		}
 
-		activeUserID = session.UserID
 		return nil
 	})
-
-	if errors.Is(err, domain.ErrSessionCompromised) && activeUserID != uuid.Nil {
-		context := context.WithoutCancel(ctx)
-		_ = s.RevokeAllSessions(context, activeUserID)
-		return "", "", domain.ErrInvalidToken
-	}
 
 	if err != nil {
 		return "", "", err
 	}
 
-	claims := domain.AccessTokenClaims{UserID: activeUserID.String()}
-	accessToken, err := s.tokenService.GenerateAccessToken(ctx, claims)
-
-	return accessToken, newRefreshToken, err
+	return accessToken, newRefreshToken, nil
 }
 
 func (s *sessionService) RevokeAllSessions(ctx context.Context, userID uuid.UUID) error {
