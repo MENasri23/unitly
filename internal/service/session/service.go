@@ -80,21 +80,12 @@ func (s *sessionService) RefreshSession(ctx context.Context, oldRefreshToken str
 			return domain.ErrInvalidToken
 		}
 
-		if session.IsExpired() {
-			return domain.ErrInvalidToken
-		}
-
 		if session.IsCompromised() {
 			activeUserID = session.UserID
 			return domain.ErrSessionCompromised
 		}
 
-		if session.IsRevoked() {
-			return domain.ErrInvalidToken
-		}
-
-		user, err := s.userRepo.GetByGUID(txCtx, session.UserID)
-		if err != nil || !user.IsActive {
+		if session.IsExpired() || session.IsRevoked() {
 			return domain.ErrInvalidToken
 		}
 
@@ -111,7 +102,7 @@ func (s *sessionService) RefreshSession(ctx context.Context, oldRefreshToken str
 
 		newSession := &domain.Session{
 			ID:               uuid.New(),
-			UserID:           user.GUID,
+			UserID:           session.UserID,
 			RefreshTokenHash: hash.SHA256(newRefreshToken),
 			ExpiresAt:        time.Now().Add(s.refreshTokenExpiry),
 		}
@@ -120,7 +111,7 @@ func (s *sessionService) RefreshSession(ctx context.Context, oldRefreshToken str
 			return err
 		}
 
-		activeUserID = user.GUID
+		activeUserID = session.UserID
 		return nil
 	})
 
