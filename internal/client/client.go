@@ -7,3 +7,13 @@ const (
 )
 
 type ClientPlatform string
+
+func GetClientPlatform(platformStr string) ClientPlatform {
+	p := ClientPlatform(platformStr)
+	switch p {
+	case WebPlatform, AndroidPlatform:
+		return p
+	default:
+		return UnknownPlatform
+	}
+}
