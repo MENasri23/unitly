@@ -87,7 +87,7 @@ func (s *sessionService) RefreshSession(ctx context.Context, oldRefreshToken str
 	if session.IsCompromised() {
 		detachedCtx := context.WithoutCancel(ctx)
 		_ = s.revokeFamily(detachedCtx, session.FamilyID)
-		return "", "", domain.ErrSessionCompromised
+		return "", "", domain.ErrInvalidToken
 	}
 
 	if session.IsExpired() || session.IsRevoked() {
