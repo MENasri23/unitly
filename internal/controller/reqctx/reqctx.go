@@ -2,8 +2,10 @@ package reqctx
 
 import (
 	"context"
-	"github.com/google/uuid"
 	"unitly/internal/domain"
+
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/google/uuid"
 )
 
 type ctxKey int
@@ -29,4 +31,8 @@ func WithUser(ctx context.Context, user *domain.User) context.Context {
 func GetUser(ctx context.Context) *domain.User {
 	user, _ := ctx.Value(userKey).(*domain.User)
 	return user
+}
+
+func GetClientIP(ctx context.Context) string {
+	return middleware.GetClientIP(ctx)
 }
