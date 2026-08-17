@@ -125,7 +125,7 @@ func (s *sessionService) RefreshSession(ctx context.Context, oldRefreshToken str
 		return "", "", domain.ErrInvalidToken
 	}
 
-	if session.IsExpired() || session.IsRevoked() {
+	if !session.IsActive() {
 		return "", "", domain.ErrInvalidToken
 	}
 
@@ -198,11 +198,7 @@ func (s *sessionService) RevokeAllSessionsExcept(ctx context.Context, userID, se
 	return s.sessionRepo.RevokeAllExcept(ctx, userID, sessionID)
 }
 
-func (s *sessionService) RevokeSessionByID(ctx context.Context, userID, currSessionID, sessionID uuid.UUID) error {
-	if currSessionID == sessionID {
-		return domain.ErrSessionInUse
-	}
-
+func (s *sessionService) RevokeSessionByID(ctx context.Context, userID, sessionID uuid.UUID) error {
 	session, err := s.sessionRepo.GetByID(ctx, sessionID)
 	if err != nil {
 		return err
@@ -210,7 +206,7 @@ func (s *sessionService) RevokeSessionByID(ctx context.Context, userID, currSess
 	if session.UserID != userID {
 		return domain.ErrSessionForbidden
 	}
-	if session.IsRevoked() {
+	if !session.IsActive() {
 		return nil
 	}
 
@@ -235,24 +231,4 @@ func (s *sessionService) ValidateResetToken(ctx context.Context, token string) (
 		return uuid.Nil, err
 	}
 	return uuid.Parse(claims.UserID)
-}
-
-func (s *sessionService) RevokeSession(ctx context.Context, refreshToken string) error {
-	if refreshToken == "" {
-		return domain.ErrInvalidToken
-	}
-
-	tokenHash := hash.SHA256(refreshToken)
-	session, err := s.sessionRepo.GetByRefreshToken(ctx, tokenHash)
-	if err != nil {
-		return domain.ErrInvalidToken
-	}
-
-	if session.IsExpired() || session.IsRevoked() {
-		return nil
-	}
-
-	revokedAt := time.Now()
-	session.RevokedAt = &revokedAt
-	return s.sessionRepo.Revoke(ctx, session)
 }

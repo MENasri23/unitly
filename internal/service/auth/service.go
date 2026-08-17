@@ -2,10 +2,11 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"unitly/internal/domain"
 	identitysvc "unitly/internal/service/identity"
 	"unitly/internal/util/validate"
+
+	"github.com/google/uuid"
 )
 
 var (
@@ -168,17 +169,8 @@ func (s *AuthService) RefreshAuthByToken(
 	}, nil
 }
 
-func (s *AuthService) Logout(ctx context.Context, refreshToken string) error {
-	if refreshToken == "" {
-		return domain.ErrInvalidToken
-	}
-
-	err := s.sessionService.RevokeSession(ctx, refreshToken)
-	if err != nil && !errors.Is(err, domain.ErrInvalidToken) {
-		return err
-	}
-
-	return nil
+func (s *AuthService) Logout(ctx context.Context, userID, sessionID uuid.UUID) error {
+	return s.sessionService.RevokeSessionByID(ctx, userID, sessionID)
 }
 
 func (s *AuthService) isValidPhone(phone string) bool {

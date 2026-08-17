@@ -123,6 +123,7 @@ func main() {
 	authController := controller.NewAuthController(
 		authService,
 		identityService,
+		authMiddleware,
 		logger,
 		controller.AuthConfig{
 			RefreshTokenExpiry: app.GetRefreshTokenExpiry(),

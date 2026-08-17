@@ -114,14 +114,13 @@ type SessionService interface {
 	
 	RevokeAllSessions(ctx context.Context, userID uuid.UUID) error
 	RevokeAllSessionsExcept(ctx context.Context, userID, sessionID uuid.UUID) error
-	RevokeSession(ctx context.Context, refreshToken string) error
 
 	// RevokeSessionByID revokes a single session by ID on behalf of userID
 	// (the "log out this device" action from the sessions list). It's
 	// distinct from RevokeSession: the caller knows the target session's
 	// ID from the list, not that device's raw refresh token, which is
 	// never retrievable once hashed.
-	RevokeSessionByID(ctx context.Context, userID, currSessionID, sessionID uuid.UUID) error
+	RevokeSessionByID(ctx context.Context, userID, sessionID uuid.UUID) error
 
 	// ListSessions returns a page of the caller's active sessions, most
 	// recently used first. page is 1-indexed; both page and pageSize are

@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 	"time"
+	"unitly/internal/controller/middleware"
 	"unitly/internal/controller/reqctx"
 	"unitly/internal/domain"
 	apphttp "unitly/internal/http"
@@ -18,10 +19,11 @@ import (
 const authCookiePath = "/api/v1/auth"
 
 type AuthController struct {
-	authSvc     *auth.AuthService
-	identitySvc identity.IdentityService
-	logger      log.Logger
-	cfg         AuthConfig
+	authSvc        *auth.AuthService
+	identitySvc    identity.IdentityService
+	authMiddleware *middleware.AuthMiddleware
+	logger         log.Logger
+	cfg            AuthConfig
 }
 
 type AuthConfig struct {
@@ -33,10 +35,11 @@ type AuthConfig struct {
 func NewAuthController(
 	authSvc *auth.AuthService,
 	identitySvc identity.IdentityService,
+	authMW *middleware.AuthMiddleware,
 	logger log.Logger,
 	cfg AuthConfig,
 ) *AuthController {
-	return &AuthController{authSvc: authSvc, identitySvc: identitySvc, logger: logger, cfg: cfg}
+	return &AuthController{authSvc: authSvc, identitySvc: identitySvc, authMiddleware: authMW, logger: logger, cfg: cfg}
 }
 
 func (c *AuthController) Routes(r chi.Router) {
@@ -52,7 +55,7 @@ func (c *AuthController) Routes(r chi.Router) {
 		})
 		r.Post("/by-password", c.AuthenticateByPassword)
 		r.Post("/refresh", c.RefreshByToken)
-		r.Post("/logout", c.Logout)
+		r.With(c.authMiddleware.RequireAuth).Post("/logout", c.Logout)
 	})
 }
 
@@ -277,24 +280,13 @@ func (c *AuthController) RefreshByToken(w http.ResponseWriter, r *http.Request) 
 }
 
 func (c *AuthController) Logout(w http.ResponseWriter, r *http.Request) {
-	req, err := refreshTokenFromRequest(r)
-	if err != nil {
-		status := http.StatusBadRequest
-		if err == domain.ErrInvalidToken {
-			status = http.StatusUnauthorized
-		}
-		jsonutil.WriteErrJSON(w, status, err)
-		return
-	}
+	user := reqctx.GetUser(r.Context())
+	userID := user.GUID
+	currentSessionID, _ := reqctx.GetSessionID(r.Context())
 
-	if err := validateStruct(req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
-		return
-	}
-
-	if err := c.authSvc.Logout(r.Context(), req.RefreshToken); err != nil {
+	if err := c.authSvc.Logout(r.Context(), userID, currentSessionID); err != nil {
+		c.logger.Error("failed to logout user", "userID", userID, "sessionID", currentSessionID, "error", err)
 		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
-		return
 	}
 
 	if apphttp.IsWebPlatform(r) {
@@ -303,5 +295,5 @@ func (c *AuthController) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.writeJSON(w, http.StatusOK, true)
+	w.WriteHeader(http.StatusNoContent)
 }

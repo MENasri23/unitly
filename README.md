@@ -178,20 +178,15 @@ The HTTP API is mounted at `/api/v1`.
 
 - Method: `POST`
 - Path: `/api/v1/auth/logout`
-- Request body (native clients):
-  ```json
-  {
-    "refresh_token": "<opaque-refresh-token>"
-  }
-  ```
-- Authentication: uses refresh token from request body for native clients or from the `refresh_token` cookie for web clients
+- Authentication: requires an authenticated session; web clients use the auth cookies, native clients use the active session from the authenticated request
 - Success response:
   - Web clients: `204 No Content` and auth cookies cleared
-  - Native clients: `200 OK` with body `true`
+  - Native clients: `204 No Content`
 - Behavior:
-  - Revokes the refresh token session via the session service
+  - Invalidates the current authenticated session via the session service
   - Clears auth cookies for web clients
-  - Treats already-invalidated refresh tokens as logged out without error
+  - Treats already-invalidated or expired sessions as logged out without error
+  - No request body is required for native clients; the service derives the user and session from the authenticated context
 
 ### Password Reset by OTP
 

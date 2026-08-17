@@ -128,7 +128,12 @@ func (c *SessionController) Revoke(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = c.sessionService.RevokeSessionByID(r.Context(), userID, currentSessionID, sessionID); err != nil {
+	if currentSessionID == sessionID {
+		jsonutil.WriteErrJSON(w, mapErrToStatusCode(domain.ErrSessionInUse), domain.ErrSessionInUse)
+		return
+	}
+
+	if err = c.sessionService.RevokeSessionByID(r.Context(), userID, sessionID); err != nil {
 		c.logError("failed to revoke session by id", userID, sessionID, err)
 		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
 	}
