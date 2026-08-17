@@ -21,6 +21,8 @@ var errToStatusCode = map[error]int{
 	domain.ErrInvalidPassword:    http.StatusBadRequest,
 	domain.ErrIncorrectPassword:  http.StatusBadRequest,
 
+	domain.ErrSessionInUse: http.StatusBadRequest,
+
 	domain.ErrRateLimit:      http.StatusTooManyRequests,
 	domain.ErrOTPAlreadyUsed: http.StatusBadRequest,
 }

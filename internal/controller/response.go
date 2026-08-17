@@ -17,3 +17,7 @@ func writeJSON(w http.ResponseWriter, status int, v any, l log.Logger) {
 func writeInternalServerError(w http.ResponseWriter, err error) {
 	jsonutil.WriteErrJSON(w, http.StatusInternalServerError, err)
 }
+
+func writeBadRequestError(w http.ResponseWriter, err error) {
+	jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+}

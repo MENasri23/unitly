@@ -61,6 +61,7 @@ func (s *AuthService) VerifyAuthByOTP(
 	ctx context.Context,
 	token string,
 	inputOTP string,
+	meta domain.ClientMetadata,
 ) (*AuthResult, error) {
 	phone, err := s.otpService.VerifyOTP(ctx, token, inputOTP, authPurpose)
 	if err != nil {
@@ -72,7 +73,7 @@ func (s *AuthService) VerifyAuthByOTP(
 		return nil, err
 	}
 
-	accessToken, refreshToken, err := s.sessionService.CreateSession(ctx, user.GUID)
+	accessToken, refreshToken, err := s.sessionService.CreateSession(ctx, user.GUID, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -87,6 +88,7 @@ func (s *AuthService) AuthenticateByPassword(
 	ctx context.Context,
 	phone string,
 	password string,
+	meta domain.ClientMetadata,
 ) (*AuthResult, error) {
 	if !s.isValidPhone(phone) {
 		return nil, domain.ErrInvalidPhone
@@ -101,7 +103,7 @@ func (s *AuthService) AuthenticateByPassword(
 		return nil, err
 	}
 
-	accessToken, refreshToken, err := s.sessionService.CreateSession(ctx, user.GUID)
+	accessToken, refreshToken, err := s.sessionService.CreateSession(ctx, user.GUID, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -153,8 +155,9 @@ func (s *AuthService) VerifyResetPasswordByOTP(
 func (s *AuthService) RefreshAuthByToken(
 	ctx context.Context,
 	refreshToken string,
+	meta domain.ClientMetadata,
 ) (*AuthResult, error) {
-	accessToken, newRefreshToken, err := s.sessionService.RefreshSession(ctx, refreshToken)
+	accessToken, newRefreshToken, err := s.sessionService.RefreshSession(ctx, refreshToken, meta)
 	if err != nil {
 		return nil, err
 	}

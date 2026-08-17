@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"strconv"
 	"unitly/pkg/jsonutil"
 )
 
@@ -16,4 +17,18 @@ func bindAndValidate[T any](r *http.Request) (T, error) {
 		return req, err
 	}
 	return req, nil
+}
+
+// queryInt reads a positive integer query param, falling back to def if
+// it's missing, not parseable, or not positive.
+func queryInt(r *http.Request, key string, def int) int {
+	raw := r.URL.Query().Get(key)
+	if raw == "" {
+		return def
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil || n < 1 {
+		return def
+	}
+	return n
 }

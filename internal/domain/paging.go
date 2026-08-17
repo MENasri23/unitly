@@ -11,3 +11,10 @@ type Page[T any] struct {
 	// TotalCount is the total number of items across all pages.
 	TotalCount int
 }
+
+func (p Page[T]) TotalPages() int {
+	if p.PageSize <= 0 {
+		return 0
+	}
+	return (p.TotalCount + p.PageSize - 1) / p.PageSize
+}

@@ -38,13 +38,39 @@ func NewSessionService(
 	}
 }
 
-func (s *sessionService) CreateSession(ctx context.Context, userID uuid.UUID) (string, string, error) {
-	refreshToken, err := token.GenerateDefaultToken()
+func (s *sessionService) ListSessions(ctx context.Context, userID uuid.UUID, page, pageSize int) (domain.SessionPage, error) {
+	if page < 1 {
+		page = 1
+	}
+	switch {
+	case pageSize <= 0:
+		pageSize = domain.DefaultSessionPageSize
+	case pageSize > domain.MaxSessionPageSize:
+		pageSize = domain.MaxSessionPageSize
+	}
+	offset := (page - 1) * pageSize
+
+	sessions, total, err := s.sessionRepo.ListActiveByUserID(ctx, userID, pageSize, offset)
+	if err != nil {
+		return domain.SessionPage{}, err
+	}
+
+	return domain.SessionPage{
+		Data:       sessions,
+		Page:       page,
+		PageSize:   pageSize,
+		TotalCount: total,
+	}, nil
+}
+
+func (s *sessionService) CreateSession(ctx context.Context, userID uuid.UUID, meta domain.ClientMetadata) (accessToken, refreshToken string, err error) {
+	refreshToken, err = token.GenerateDefaultToken()
 	if err != nil {
 		return "", "", err
 	}
 
 	sessionID := uuid.New()
+	device := resolveDevice(meta.UserAgent)
 	now := time.Now()
 	session := &domain.Session{
 		ID:               sessionID,
@@ -52,15 +78,24 @@ func (s *sessionService) CreateSession(ctx context.Context, userID uuid.UUID) (s
 		FamilyID:         sessionID, // Root session sets FamilyID to its own ID
 		ParentSessionID:  nil,       // Root session has no parent
 		RefreshTokenHash: hash.SHA256(refreshToken),
-		CreatedAt:        now,
-		ExpiresAt:        now.Add(s.refreshTokenExpiry),
+
+		IPAddress:  meta.IPAddress,
+		UserAgent:  meta.UserAgent,
+		DeviceType: device.DeviceType,
+		OSName:     device.OSName,
+		OSVersion:  device.OSVersion,
+		Label:      device.ClientLabel,
+
+		CreatedAt:  now,
+		LastUsedAt: now,
+		ExpiresAt:  now.Add(s.refreshTokenExpiry),
 	}
 
 	claims := domain.AccessTokenClaims{
 		UserID:    userID.String(),
 		SessionID: session.ID.String(),
 	}
-	accessToken, err := s.tokenService.GenerateAccessToken(ctx, claims)
+	accessToken, err = s.tokenService.GenerateAccessToken(ctx, claims)
 	if err != nil {
 		return "", "", err
 	}
@@ -72,7 +107,7 @@ func (s *sessionService) CreateSession(ctx context.Context, userID uuid.UUID) (s
 	return accessToken, refreshToken, nil
 }
 
-func (s *sessionService) RefreshSession(ctx context.Context, oldRefreshToken string) (string, string, error) {
+func (s *sessionService) RefreshSession(ctx context.Context, oldRefreshToken string, meta domain.ClientMetadata) (accessToken, newRefreshToken string, err error) {
 	if oldRefreshToken == "" {
 		return "", "", domain.ErrInvalidToken
 	}
@@ -95,34 +130,45 @@ func (s *sessionService) RefreshSession(ctx context.Context, oldRefreshToken str
 	}
 
 	claims := domain.AccessTokenClaims{UserID: session.UserID.String()}
-	accessToken, err := s.tokenService.GenerateAccessToken(ctx, claims)
+	accessToken, err = s.tokenService.GenerateAccessToken(ctx, claims)
 	if err != nil {
 		return "", "", err
 	}
 
-	var newRefreshToken string
+	newRefreshToken, err = token.GenerateDefaultToken()
+	if err != nil {
+		return "", "", err
+	}
+
+	now := time.Now()
+
+	revokedAt := now
+	session.RevokedAt = &revokedAt
+
+	device := resolveDevice(meta.UserAgent)
+	parentID := session.ID
+	newSession := &domain.Session{
+		ID:               uuid.New(),
+		UserID:           session.UserID,
+		FamilyID:         session.FamilyID,
+		ParentSessionID:  &parentID,
+		RefreshTokenHash: hash.SHA256(newRefreshToken),
+
+		IPAddress:  meta.IPAddress,
+		UserAgent:  meta.UserAgent,
+		DeviceType: device.DeviceType,
+		OSName:     device.OSName,
+		OSVersion:  device.OSVersion,
+		Label:      device.ClientLabel,
+
+		CreatedAt:  now,
+		LastUsedAt: now,
+		ExpiresAt:  now.Add(s.refreshTokenExpiry),
+	}
 
 	err = s.uow.Do(ctx, func(txCtx context.Context) error {
-		now := time.Now()
-		session.RevokedAt = &now
 		if err = s.sessionRepo.Revoke(txCtx, session); err != nil {
 			return err
-		}
-
-		newRefreshToken, err = token.GenerateDefaultToken()
-		if err != nil {
-			return err
-		}
-
-		parentID := session.ID
-		newSession := &domain.Session{
-			ID:               uuid.New(),
-			UserID:           session.UserID,
-			FamilyID:         session.FamilyID,
-			ParentSessionID:  &parentID,
-			RefreshTokenHash: hash.SHA256(newRefreshToken),
-			CreatedAt:        now,
-			ExpiresAt:        now.Add(s.refreshTokenExpiry),
 		}
 
 		// Database-level UNIQUE constraint on parent_session_id prevents race conditions
@@ -150,6 +196,27 @@ func (s *sessionService) RevokeAllSessions(ctx context.Context, userID uuid.UUID
 
 func (s *sessionService) RevokeAllSessionsExcept(ctx context.Context, userID, sessionID uuid.UUID) error {
 	return s.sessionRepo.RevokeAllExcept(ctx, userID, sessionID)
+}
+
+func (s *sessionService) RevokeSessionByID(ctx context.Context, userID, currSessionID, sessionID uuid.UUID) error {
+	if currSessionID == sessionID {
+		return domain.ErrSessionInUse
+	}
+
+	session, err := s.sessionRepo.GetByID(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+	if session.UserID != userID {
+		return domain.ErrSessionForbidden
+	}
+	if session.IsRevoked() {
+		return nil
+	}
+
+	now := time.Now()
+	session.RevokedAt = &now
+	return s.sessionRepo.Revoke(ctx, session)
 }
 
 func (s *sessionService) GenerateResetToken(ctx context.Context, userID uuid.UUID) (string, error) {

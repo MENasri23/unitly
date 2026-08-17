@@ -120,6 +120,8 @@ func main() {
 		userRepository,
 	)
 
+	sessionController := controller.NewSessionController(sessionService, logger)
+
 	r := chi.NewRouter()
 
 	r.Use(cors.Handler(cors.Options{
@@ -168,6 +170,11 @@ func main() {
 				authMiddleware,
 				logger,
 			)
+
+			r.Route("/me", func(r chi.Router) {
+				r.Use(authMiddleware.RequireAuth)
+				sessionController.Routes(r)
+			})
 
 			r.Group(func(r chi.Router) {
 				r.Use(authMiddleware.RequireAuth)

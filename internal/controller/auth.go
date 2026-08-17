@@ -3,8 +3,10 @@ package controller
 import (
 	"net/http"
 	"time"
+	"unitly/internal/controller/reqctx"
 	"unitly/internal/domain"
 	apphttp "unitly/internal/http"
+	"unitly/internal/http/header"
 	"unitly/internal/log"
 	"unitly/internal/service/auth"
 	"unitly/internal/service/identity"
@@ -113,6 +115,13 @@ func refreshTokenFromRequest(r *http.Request) (refreshRequest, error) {
 	return req, nil
 }
 
+func getClientMeta(r *http.Request) domain.ClientMetadata {
+	return domain.ClientMetadata{
+		IPAddress: reqctx.GetClientIP(r.Context()),
+		UserAgent: header.GetUserAgent(r),
+	}
+}
+
 func (c *AuthController) RequestAuthByOTP(w http.ResponseWriter, r *http.Request) {
 	req, err := bindAndValidate[requestOTPRequest](r)
 	if err != nil {
@@ -136,7 +145,8 @@ func (c *AuthController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	result, err := c.authSvc.VerifyAuthByOTP(r.Context(), req.Sign, req.Otp)
+	meta := getClientMeta(r)
+	result, err := c.authSvc.VerifyAuthByOTP(r.Context(), req.Sign, req.Otp, meta)
 	if err != nil {
 		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
 		return
@@ -152,7 +162,8 @@ func (c *AuthController) AuthenticateByPassword(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	result, err := c.authSvc.AuthenticateByPassword(r.Context(), req.Phone, req.Password)
+	meta := getClientMeta(r)
+	result, err := c.authSvc.AuthenticateByPassword(r.Context(), req.Phone, req.Password, meta)
 	if err != nil {
 		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
 		return
@@ -225,7 +236,8 @@ func (c *AuthController) RefreshByToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	result, err := c.authSvc.RefreshAuthByToken(r.Context(), req.RefreshToken)
+	meta := getClientMeta(r)
+	result, err := c.authSvc.RefreshAuthByToken(r.Context(), req.RefreshToken, meta)
 	if err != nil {
 		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
 		return
@@ -287,7 +299,7 @@ func SetupAuthRoutes(
 			r.Post("/request", authController.RequestAuthByOTP)
 			r.Post("/verify", authController.VerifyAuthByOTP)
 		})
-		
+
 		r.Route("/reset-password", func(r chi.Router) {
 			r.Route("/by-otp", func(r chi.Router) {
 				r.Post("/request", authController.RequestResetPasswordByOTP)
@@ -295,7 +307,7 @@ func SetupAuthRoutes(
 				r.Post("/finalize", authController.FinalizeResetPasswordByOTP)
 			})
 		})
-		
+
 		r.Post("/by-password", authController.AuthenticateByPassword)
 		r.Post("/refresh", authController.RefreshByToken)
 		r.Post("/logout", authController.Logout)

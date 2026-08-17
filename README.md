@@ -371,6 +371,67 @@ The HTTP API is mounted at `/api/v1`.
   - Updates the authenticated user's phone number upon successful verification.
   - The authenticated user is identified from the access token.
 
+### Sessions
+
+#### List Active Sessions
+
+- Method: `GET`
+- Path: `/api/v1/me/sessions`
+- Authentication: `Bearer <access-token>`
+- Query parameters:
+  - `page` (optional, default: 1) — page number for pagination
+  - `page_size` (optional, default: 10, max: 20) — number of sessions per page
+
+- Success response:
+  - Status: `200 OK`
+  - Response body:
+    ```json
+    {
+      "sessions": [
+        {
+          "id": "550e8400-e29b-41d4-a716-446655440000",
+          "is_current": true,
+          "ip_address": "192.168.1.100",
+          "device_type": "Desktop",
+          "os_name": "Windows",
+          "os_version": "11",
+          "client_label": "Chrome",
+          "created_at": "2024-01-15T10:30:00Z",
+          "last_used_at": "2024-01-15T14:22:30Z",
+          "expires_at": "2024-01-22T10:30:00Z"
+        }
+      ],
+      "page": 1,
+      "page_size": 10,
+      "total_count": 5,
+      "total_pages": 1
+    }
+    ```
+
+- Behavior:
+  - Returns a paginated list of the authenticated user's active sessions.
+  - Sessions are ordered by most recently used first.
+  - The `is_current` flag indicates the session of the current request.
+  - The authenticated user is identified from the access token.
+
+#### Revoke Session
+
+- Method: `DELETE`
+- Path: `/api/v1/me/sessions/{sessionID}`
+- Authentication: `Bearer <access-token>`
+- Success response:
+  - Status: `200 OK` or `204 No Content`
+  - Response body: _(empty or success message)_
+
+- Validation:
+  - `sessionID` must be a valid UUID.
+  - Session must belong to the authenticated user, returns "SESSION_FORBIDDEN" error otherwise.
+  - Cannot revoke the current active session(error code: "SESSION_IN_USE").
+
+- Behavior:
+  - Revokes a single session by ID (logout from a specific device).
+  - The authenticated user is identified from the access token.
+  - After revocation, the refresh token associated with the session becomes invalid.
 
 
 ## Error Handling
