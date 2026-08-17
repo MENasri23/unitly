@@ -120,7 +120,18 @@ func main() {
 		userRepository,
 	)
 
-	sessionController := controller.NewSessionController(sessionService, logger)
+	authController := controller.NewAuthController(
+		authService,
+		identityService,
+		logger,
+		controller.AuthConfig{
+			RefreshTokenExpiry: app.GetRefreshTokenExpiry(),
+			AccessTokenExpiry:  app.GetAccessTokenExpiry(),
+			DebugMode:          app.DebugMode(),
+		},
+	)
+	profileController := controller.NewProfileController(authService, identityService, authMiddleware, logger)
+	sessionController := controller.NewSessionController(sessionService, authMiddleware, logger)
 
 	r := chi.NewRouter()
 
@@ -153,26 +164,9 @@ func main() {
 
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/v1", func(r chi.Router) {
-			controller.SetupAuthRoutes(
-				r,
-				authService,
-				identityService,
-				logger,
-				app.GetRefreshTokenExpiry(),
-				app.GetAccessTokenExpiry(),
-				app.DebugMode(),
-			)
-
-			controller.SetupProfileRoutes(
-				r,
-				authService,
-				identityService,
-				authMiddleware,
-				logger,
-			)
-
+			authController.Routes(r)
 			r.Route("/me", func(r chi.Router) {
-				r.Use(authMiddleware.RequireAuth)
+				profileController.Routes(r)
 				sessionController.Routes(r)
 			})
 

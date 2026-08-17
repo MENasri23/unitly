@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"time"
+	"unitly/internal/controller/middleware"
 	"unitly/internal/controller/reqctx"
 	"unitly/internal/domain"
 	"unitly/internal/log"
@@ -15,20 +16,23 @@ import (
 
 type SessionController struct {
 	sessionService domain.SessionService
+	authMiddleware *middleware.AuthMiddleware
 	logger         log.Logger
 }
 
 func NewSessionController(
 	sessionService domain.SessionService,
+	authMiddleware *middleware.AuthMiddleware,
 	logger log.Logger,
 ) *SessionController {
-	return &SessionController{sessionService: sessionService, logger: logger}
+	return &SessionController{sessionService: sessionService, authMiddleware: authMiddleware, logger: logger}
 }
 
 // Routes mounts the session endpoints. Wire this under whatever router
 // group already applies your access-token auth middleware.
 func (c *SessionController) Routes(r chi.Router) {
 	r.Route("/sessions", func(r chi.Router) {
+		r.Use(c.authMiddleware.RequireAuth)
 		r.Get("/", c.List)
 		r.Delete("/{sessionID}", c.Revoke)
 	})

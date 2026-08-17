@@ -13,10 +13,33 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type profileController struct {
+type ProfileController struct {
 	authSvc     *auth.AuthService
 	identitySvc identity.IdentityService
+	authMw      *middleware.AuthMiddleware
 	logger      log.Logger
+}
+
+func NewProfileController(
+	authSvc *auth.AuthService,
+	identitySvc identity.IdentityService,
+	authMw *middleware.AuthMiddleware,
+	logger log.Logger,
+) *ProfileController {
+	return &ProfileController{authSvc: authSvc, identitySvc: identitySvc, authMw: authMw, logger: logger}
+}
+
+func (c *ProfileController) Routes(r chi.Router) {
+	r.Route("/profile", func(r chi.Router) {
+		r.Use(c.authMw.RequireAuth)
+		r.Get("/", c.getProfileInfo)
+		r.Patch("/name", c.updateFullName)
+		r.Patch("/password", c.updatePassword)
+		r.Route("/phone", func(r chi.Router) {
+			r.Post("/request", c.updatePhoneRequest)
+			r.Post("/verify", c.updatePhoneVerify)
+		})
+	})
 }
 
 type updateFullNameRequest struct {
@@ -45,7 +68,7 @@ type updatePhoneVerify struct {
 	Otp  string `json:"otp" validate:"required,number,len=6"`
 }
 
-func (c *profileController) updateFullName(w http.ResponseWriter, r *http.Request) {
+func (c *ProfileController) updateFullName(w http.ResponseWriter, r *http.Request) {
 	var req updateFullNameRequest
 	if err := jsonutil.ReadJSON(r, &req); err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
@@ -68,7 +91,7 @@ func (c *profileController) updateFullName(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (c *profileController) getProfileInfo(w http.ResponseWriter, r *http.Request) {
+func (c *ProfileController) getProfileInfo(w http.ResponseWriter, r *http.Request) {
 	user := reqctx.GetUser(r.Context())
 
 	dto := profileInfoDTO{
@@ -83,7 +106,7 @@ func (c *profileController) getProfileInfo(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func (c *profileController) updatePassword(w http.ResponseWriter, r *http.Request) {
+func (c *ProfileController) updatePassword(w http.ResponseWriter, r *http.Request) {
 	req, err := bindAndValidate[updatePasswordRequest](r)
 	if err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
@@ -105,7 +128,7 @@ func (c *profileController) updatePassword(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (c *profileController) updatePhoneRequest(w http.ResponseWriter, r *http.Request) {
+func (c *ProfileController) updatePhoneRequest(w http.ResponseWriter, r *http.Request) {
 	req, err := bindAndValidate[updatePhoneRequest](r)
 	if err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
@@ -122,7 +145,7 @@ func (c *profileController) updatePhoneRequest(w http.ResponseWriter, r *http.Re
 	writeJSON(w, http.StatusOK, token, c.logger)
 }
 
-func (c *profileController) updatePhoneVerify(w http.ResponseWriter, r *http.Request) {
+func (c *ProfileController) updatePhoneVerify(w http.ResponseWriter, r *http.Request) {
 	req, err := bindAndValidate[updatePhoneVerify](r)
 	if err != nil {
 		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
@@ -136,29 +159,4 @@ func (c *profileController) updatePhoneVerify(w http.ResponseWriter, r *http.Req
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-}
-
-func SetupProfileRoutes(
-	r chi.Router,
-	authService *auth.AuthService,
-	identityService identity.IdentityService,
-	authMiddleware *middleware.AuthMiddleware,
-	logger log.Logger,
-) {
-	controller := &profileController{
-		authSvc:     authService,
-		identitySvc: identityService,
-		logger:      logger,
-	}
-
-	r.Route("/profiles", func(r chi.Router) {
-		r.Use(authMiddleware.RequireAuth)
-		r.Get("/info", controller.getProfileInfo)
-		r.Patch("/change-name", controller.updateFullName)
-		r.Patch("/change-password", controller.updatePassword)
-		r.Route("/change-phone", func(r chi.Router) {
-			r.Post("/", controller.updatePhoneRequest)
-			r.Post("/verify", controller.updatePhoneVerify)
-		})
-	})
 }

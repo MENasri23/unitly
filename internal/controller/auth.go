@@ -18,12 +18,42 @@ import (
 const authCookiePath = "/api/v1/auth"
 
 type AuthController struct {
-	authSvc            *auth.AuthService
-	identitySvc        identity.IdentityService
-	logger             log.Logger
-	refreshTokenExpiry time.Duration
-	accessTokenExpiry  time.Duration
-	debugMode          bool
+	authSvc     *auth.AuthService
+	identitySvc identity.IdentityService
+	logger      log.Logger
+	cfg         AuthConfig
+}
+
+type AuthConfig struct {
+	RefreshTokenExpiry time.Duration
+	AccessTokenExpiry  time.Duration
+	DebugMode          bool
+}
+
+func NewAuthController(
+	authSvc *auth.AuthService,
+	identitySvc identity.IdentityService,
+	logger log.Logger,
+	cfg AuthConfig,
+) *AuthController {
+	return &AuthController{authSvc: authSvc, identitySvc: identitySvc, logger: logger, cfg: cfg}
+}
+
+func (c *AuthController) Routes(r chi.Router) {
+	r.Route("/auth", func(r chi.Router) {
+		r.Route("/by-otp", func(r chi.Router) {
+			r.Post("/request", c.RequestAuthByOTP)
+			r.Post("/verify", c.VerifyAuthByOTP)
+		})
+		r.Route("/reset-password/by-otp", func(r chi.Router) {
+			r.Post("/request", c.RequestResetPasswordByOTP)
+			r.Post("/verify", c.VerifyResetPasswordByOTP)
+			r.Post("/finalize", c.FinalizeResetPasswordByOTP)
+		})
+		r.Post("/by-password", c.AuthenticateByPassword)
+		r.Post("/refresh", c.RefreshByToken)
+		r.Post("/logout", c.Logout)
+	})
 }
 
 type requestOTPRequest struct {
@@ -65,14 +95,14 @@ func (c *AuthController) buildCookie(name, value, path string, maxAge int) *http
 		Value:    value,
 		MaxAge:   maxAge,
 		HttpOnly: true,
-		Secure:   !c.debugMode,
+		Secure:   !c.cfg.DebugMode,
 		SameSite: http.SameSiteStrictMode,
 	}
 }
 
 func (c *AuthController) setAuthCookies(w http.ResponseWriter, accessToken, refreshToken string) {
-	http.SetCookie(w, c.buildCookie("access_token", accessToken, "/", int(c.accessTokenExpiry.Seconds())))
-	http.SetCookie(w, c.buildCookie("refresh_token", refreshToken, authCookiePath, int(c.refreshTokenExpiry.Seconds())))
+	http.SetCookie(w, c.buildCookie("access_token", accessToken, "/", int(c.cfg.AccessTokenExpiry.Seconds())))
+	http.SetCookie(w, c.buildCookie("refresh_token", refreshToken, authCookiePath, int(c.cfg.RefreshTokenExpiry.Seconds())))
 }
 
 func (c *AuthController) clearAuthCookies(w http.ResponseWriter) {
@@ -274,43 +304,4 @@ func (c *AuthController) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.writeJSON(w, http.StatusOK, true)
-}
-
-func SetupAuthRoutes(
-	r chi.Router,
-	authService *auth.AuthService,
-	identityService identity.IdentityService,
-	logger log.Logger,
-	refreshTokenExpiry time.Duration,
-	accessTokenExpiry time.Duration,
-	debugMode bool,
-) {
-	authController := &AuthController{
-		authSvc:            authService,
-		identitySvc:        identityService,
-		logger:             logger,
-		refreshTokenExpiry: refreshTokenExpiry,
-		accessTokenExpiry:  accessTokenExpiry,
-		debugMode:          debugMode,
-	}
-
-	r.Route("/auth", func(r chi.Router) {
-		r.Route("/by-otp", func(r chi.Router) {
-			r.Post("/request", authController.RequestAuthByOTP)
-			r.Post("/verify", authController.VerifyAuthByOTP)
-		})
-
-		r.Route("/reset-password", func(r chi.Router) {
-			r.Route("/by-otp", func(r chi.Router) {
-				r.Post("/request", authController.RequestResetPasswordByOTP)
-				r.Post("/verify", authController.VerifyResetPasswordByOTP)
-				r.Post("/finalize", authController.FinalizeResetPasswordByOTP)
-			})
-		})
-
-		r.Post("/by-password", authController.AuthenticateByPassword)
-		r.Post("/refresh", authController.RefreshByToken)
-		r.Post("/logout", authController.Logout)
-	})
-
 }
