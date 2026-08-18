@@ -6,24 +6,35 @@ import (
 	"time"
 )
 
-func RunPeriodicWorker(name string, ctx context.Context, interval time.Duration, task func() error) {
-	ticker := time.NewTicker(interval)
+type periodicWorker struct {
+	name   string
+	ticker *time.Ticker
+	task   func(context.Context) error
+}
 
-	go func() {
-		defer ticker.Stop()
-		log.Printf("[INFO] %s worker initialized. Run Interval: %v", name, interval)
+func (w *periodicWorker) Do(ctx context.Context) {
+	defer w.ticker.Stop()
+	w.task(ctx)
+	for {
+		select {
+		case <-ctx.Done():
+			log.Printf("[INFO] Shutting down %s worker gracefully...", w.name)
+			return
 
-		for {
-			select {
-			case <-ctx.Done():
-				log.Printf("[INFO] Shutting down %s worker gracefully...", name)
-				return
-
-			case <-ticker.C:
-				if err := task(); err != nil {
-					log.Printf("[ERROR] %s worker failed: %v", name, err)
-				}
+		case <-w.ticker.C:
+			if err := w.task(ctx); err != nil {
+				log.Printf("[ERROR] %s worker failed: %v", w.name, err)
 			}
 		}
-	}()
+	}
+}
+
+func RunPeriodicWorker(name string, ctx context.Context, interval time.Duration, task func(context.Context) error) Worker {
+	w := &periodicWorker{
+		name:   name,
+		ticker: time.NewTicker(interval),
+		task:   task,
+	}
+	go w.Do(ctx)
+	return w
 }

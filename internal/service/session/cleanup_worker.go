@@ -18,9 +18,9 @@ func RunSessionCleanupWorker(
 	ctx context.Context,
 	sessionRepo domain.SessionRepository,
 	interval time.Duration,
-) {
-	worker.RunPeriodicWorker("session-cleanup", ctx, interval, func() error {
-		execCtx, cancel := context.WithTimeout(context.Background(), sessionCleanupTimeout)
+) worker.Worker {
+	return worker.RunPeriodicWorker("session-cleanup", ctx, interval, func(ctx context.Context) error {
+		execCtx, cancel := context.WithTimeout(ctx, sessionCleanupTimeout)
 		defer cancel()
 
 		// Pass the thresholds into the execution function

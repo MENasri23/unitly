@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -133,6 +134,8 @@ func main() {
 	)
 	profileController := controller.NewProfileController(authService, identityService, authMiddleware, logger)
 	sessionController := controller.NewSessionController(sessionService, authMiddleware, logger)
+
+	sessionsvc.RunSessionCleanupWorker(context.Background(), sessionRepository, 10*time.Minute)
 
 	r := chi.NewRouter()
 

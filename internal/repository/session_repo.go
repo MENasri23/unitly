@@ -182,19 +182,26 @@ func (s *sessionRepository) ListActiveByUserID(ctx context.Context, userID uuid.
 	return sessions, total, rows.Err()
 }
 
-func (s *sessionRepository) CleanupOldSessions(ctx context.Context, expiredThreshold, revokedThreshold time.Duration) (int64, error) {
-	query := `
-		DELETE FROM sessions 
-		WHERE expires_at < $1
-		   OR (revoked_at IS NOT NULL AND created_at < $2);
-	`
+const cleanupOldSession = `
+WITH sessions_to_delete AS (
+    SELECT id
+    FROM sessions
+    WHERE expires_at < $1
+       OR (revoked_at IS NOT NULL AND revoked_at < $2)
+    ORDER BY expires_at
+    LIMIT 5000
+)
+DELETE FROM sessions s
+USING sessions_to_delete d
+WHERE s.id = d.id`
 
+func (s *sessionRepository) CleanupOldSessions(ctx context.Context, expiredThreshold, revokedThreshold time.Duration) (int64, error) {
 	now := time.Now()
 	expiredCutoff := now.Add(-expiredThreshold)
 	revokedCutoff := now.Add(-revokedThreshold)
 
 	querier := s.getQuerier(ctx)
-	cmdTag, err := querier.Exec(ctx, query, expiredCutoff, revokedCutoff)
+	cmdTag, err := querier.Exec(ctx, cleanupOldSession, expiredCutoff, revokedCutoff)
 	if err != nil {
 		return 0, err
 	}
