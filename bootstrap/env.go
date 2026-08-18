@@ -63,7 +63,5 @@ func NewEnv() (*Env, error) {
 		return nil, fmt.Errorf("Environment can't be loaded: %v", err)
 	}
 
-	fmt.Println("origins:", env.AllowedOrigins)
-
 	return &env, nil
 }
