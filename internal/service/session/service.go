@@ -129,7 +129,10 @@ func (s *sessionService) RefreshSession(ctx context.Context, oldRefreshToken str
 		return "", "", domain.ErrInvalidToken
 	}
 
-	claims := domain.AccessTokenClaims{UserID: session.UserID.String()}
+	claims := domain.AccessTokenClaims{
+		UserID:    session.UserID.String(),
+		SessionID: session.ID.String(),
+	}
 	accessToken, err = s.tokenService.GenerateAccessToken(ctx, claims)
 	if err != nil {
 		return "", "", err
@@ -161,7 +164,7 @@ func (s *sessionService) RefreshSession(ctx context.Context, oldRefreshToken str
 		OSVersion:  device.OSVersion,
 		Label:      device.ClientLabel,
 
-		CreatedAt:  now,
+		CreatedAt:  session.CreatedAt,
 		LastUsedAt: now,
 		ExpiresAt:  now.Add(s.refreshTokenExpiry),
 	}
@@ -206,8 +209,11 @@ func (s *sessionService) RevokeSessionByID(ctx context.Context, userID, sessionI
 	if session.UserID != userID {
 		return domain.ErrSessionForbidden
 	}
-	if !session.IsActive() {
+	if session.IsExpired() {
 		return nil
+	}
+	if session.IsRevoked() {
+		return s.sessionRepo.RevokeFamily(ctx, session.FamilyID)
 	}
 
 	now := time.Now()
