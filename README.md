@@ -407,7 +407,31 @@ The HTTP API is mounted at `/api/v1`.
   - Returns a paginated list of the authenticated user's active sessions.
   - Sessions are ordered by most recently used first.
   - The `is_current` flag indicates the session of the current request.
-  - The authenticated user is identified from the access token.
+  - The `device_type` field represents the type of device and is of type `domain.DeviceType`. Valid values:
+- The authenticated user is identified from the access token.
+
+```go
+  DeviceType {
+    Desktop,
+    Android,
+    iOS,
+    Bot,
+    Unknown,
+  }
+
+  SessionDTO {
+    id: uuid.UUID,
+    isCurrent: bool,
+    ipAddress: string,
+    deviceType: DeviceType,
+    osName: string,
+    osVersion: string,
+    clientLabel: string,
+    createdAt: time.Time,
+    lastUsedAt: time.Time,
+    expiresAt: time.Time,
+  }
+```
 
 #### Revoke Session
 
@@ -427,7 +451,6 @@ The HTTP API is mounted at `/api/v1`.
   - Revokes a single session by ID (logout from a specific device).
   - The authenticated user is identified from the access token.
   - After revocation, the refresh token associated with the session becomes invalid.
-
 
 ## Error Handling
 
