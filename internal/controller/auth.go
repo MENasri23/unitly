@@ -16,7 +16,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-const authCookiePath = "/api/v1/auth"
+const authCookiePath = "/api/v1/auth/refresh"
 
 type AuthController struct {
 	authSvc        *auth.AuthService
