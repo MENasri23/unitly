@@ -181,6 +181,10 @@ func main() {
 		})
 	})
 
+	if app.DebugMode() {
+		logRoutes(r, logger)
+	}
+
 	server := app.NewServer(r)
 
 	logger.Info(fmt.Sprintf("trying to listen on %s", app.GetServerAddress()))
@@ -241,4 +245,11 @@ func newSmsService(app *bootstrap.Application, logger log.Logger) domain.SmsServ
 		app.GetOtpConfig().TempID,
 		logger,
 	)
+}
+
+func logRoutes(r chi.Router, l log.Logger) {
+	_ = chi.Walk(r, func(method, route string, _ http.Handler, _ ...func(http.Handler) http.Handler) error {
+		l.Info(fmt.Sprintf("%-7s %s", method, route))
+		return nil
+	})
 }
