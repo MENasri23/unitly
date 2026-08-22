@@ -3,11 +3,11 @@ package controller
 import (
 	"net/http"
 	"time"
-	"unitly/internal/controller/middleware"
-	"unitly/internal/controller/reqctx"
 	"unitly/internal/domain"
 	apphttp "unitly/internal/http"
 	"unitly/internal/http/header"
+	"unitly/internal/http/middleware"
+	"unitly/internal/http/reqctx"
 	"unitly/internal/log"
 	"unitly/internal/service/auth"
 	"unitly/internal/service/identity"

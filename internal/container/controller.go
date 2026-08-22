@@ -3,7 +3,7 @@ package container
 import (
 	"unitly/internal/bootstrap"
 	"unitly/internal/controller"
-	"unitly/internal/controller/middleware"
+	"unitly/internal/http/middleware"
 	"unitly/internal/log"
 )
 

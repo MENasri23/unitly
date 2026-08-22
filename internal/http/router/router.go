@@ -6,7 +6,7 @@ import (
 	"unitly/internal/controller"
 	"unitly/internal/http/header"
 
-	appmw "unitly/internal/controller/middleware"
+	appmw "unitly/internal/http/middleware"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"

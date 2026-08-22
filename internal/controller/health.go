@@ -2,8 +2,8 @@ package controller
 
 import (
 	"net/http"
-	"unitly/internal/controller/reqctx"
 	"unitly/internal/domain"
+	"unitly/internal/http/reqctx"
 	"unitly/pkg/jsonutil"
 )
 

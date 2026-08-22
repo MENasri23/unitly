@@ -3,10 +3,10 @@ package middleware
 import (
 	"net/http"
 	"strings"
-	"unitly/internal/controller/reqctx"
 	"unitly/internal/domain"
 	apphttp "unitly/internal/http"
 	"unitly/internal/http/header"
+	"unitly/internal/http/reqctx"
 	"unitly/pkg/jsonutil"
 
 	"github.com/google/uuid"

@@ -3,7 +3,7 @@ package container
 import (
 	"fmt"
 	"unitly/internal/bootstrap"
-	"unitly/internal/controller/middleware"
+	"unitly/internal/http/middleware"
 	"unitly/internal/log"
 )
 

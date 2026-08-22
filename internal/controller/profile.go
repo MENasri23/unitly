@@ -2,9 +2,9 @@ package controller
 
 import (
 	"net/http"
-	"unitly/internal/controller/middleware"
-	"unitly/internal/controller/reqctx"
 	"unitly/internal/domain"
+	"unitly/internal/http/middleware"
+	"unitly/internal/http/reqctx"
 	"unitly/internal/log"
 	"unitly/internal/service/auth"
 	"unitly/internal/service/identity"
