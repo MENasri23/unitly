@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
-	"unitly/bootstrap"
+	"unitly/internal/bootstrap"
 	"unitly/internal/cache"
 	"unitly/internal/controller"
 	"unitly/internal/db"
