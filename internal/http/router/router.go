@@ -69,7 +69,7 @@ func New(p Params) *chi.Mux {
 			p.Session.Routes(r)
 		})
 		r.Group(func(r chi.Router) {
-			r.Use(p.AuthMiddleware.RequireAuth)
+			r.Use(p.AuthMiddleware.RequireAuth, p.AuthMiddleware.RequireUser)
 			r.Get("/healthcheck", controller.HealthCheck)
 		})
 	})

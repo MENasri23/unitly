@@ -280,8 +280,7 @@ func (c *AuthController) RefreshByToken(w http.ResponseWriter, r *http.Request) 
 }
 
 func (c *AuthController) Logout(w http.ResponseWriter, r *http.Request) {
-	user := reqctx.GetUser(r.Context())
-	userID := user.GUID
+	userID, _ := reqctx.GetUserID(r.Context())
 	currentSessionID, _ := reqctx.GetSessionID(r.Context())
 
 	if err := c.authSvc.Logout(r.Context(), userID, currentSessionID); err != nil {

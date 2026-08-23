@@ -31,7 +31,7 @@ func NewProfileController(
 
 func (c *ProfileController) Routes(r chi.Router) {
 	r.Route("/profile", func(r chi.Router) {
-		r.Use(c.authMw.RequireAuth)
+		r.Use(c.authMw.RequireAuth, c.authMw.RequireUser)
 		r.Get("/", c.getProfileInfo)
 		r.Patch("/name", c.updateFullName)
 		r.Patch("/password", c.updatePassword)

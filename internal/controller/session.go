@@ -4,9 +4,9 @@ import (
 	"errors"
 	"net/http"
 	"time"
+	"unitly/internal/domain"
 	"unitly/internal/http/middleware"
 	"unitly/internal/http/reqctx"
-	"unitly/internal/domain"
 	"unitly/internal/log"
 	"unitly/pkg/jsonutil"
 
@@ -88,8 +88,7 @@ type listSessionsDTO struct {
 // again regardless, this is just so a bad query param doesn't 400 a page
 // load.
 func (c *SessionController) List(w http.ResponseWriter, r *http.Request) {
-	user := reqctx.GetUser(r.Context())
-	userID := user.GUID
+	userID, _ := reqctx.GetUserID(r.Context())
 	currentSessionID, _ := reqctx.GetSessionID(r.Context())
 
 	page := queryInt(r, "page", 1)
@@ -118,8 +117,7 @@ func (c *SessionController) List(w http.ResponseWriter, r *http.Request) {
 
 // Revoke handles DELETE /me/sessions/{sessionID}.
 func (c *SessionController) Revoke(w http.ResponseWriter, r *http.Request) {
-	user := reqctx.GetUser(r.Context())
-	userID := user.GUID
+	userID, _ := reqctx.GetUserID(r.Context())
 	currentSessionID, _ := reqctx.GetSessionID(r.Context())
 
 	sessionID, err := uuid.Parse(chi.URLParam(r, "sessionID"))

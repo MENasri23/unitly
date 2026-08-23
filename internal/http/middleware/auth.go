@@ -29,24 +29,28 @@ func NewAuthMiddleware(
 	}
 }
 
+func getTokenFromRequest(r *http.Request) (string, error) {
+	if apphttp.IsWebPlatform(r) {
+		atCookie, err := r.Cookie("access_token")
+		if err != nil {
+			return "", err
+		}
+		return atCookie.Value, nil
+	} else {
+		authHeader := r.Header.Get(header.Authorization)
+		if !startWithBearer(authHeader) {
+			return "", domain.ErrInvalidToken
+		}
+		return trimBearer(authHeader), nil
+	}
+}
+
 func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) {
-		var token string
-
-		if apphttp.IsWebPlatform(r) {
-			atCookie, err := r.Cookie("access_token")
-			if err != nil {
-				jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
-				return
-			}
-			token = atCookie.Value
-		} else {
-			authHeader := r.Header.Get(header.Authorization)
-			if !startWithBearer(authHeader) {
-				unauthorized(w)
-				return
-			}
-			token = trimBearer(authHeader)
+		token, err := getTokenFromRequest(r)
+		if err != nil {
+			unauthorized(w)
+			return
 		}
 
 		claims, err := m.tokenValidator.ValidateAccessToken(r.Context(), token)
@@ -66,6 +70,21 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 			return
 		}
 
+		ctx := reqctx.WithUserID(r.Context(), userID)
+		ctx = reqctx.WithSessionID(ctx, sessionID)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+	return http.HandlerFunc(f)
+}
+
+func (m *AuthMiddleware) RequireUser(next http.Handler) http.Handler {
+	f := func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := reqctx.GetUserID(r.Context())
+		if !ok {
+			unauthorized(w)
+			return
+		}
+
 		user, err := m.userRepo.GetByGUID(r.Context(), userID)
 		if err != nil {
 			unauthorized(w)
@@ -73,7 +92,6 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 		}
 
 		ctx := reqctx.WithUser(r.Context(), user)
-		ctx = reqctx.WithSessionID(ctx, sessionID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(f)
