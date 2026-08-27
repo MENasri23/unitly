@@ -69,7 +69,11 @@ func (s *sessionService) CreateSession(ctx context.Context, userID uuid.UUID, me
 		return "", "", err
 	}
 
-	sessionID := uuid.New()
+	sessionID, err := uuid.NewV7()
+	if err != nil {
+		return "", "", err
+	}
+	
 	device := resolveDevice(meta.UserAgent)
 	now := time.Now()
 	session := &domain.Session{
@@ -150,8 +154,12 @@ func (s *sessionService) RefreshSession(ctx context.Context, oldRefreshToken str
 
 	device := resolveDevice(meta.UserAgent)
 	parentID := session.ID
+	newSessionID, err := uuid.NewV7()
+	if err != nil {
+		return "", "", err
+	}
 	newSession := &domain.Session{
-		ID:               uuid.New(),
+		ID:               newSessionID,
 		UserID:           session.UserID,
 		FamilyID:         session.FamilyID,
 		ParentSessionID:  &parentID,

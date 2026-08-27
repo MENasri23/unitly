@@ -67,7 +67,7 @@ func (s *identityService) GetOrCreateUser(ctx context.Context, phone string) (*d
 		return nil, err
 	}
 
-	guid, err := uuid.NewUUID()
+	guid, err := uuid.NewV7()
 	if err != nil {
 		return nil, err
 	}
