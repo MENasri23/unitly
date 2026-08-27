@@ -59,7 +59,7 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		userID, err := uuid.Parse(claims.UserID)
+		userGUID, err := uuid.Parse(claims.UserID)
 		if err != nil {
 			unauthorized(w)
 			return
@@ -70,7 +70,14 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := reqctx.WithUserID(r.Context(), userID)
+		userID, err := m.userRepo.GetIDByGUID(r.Context(), userGUID)
+		if err != nil {
+			unauthorized(w)
+			return
+		}
+
+		ctx := reqctx.WithUserID(r.Context(), userGUID)
+		ctx = reqctx.WithUserInternalID(ctx, userID)
 		ctx = reqctx.WithSessionID(ctx, sessionID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}

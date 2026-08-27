@@ -30,6 +30,7 @@ type UserRepository interface {
 	GetByID(ctx context.Context, userID int64) (*User, error)
 	GetByPhone(ctx context.Context, phone string) (*User, error)
 	GetByGUID(ctx context.Context, guid uuid.UUID) (*User, error)
+	GetIDByGUID(ctx context.Context, guid uuid.UUID) (int64, error)
 	ExistsByPhone(ctx context.Context, phone string) (bool, error)
 	UpdatePassword(ctx context.Context, user *User, password string) error
 	UpdateFullName(ctx context.Context, user *User) error

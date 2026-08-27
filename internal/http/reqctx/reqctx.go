@@ -13,6 +13,7 @@ type ctxKey int
 const (
 	sessionIDKey ctxKey = iota
 	userIDKey
+	userInternalIDKey
 	userKey
 )
 
@@ -31,6 +32,15 @@ func WithUserID(ctx context.Context, id uuid.UUID) context.Context {
 
 func GetUserID(ctx context.Context) (uuid.UUID, bool) {
 	id, ok := ctx.Value(userIDKey).(uuid.UUID)
+	return id, ok
+}
+
+func WithUserInternalID(ctx context.Context, id int64) context.Context {
+	return context.WithValue(ctx, userInternalIDKey, id)
+}
+
+func GetUserInternalID(ctx context.Context) (int64, bool) {
+	id, ok := ctx.Value(userInternalIDKey).(int64)
 	return id, ok
 }
 

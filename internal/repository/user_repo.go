@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
+	"time"
 	"unitly/internal/db"
 	"unitly/internal/domain"
 	"unitly/internal/util/hash"
@@ -13,17 +15,21 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+const userIDCacheTTL = 24 * time.Hour
+
 type userRepository struct {
-	db *pgxpool.Pool
+	db    *pgxpool.Pool
+	cache domain.Cache
 }
 
-func NewUserRepository(db *pgxpool.Pool) domain.UserRepository {
+func NewUserRepository(db *pgxpool.Pool, cache domain.Cache) domain.UserRepository {
 	if db == nil {
 		panic("db cannot be nil")
 	}
 
 	return &userRepository{
-		db: db,
+		db:    db,
+		cache: cache,
 	}
 }
 
@@ -69,6 +75,30 @@ func (u *userRepository) GetByID(ctx context.Context, userID int64) (*domain.Use
 
 func (u *userRepository) GetByGUID(ctx context.Context, guid uuid.UUID) (*domain.User, error) {
 	return u.getBy(ctx, "public_id", guid)
+}
+
+const getIDByGUID = `SELECT id FROM users WHERE public_id = $1`
+
+func (u *userRepository) GetIDByGUID(ctx context.Context, guid uuid.UUID) (int64, error) {
+	key := userIDCacheKey(guid)
+	if id, err := u.cache.Get(ctx, key); err == nil {
+		return strconv.ParseInt(id, 10, 64)
+	}
+
+	querier := u.getQuerier(ctx)
+	var id int64
+	err := querier.QueryRow(ctx, getIDByGUID, guid).Scan(&id)
+	if err != nil {
+		return 0, mapDBError(err)
+	}
+
+	u.cache.Set(ctx, key, id, userIDCacheTTL)
+
+	return id, nil
+}
+
+func userIDCacheKey(guid uuid.UUID) string {
+	return "user:public_id:" + guid.String()
 }
 
 func (u *userRepository) GetByPhone(ctx context.Context, phone string) (*domain.User, error) {

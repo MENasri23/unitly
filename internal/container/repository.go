@@ -17,7 +17,7 @@ type Repositories struct {
 
 func newRepositories(app *bootstrap.Application, pgxDB *pgxpool.Pool, cache domain.Cache) Repositories {
 	return Repositories{
-		User:    repository.NewUserRepository(pgxDB),
+		User:    repository.NewUserRepository(pgxDB, cache),
 		OTP:     newOtpRepository(app, cache),
 		Session: repository.NewSessionRepository(pgxDB),
 	}
