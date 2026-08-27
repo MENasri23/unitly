@@ -9,7 +9,7 @@ import (
 
 // Compile-time checks to ensure mocks satisfy the interfaces
 var (
-	_ domain.Cache      = (*MockCache)(nil)
+	_ domain.Cache = (*MockCache)(nil)
 )
 
 // MockCache provides a flexible, function-field-based mock for domain.Cache.
@@ -20,6 +20,7 @@ type MockCache struct {
 	GetFn           func(ctx context.Context, key string) (string, error)
 	IncrFn          func(ctx context.Context, key string) (int64, error)
 	ExistsKeyFn     func(ctx context.Context, key string) (bool, error)
+	SetFn           func(ctx context.Context, key string, val any, exp time.Duration) error
 	SetIfNotExistFn func(ctx context.Context, key string, val any, exp time.Duration) (bool, error)
 	DeleteFn        func(ctx context.Context, key string) (bool, error)
 	DeleteAllFn     func(ctx context.Context, keys ...string) (int64, error)
@@ -79,6 +80,14 @@ func (m *MockCache) ExistsKey(ctx context.Context, key string) (bool, error) {
 		return m.ExistsKeyFn(ctx, key)
 	}
 	panic("MockCache.ExistsKey was called but not stubbed")
+}
+
+func (m *MockCache) Set(ctx context.Context, key string, val any, exp time.Duration) error {
+	m.trackCall("Set")
+	if m.SetFn != nil {
+		return m.SetFn(ctx, key, val, exp)
+	}
+	panic("MockCache.Set was called but not stubbed")
 }
 
 func (m *MockCache) SetIfNotExist(ctx context.Context, key string, val any, exp time.Duration) (bool, error) {

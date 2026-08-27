@@ -35,6 +35,7 @@ type Cache interface {
 	Get(ctx context.Context, key string) (string, error)
 	Incr(ctx context.Context, key string) (int64, error)
 	ExistsKey(ctx context.Context, key string) (bool, error)
+	Set(ctx context.Context, key string, val any, exp time.Duration) error
 	SetIfNotExist(ctx context.Context, key string, val any, exp time.Duration) (bool, error)
 	Delete(ctx context.Context, key string) (bool, error)
 	DeleteAll(ctx context.Context, keys ...string) (int64, error)

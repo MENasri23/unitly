@@ -82,6 +82,10 @@ func (c *redisCache) ExistsKey(ctx context.Context, key string) (bool, error) {
 	return val == 1, err
 }
 
+func (c *redisCache) Set(ctx context.Context, key string, val any, exp time.Duration) error {
+	return c.Client.Set(ctx, key, val, exp).Err()
+}
+
 func (c *redisCache) SetIfNotExist(ctx context.Context, key string, val any, exp time.Duration) (bool, error) {
 	return c.Client.SetNX(ctx, key, val, exp).Result()
 }
