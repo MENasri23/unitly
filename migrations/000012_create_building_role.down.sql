@@ -1,0 +1,1 @@
+DROP TYPE IF EXISTS building_role;

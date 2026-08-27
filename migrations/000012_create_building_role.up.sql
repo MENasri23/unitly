@@ -1,0 +1,1 @@
+CREATE TYPE building_role AS ENUM ('admin', 'owner', 'tenant');
