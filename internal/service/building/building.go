@@ -8,9 +8,10 @@ import (
 )
 
 type Building struct {
-	ID      uuid.UUID
-	Name    string
-	Address *string
+	ID        uuid.UUID
+	Name      string
+	Address   *string
+	CreatedBy int64
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -28,4 +29,3 @@ type BuildingRepository interface {
 	Update(ctx context.Context, b *Building) error
 	SoftDelete(ctx context.Context, id uuid.UUID) error
 }
-
