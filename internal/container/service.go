@@ -3,6 +3,7 @@ package container
 import (
 	"fmt"
 	"unitly/internal/bootstrap"
+	"unitly/internal/building"
 	"unitly/internal/db"
 	"unitly/internal/domain"
 	"unitly/internal/log"
@@ -23,6 +24,7 @@ type Services struct {
 	OTP      domain.OTPService
 	Identity identity.IdentityService
 	Auth     *auth.AuthService
+	Building building.BuildingService
 }
 
 func newServices(app *bootstrap.Application, logger log.Logger, pgxDB *pgxpool.Pool, cache domain.Cache, repos Repositories) (Services, error) {
@@ -47,8 +49,17 @@ func newServices(app *bootstrap.Application, logger log.Logger, pgxDB *pgxpool.P
 	otpSvc := otpsvc.NewOTPService(repos.OTP, smsSvc, otpRateLimiter)
 	identitySvc := identity.NewIdentityService(repos.User, sessionSvc, otpSvc)
 	authSvc := auth.NewAuthService(otpSvc, identitySvc, sessionSvc, smsSvc, tokenSvc, txManager)
+	buildingSvc := building.NewBuildingService(repos.Building, repos.Membership, txManager)
 
-	return Services{Token: tokenSvc, SMS: smsSvc, Session: sessionSvc, OTP: otpSvc, Identity: identitySvc, Auth: authSvc}, nil
+	return Services{
+		Token:    tokenSvc,
+		SMS:      smsSvc,
+		Session:  sessionSvc,
+		OTP:      otpSvc,
+		Identity: identitySvc,
+		Auth:     authSvc,
+		Building: buildingSvc,
+	}, nil
 }
 
 func newSmsService(app *bootstrap.Application, logger log.Logger) domain.SmsService {
