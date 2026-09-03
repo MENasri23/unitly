@@ -2,6 +2,8 @@ package container
 
 import (
 	"unitly/internal/bootstrap"
+	"unitly/internal/building"
+	"unitly/internal/building/membership"
 	"unitly/internal/domain"
 	"unitly/internal/repository"
 	otprepo "unitly/internal/repository/otp"
@@ -10,9 +12,11 @@ import (
 )
 
 type Repositories struct {
-	User    domain.UserRepository
-	OTP     domain.OTPRepository
-	Session domain.SessionRepository
+	User       domain.UserRepository
+	OTP        domain.OTPRepository
+	Session    domain.SessionRepository
+	Building   building.BuildingRepository
+	Membership membership.MembershipRepository
 }
 
 func newRepositories(app *bootstrap.Application, pgxDB *pgxpool.Pool, cache domain.Cache) Repositories {
@@ -20,6 +24,8 @@ func newRepositories(app *bootstrap.Application, pgxDB *pgxpool.Pool, cache doma
 		User:    repository.NewUserRepository(pgxDB, cache),
 		OTP:     newOtpRepository(app, cache),
 		Session: repository.NewSessionRepository(pgxDB),
+		Building: building.NewBuildingRepository(pgxDB, cache),
+		Membership: membership.NewMembershipRepository(pgxDB, cache),
 	}
 }
 
