@@ -8,7 +8,8 @@ import (
 )
 
 type Building struct {
-	ID        uuid.UUID
+	ID        int64
+	GUID      uuid.UUID
 	Name      string
 	Address   *string
 	CreatedBy int64
