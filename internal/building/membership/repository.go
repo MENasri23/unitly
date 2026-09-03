@@ -2,13 +2,13 @@ package membership
 
 import (
 	"context"
-	"unitly/internal/building"
+	"unitly/internal/building/role"
 
 	"github.com/google/uuid"
 )
 
 type MembershipFilter struct {
-	RoleName *building.RoleName
+	RoleName *role.RoleName
 	Status   *MembershipStatus
 }
 

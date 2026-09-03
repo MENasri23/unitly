@@ -2,7 +2,7 @@ package membership
 
 import (
 	"time"
-	"unitly/internal/building"
+	"unitly/internal/building/role"
 	"unitly/internal/domain"
 
 	"github.com/google/uuid"
@@ -23,7 +23,7 @@ type Membership struct {
 	GUID       uuid.UUID
 	UserID     int64
 	BuildingID int64
-	Role       building.Role
+	Role       role.Role
 	Status     MembershipStatus
 	InvitedBy  *int64
 	Version    int

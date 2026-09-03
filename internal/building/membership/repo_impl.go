@@ -3,7 +3,7 @@ package membership
 import (
 	"context"
 	"errors"
-	"unitly/internal/building"
+	"unitly/internal/building/role"
 	"unitly/internal/db"
 	"unitly/internal/domain"
 
@@ -32,7 +32,7 @@ const membershipSelect = `
 
 func scanMembership(row db.Row) (*Membership, error) {
 	var m Membership
-	var role building.Role
+	var role role.Role
 	err := row.Scan(&m.ID, &m.GUID, &m.UserID, &m.BuildingID, &m.Status, &m.InvitedBy, &m.Version,
 		&m.CreatedAt, &m.UpdatedAt, &role.ID, &role.Name, &role.Level)
 	if err != nil {
