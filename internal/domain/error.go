@@ -71,3 +71,17 @@ func NewNotFoundError(entity string) Error {
 		params:  map[string]any{"entity": entityName},
 	}
 }
+
+func NewConflictError(entity string) Error {
+	entityName := strings.TrimSpace(strings.ToLower(entity))
+	if entityName == "" {
+		entityName = "record"
+	}
+
+	code := ErrorCode(strings.ToUpper(entityName) + "_CONFLICT")
+	return &errorCode{
+		code:    code,
+		message: fmt.Sprintf("%s conflict", entityName),
+		params:  map[string]any{"entity": entityName},
+	}
+}
