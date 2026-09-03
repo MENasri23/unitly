@@ -29,9 +29,10 @@ func NewBuildingRepository(db *pgxpool.Pool, cache domain.Cache) BuildingReposit
 	}
 }
 
+const columns = "id, guid, name, address, created_by, version, created_at, updated_at"
+
 const buildingSelect = `
-	SELECT id, guid, name, address,
-			created_by, version, created_at, updated_at
+	SELECT ` + columns + `
 	FROM buildings`
 
 func scanBuilding(row db.Row) (*Building, error) {
@@ -89,6 +90,33 @@ const getByGUID = buildingSelect + ` WHERE guid=$1 AND deleted_at IS NULL`
 
 func (r *buildingRepository) GetByGUID(ctx context.Context, guid uuid.UUID) (*Building, error) {
 	return scanBuilding(r.getQuerier(ctx).QueryRow(ctx, getByGUID, guid))
+}
+
+const listByUser = `
+		SELECT DISTINCT ` + columns + `
+		FROM buildings b
+		JOIN building_memberships m ON m.building_id = b.id
+		WHERE m.user_id = $1 AND m.status = 'active' AND b.deleted_at IS NULL
+		ORDER BY b.created_at DESC`
+
+// ListByUser: DISTINCT because a user can hold more than one active
+// membership row (e.g. owner + tenant) in the same building.
+func (r *buildingRepository) ListByUser(ctx context.Context, userID int64) ([]*Building, error) {
+	rows, err := r.getQuerier(ctx).Query(ctx, listByUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []*Building
+	for rows.Next() {
+		b, err := scanBuilding(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, b)
+	}
+	return out, rows.Err()
 }
 
 const softDelete = `UPDATE buildings SET deleted_at=now() WHERE guid=$1 AND deleted_at IS NULL`
