@@ -12,6 +12,7 @@ type Building struct {
 	Name      string
 	Address   *string
 	CreatedBy int64
+	Version   int
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
