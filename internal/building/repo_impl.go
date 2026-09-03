@@ -34,7 +34,7 @@ const buildingSelect = `
 			created_by, version, created_at, updated_at
 	FROM buildings`
 
-func scanBuilding(row pgx.Row) (*Building, error) {
+func scanBuilding(row db.Row) (*Building, error) {
 	var b Building
 	err := row.Scan(&b.ID, &b.GUID, &b.Name, &b.Address,
 		&b.CreatedBy, &b.Version, &b.CreatedAt, &b.UpdatedAt)
