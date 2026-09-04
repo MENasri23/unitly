@@ -108,11 +108,17 @@ func (r *buildingRepository) GetInternalID(ctx context.Context, guid uuid.UUID) 
 }
 
 const getSummaryByID = `
-		SELECT DISTINCT b.guid, b.name
-		FROM buildings b
-		JOIN building_memberships m ON m.building_id = b.id
-		WHERE m.user_id = $1 AND m.status = 'active' AND b.deleted_at IS NULL
-		ORDER BY b.created_at DESC`
+	SELECT b.guid, b.name
+	FROM buildings b
+	WHERE b.deleted_at IS NULL
+  		AND EXISTS (
+			SELECT 1
+      		FROM building_memberships m
+      		WHERE m.building_id = b.id
+        		AND m.user_id = $1
+        		AND m.status = 'active'
+  		)
+	ORDER BY b.created_at DESC`
 
 func (r *buildingRepository) ListSummaryByUser(ctx context.Context, userID int64) ([]*BuildingSummary, error) {
 	rows, err := r.getQuerier(ctx).Query(ctx, getSummaryByID, userID)
@@ -134,11 +140,17 @@ func (r *buildingRepository) ListSummaryByUser(ctx context.Context, userID int64
 }
 
 const listByUser = `
-		SELECT DISTINCT ` + columns + `
-		FROM buildings b
-		JOIN building_memberships m ON m.building_id = b.id
-		WHERE m.user_id = $1 AND m.status = 'active' AND b.deleted_at IS NULL
-		ORDER BY b.created_at DESC`
+	SELECT ` + columns + `
+	FROM buildings b
+	WHERE b.deleted_at IS NULL
+		AND EXISTS (
+			SELECT 1
+      		FROM building_memberships m
+      		WHERE m.building_id = b.id
+        		AND m.user_id = $1
+        		AND m.status = 'active'
+  		)
+	ORDER BY b.created_at DESC`
 
 // ListByUser: DISTINCT because a user can hold more than one active
 // membership row (e.g. owner + tenant) in the same building.
