@@ -1,5 +1,5 @@
 // Package response provides small HTTP helper utilities for working with JSON APIs.
-package jsonutil
+package http
 
 import (
 	"encoding/json"

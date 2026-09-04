@@ -11,7 +11,6 @@ import (
 	"unitly/internal/log"
 	"unitly/internal/service/auth"
 	"unitly/internal/service/identity"
-	"unitly/pkg/jsonutil"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -142,7 +141,7 @@ func refreshTokenFromRequest(r *http.Request) (refreshRequest, error) {
 		return req, nil
 	}
 
-	if err := jsonutil.ReadJSON(r, &req); err != nil {
+	if err := apphttp.ReadJSON(r, &req); err != nil {
 		return req, err
 	}
 	return req, nil
@@ -158,13 +157,13 @@ func getClientMeta(r *http.Request) domain.ClientMetadata {
 func (c *AuthController) RequestAuthByOTP(w http.ResponseWriter, r *http.Request) {
 	req, err := bindAndValidate[requestOTPRequest](r)
 	if err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
 
 	token, err := c.authSvc.RequestAuthByOTP(r.Context(), req.Phone)
 	if err != nil {
-		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
+		apphttp.WriteErrJSON(w, mapErrToStatusCode(err), err)
 		return
 	}
 
@@ -174,14 +173,14 @@ func (c *AuthController) RequestAuthByOTP(w http.ResponseWriter, r *http.Request
 func (c *AuthController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Request) {
 	req, err := bindAndValidate[verifyOTPRequest](r)
 	if err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
 
 	meta := getClientMeta(r)
 	result, err := c.authSvc.VerifyAuthByOTP(r.Context(), req.Sign, req.Otp, meta)
 	if err != nil {
-		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
+		apphttp.WriteErrJSON(w, mapErrToStatusCode(err), err)
 		return
 	}
 
@@ -191,14 +190,14 @@ func (c *AuthController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Request)
 func (c *AuthController) AuthenticateByPassword(w http.ResponseWriter, r *http.Request) {
 	req, err := bindAndValidate[authByPasswordRequest](r)
 	if err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
 
 	meta := getClientMeta(r)
 	result, err := c.authSvc.AuthenticateByPassword(r.Context(), req.Phone, req.Password, meta)
 	if err != nil {
-		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
+		apphttp.WriteErrJSON(w, mapErrToStatusCode(err), err)
 		return
 	}
 
@@ -208,13 +207,13 @@ func (c *AuthController) AuthenticateByPassword(w http.ResponseWriter, r *http.R
 func (c *AuthController) RequestResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
 	req, err := bindAndValidate[requestOTPRequest](r)
 	if err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
 
 	token, err := c.authSvc.RequestResetPasswordByOTP(r.Context(), req.Phone)
 	if err != nil {
-		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
+		apphttp.WriteErrJSON(w, mapErrToStatusCode(err), err)
 		return
 	}
 
@@ -224,13 +223,13 @@ func (c *AuthController) RequestResetPasswordByOTP(w http.ResponseWriter, r *htt
 func (c *AuthController) VerifyResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
 	req, err := bindAndValidate[verifyOTPRequest](r)
 	if err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
 
 	token, err := c.authSvc.VerifyResetPasswordByOTP(r.Context(), req.Sign, req.Otp)
 	if err != nil {
-		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
+		apphttp.WriteErrJSON(w, mapErrToStatusCode(err), err)
 		return
 	}
 
@@ -240,12 +239,12 @@ func (c *AuthController) VerifyResetPasswordByOTP(w http.ResponseWriter, r *http
 func (c *AuthController) FinalizeResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
 	req, err := bindAndValidate[finalizeResetPasswordRequest](r)
 	if err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
 
 	if err := c.authSvc.FinalizeResetPasswordByOTP(r.Context(), req.Sign, req.NewPassword); err != nil {
-		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
+		apphttp.WriteErrJSON(w, mapErrToStatusCode(err), err)
 		return
 	}
 
@@ -260,19 +259,19 @@ func (c *AuthController) RefreshByToken(w http.ResponseWriter, r *http.Request) 
 		if err == domain.ErrInvalidToken {
 			status = http.StatusUnauthorized
 		}
-		jsonutil.WriteErrJSON(w, status, err)
+		apphttp.WriteErrJSON(w, status, err)
 		return
 	}
 
 	if err := validateStruct(req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
 
 	meta := getClientMeta(r)
 	result, err := c.authSvc.RefreshAuthByToken(r.Context(), req.RefreshToken, meta)
 	if err != nil {
-		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
+		apphttp.WriteErrJSON(w, mapErrToStatusCode(err), err)
 		return
 	}
 
@@ -285,7 +284,7 @@ func (c *AuthController) Logout(w http.ResponseWriter, r *http.Request) {
 
 	if err := c.authSvc.Logout(r.Context(), userID, currentSessionID); err != nil {
 		c.logger.Error("failed to logout user", "userID", userID, "sessionID", currentSessionID, "error", err)
-		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
+		apphttp.WriteErrJSON(w, mapErrToStatusCode(err), err)
 	}
 
 	if apphttp.IsWebPlatform(r) {

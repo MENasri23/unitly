@@ -8,10 +8,10 @@ import (
 	"unitly/internal/http/middleware"
 	"unitly/internal/http/reqctx"
 	"unitly/internal/log"
-	"unitly/pkg/jsonutil"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	apphttp "unitly/internal/http"
 )
 
 type SessionController struct {
@@ -127,13 +127,13 @@ func (c *SessionController) Revoke(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if currentSessionID == sessionID {
-		jsonutil.WriteErrJSON(w, mapErrToStatusCode(domain.ErrSessionInUse), domain.ErrSessionInUse)
+		apphttp.WriteErrJSON(w, mapErrToStatusCode(domain.ErrSessionInUse), domain.ErrSessionInUse)
 		return
 	}
 
 	if err = c.sessionService.RevokeSessionByID(r.Context(), userID, sessionID); err != nil {
 		c.logError("failed to revoke session by id", userID, sessionID, err)
-		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
+		apphttp.WriteErrJSON(w, mapErrToStatusCode(err), err)
 	}
 }
 

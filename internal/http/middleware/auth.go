@@ -7,7 +7,6 @@ import (
 	apphttp "unitly/internal/http"
 	"unitly/internal/http/header"
 	"unitly/internal/http/reqctx"
-	"unitly/pkg/jsonutil"
 
 	"github.com/google/uuid"
 )
@@ -113,5 +112,5 @@ func trimBearer(header string) string {
 }
 
 func unauthorized(w http.ResponseWriter) {
-	jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
+	apphttp.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
 }

@@ -1,16 +1,15 @@
 package controller
 
 import (
+	"github.com/go-chi/chi/v5"
 	"net/http"
 	"unitly/internal/domain"
+	apphttp "unitly/internal/http"
 	"unitly/internal/http/middleware"
 	"unitly/internal/http/reqctx"
 	"unitly/internal/log"
 	"unitly/internal/service/auth"
 	"unitly/internal/service/identity"
-	"unitly/pkg/jsonutil"
-
-	"github.com/go-chi/chi/v5"
 )
 
 type ProfileController struct {
@@ -70,13 +69,13 @@ type updatePhoneVerify struct {
 
 func (c *ProfileController) updateFullName(w http.ResponseWriter, r *http.Request) {
 	var req updateFullNameRequest
-	if err := jsonutil.ReadJSON(r, &req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+	if err := apphttp.ReadJSON(r, &req); err != nil {
+		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
 
 	if err := validateStruct(&req); err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
 	user := reqctx.GetUser(r.Context())
@@ -84,7 +83,7 @@ func (c *ProfileController) updateFullName(w http.ResponseWriter, r *http.Reques
 	user.LastName = req.LastName
 
 	if err := c.identitySvc.UpdateFullName(r.Context(), user); err != nil {
-		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
+		apphttp.WriteErrJSON(w, mapErrToStatusCode(err), err)
 		return
 	}
 
@@ -101,7 +100,7 @@ func (c *ProfileController) getProfileInfo(w http.ResponseWriter, r *http.Reques
 		Phone:       user.Phone,
 	}
 
-	if err := jsonutil.WriteJSON(w, http.StatusOK, dto); err != nil {
+	if err := apphttp.WriteJSON(w, http.StatusOK, dto); err != nil {
 		c.logger.Error("failed to write response", "error", err)
 	}
 }
@@ -109,19 +108,19 @@ func (c *ProfileController) getProfileInfo(w http.ResponseWriter, r *http.Reques
 func (c *ProfileController) updatePassword(w http.ResponseWriter, r *http.Request) {
 	req, err := bindAndValidate[updatePasswordRequest](r)
 	if err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
 
 	user := reqctx.GetUser(r.Context())
 	sessionID, ok := reqctx.GetSessionID(r.Context())
 	if !ok {
-		jsonutil.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
+		apphttp.WriteErrJSON(w, http.StatusUnauthorized, domain.ErrInvalidToken)
 		return
 	}
 
 	if err := c.identitySvc.UpdatePassword(r.Context(), user, sessionID, req.OldPassword, req.NewPassword); err != nil {
-		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
+		apphttp.WriteErrJSON(w, mapErrToStatusCode(err), err)
 		return
 	}
 
@@ -131,14 +130,14 @@ func (c *ProfileController) updatePassword(w http.ResponseWriter, r *http.Reques
 func (c *ProfileController) updatePhoneRequest(w http.ResponseWriter, r *http.Request) {
 	req, err := bindAndValidate[updatePhoneRequest](r)
 	if err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
 
 	user := reqctx.GetUser(r.Context())
 	token, err := c.identitySvc.UpdatePhoneRequest(r.Context(), user, req.Phone)
 	if err != nil {
-		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
+		apphttp.WriteErrJSON(w, mapErrToStatusCode(err), err)
 		return
 	}
 
@@ -148,13 +147,13 @@ func (c *ProfileController) updatePhoneRequest(w http.ResponseWriter, r *http.Re
 func (c *ProfileController) updatePhoneVerify(w http.ResponseWriter, r *http.Request) {
 	req, err := bindAndValidate[updatePhoneVerify](r)
 	if err != nil {
-		jsonutil.WriteErrJSON(w, http.StatusBadRequest, err)
+		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
 
 	user := reqctx.GetUser(r.Context())
 	if err = c.identitySvc.UpdatePhoneVerify(r.Context(), user, req.Sign, req.Otp); err != nil {
-		jsonutil.WriteErrJSON(w, mapErrToStatusCode(err), err)
+		apphttp.WriteErrJSON(w, mapErrToStatusCode(err), err)
 		return
 	}
 
