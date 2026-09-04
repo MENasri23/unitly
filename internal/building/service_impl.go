@@ -60,6 +60,11 @@ func (s *buildingService) Create(ctx context.Context, actorUserID int64, in Crea
 func (s *buildingService) Get(ctx context.Context, id int64) (*Building, error) {
 	return s.buildings.GetByID(ctx, id)
 }
+
+func (s *buildingService) GetInternalID(ctx context.Context, buildingID uuid.UUID) (int64, error) {
+	return s.buildings.GetInternalID(ctx, buildingID)
+}
+
 func (s *buildingService) ListMine(ctx context.Context, userID int64) ([]*Building, error) {
 	return s.buildings.ListByUser(ctx, userID)
 }

@@ -92,6 +92,21 @@ func (r *buildingRepository) GetByGUID(ctx context.Context, guid uuid.UUID) (*Bu
 	return scanBuilding(r.getQuerier(ctx).QueryRow(ctx, getByGUID, guid))
 }
 
+const getInternalID = `SELECT id FROM buildings WHERE guid=$1 AND deleted_at IS NULL`
+
+func (r *buildingRepository) GetInternalID(ctx context.Context, guid uuid.UUID) (int64, error) {
+	row := r.getQuerier(ctx).QueryRow(ctx, getInternalID, guid)
+	var id int64
+	err := row.Scan(&id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, ErrBuildingNotFound
+		}
+		return 0, err
+	}
+	return id, nil
+}
+
 const listByUser = `
 		SELECT DISTINCT ` + columns + `
 		FROM buildings b
