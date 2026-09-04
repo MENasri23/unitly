@@ -91,13 +91,13 @@ func (c *SessionController) List(w http.ResponseWriter, r *http.Request) {
 	userID, _ := reqctx.GetUserID(r.Context())
 	currentSessionID, _ := reqctx.GetSessionID(r.Context())
 
-	page := queryInt(r, "page", 1)
-	pageSize := queryInt(r, "page_size", domain.DefaultSessionPageSize)
+	page := apphttp.QueryInt(r, "page", 1)
+	pageSize := apphttp.QueryInt(r, "page_size", domain.DefaultSessionPageSize)
 
 	result, err := c.sessionService.ListSessions(r.Context(), userID, page, pageSize)
 	if err != nil {
 		c.logError("failed to list sessions", userID, currentSessionID, err)
-		writeInternalServerError(w, errors.New("failed to list sessions"))
+		apphttp.InternalServerError(w, errors.New("failed to list sessions"))
 		return
 	}
 

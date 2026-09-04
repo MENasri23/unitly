@@ -155,7 +155,7 @@ func getClientMeta(r *http.Request) domain.ClientMetadata {
 }
 
 func (c *AuthController) RequestAuthByOTP(w http.ResponseWriter, r *http.Request) {
-	req, err := bindAndValidate[requestOTPRequest](r)
+	req, err := apphttp.BindAndValidate[requestOTPRequest](r)
 	if err != nil {
 		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
@@ -171,7 +171,7 @@ func (c *AuthController) RequestAuthByOTP(w http.ResponseWriter, r *http.Request
 }
 
 func (c *AuthController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Request) {
-	req, err := bindAndValidate[verifyOTPRequest](r)
+	req, err := apphttp.BindAndValidate[verifyOTPRequest](r)
 	if err != nil {
 		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
@@ -188,7 +188,7 @@ func (c *AuthController) VerifyAuthByOTP(w http.ResponseWriter, r *http.Request)
 }
 
 func (c *AuthController) AuthenticateByPassword(w http.ResponseWriter, r *http.Request) {
-	req, err := bindAndValidate[authByPasswordRequest](r)
+	req, err := apphttp.BindAndValidate[authByPasswordRequest](r)
 	if err != nil {
 		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
@@ -205,7 +205,7 @@ func (c *AuthController) AuthenticateByPassword(w http.ResponseWriter, r *http.R
 }
 
 func (c *AuthController) RequestResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
-	req, err := bindAndValidate[requestOTPRequest](r)
+	req, err := apphttp.BindAndValidate[requestOTPRequest](r)
 	if err != nil {
 		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
@@ -221,7 +221,7 @@ func (c *AuthController) RequestResetPasswordByOTP(w http.ResponseWriter, r *htt
 }
 
 func (c *AuthController) VerifyResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
-	req, err := bindAndValidate[verifyOTPRequest](r)
+	req, err := apphttp.BindAndValidate[verifyOTPRequest](r)
 	if err != nil {
 		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
@@ -237,7 +237,7 @@ func (c *AuthController) VerifyResetPasswordByOTP(w http.ResponseWriter, r *http
 }
 
 func (c *AuthController) FinalizeResetPasswordByOTP(w http.ResponseWriter, r *http.Request) {
-	req, err := bindAndValidate[finalizeResetPasswordRequest](r)
+	req, err := apphttp.BindAndValidate[finalizeResetPasswordRequest](r)
 	if err != nil {
 		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
@@ -263,7 +263,7 @@ func (c *AuthController) RefreshByToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := validateStruct(req); err != nil {
+	if err := apphttp.ValidateStruct(req); err != nil {
 		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}

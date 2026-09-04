@@ -74,7 +74,7 @@ func (c *ProfileController) updateFullName(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if err := validateStruct(&req); err != nil {
+	if err := apphttp.ValidateStruct(&req); err != nil {
 		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
 	}
@@ -106,7 +106,7 @@ func (c *ProfileController) getProfileInfo(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *ProfileController) updatePassword(w http.ResponseWriter, r *http.Request) {
-	req, err := bindAndValidate[updatePasswordRequest](r)
+	req, err := apphttp.BindAndValidate[updatePasswordRequest](r)
 	if err != nil {
 		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
@@ -128,7 +128,7 @@ func (c *ProfileController) updatePassword(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *ProfileController) updatePhoneRequest(w http.ResponseWriter, r *http.Request) {
-	req, err := bindAndValidate[updatePhoneRequest](r)
+	req, err := apphttp.BindAndValidate[updatePhoneRequest](r)
 	if err != nil {
 		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return
@@ -145,7 +145,7 @@ func (c *ProfileController) updatePhoneRequest(w http.ResponseWriter, r *http.Re
 }
 
 func (c *ProfileController) updatePhoneVerify(w http.ResponseWriter, r *http.Request) {
-	req, err := bindAndValidate[updatePhoneVerify](r)
+	req, err := apphttp.BindAndValidate[updatePhoneVerify](r)
 	if err != nil {
 		apphttp.WriteErrJSON(w, http.StatusBadRequest, err)
 		return

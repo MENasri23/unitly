@@ -93,3 +93,11 @@ func ReadJSON(
 
 	return nil
 }
+
+func InternalServerError(w http.ResponseWriter, err error) error {
+	return WriteErrJSON(w, http.StatusInternalServerError, err)
+}
+
+func BadRequestError(w http.ResponseWriter, err error) error {
+	return WriteErrJSON(w, http.StatusBadRequest, err)
+}

@@ -1,4 +1,4 @@
-package controller
+package http
 
 import (
 	"errors"
@@ -64,7 +64,7 @@ func validateProfileName(fl validator.FieldLevel) bool {
 	return l >= 2 && l <= 20
 }
 
-func validateStruct(s any) error {
+func ValidateStruct(s any) error {
 	if err := v.Struct(s); err != nil {
 		return domain.NewError("VALIDATION_ERROR", translate(err))
 	}
