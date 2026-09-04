@@ -37,12 +37,12 @@ func (s *buildingService) Create(ctx context.Context, actorUserID int64, in Crea
 			return err
 		}
 
-		m := &membership.Membership{
+		m := &domain.Membership{
 			GUID:       membershipID,
 			UserID:     actorUserID,
 			BuildingID: b.ID,
 			Role:       role.RoleAdmin,
-			Status:     membership.MembershipStatusActive,
+			Status:     domain.MembershipStatusActive,
 		}
 		if err := s.memberships.Create(ctx, m); err != nil {
 			return err

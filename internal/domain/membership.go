@@ -1,15 +1,14 @@
-package membership
+package domain
 
 import (
 	"time"
 	"unitly/internal/building/role"
-	"unitly/internal/domain"
 
 	"github.com/google/uuid"
 )
 
-var ErrMembershipNotFound = domain.NewNotFoundError("membership")
-var ErrMembershipConflict = domain.NewConflictError("membership")
+var ErrMembershipNotFound = NewNotFoundError("membership")
+var ErrMembershipConflict = NewConflictError("membership")
 
 type MembershipStatus string
 

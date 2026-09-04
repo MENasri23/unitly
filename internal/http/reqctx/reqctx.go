@@ -15,6 +15,7 @@ const (
 	userIDKey
 	userInternalIDKey
 	userKey
+	ctxMembershipKey
 )
 
 func WithSessionID(ctx context.Context, id uuid.UUID) context.Context {
@@ -55,4 +56,13 @@ func GetUser(ctx context.Context) *domain.User {
 
 func GetClientIP(ctx context.Context) string {
 	return middleware.GetClientIP(ctx)
+}
+
+func WithMembership(ctx context.Context, m *domain.Membership) context.Context {
+	return context.WithValue(ctx, ctxMembershipKey, m)
+}
+
+func GetMembership(ctx context.Context) *domain.Membership {
+	m, _ := ctx.Value(ctxMembershipKey).(*domain.Membership)
+	return m
 }

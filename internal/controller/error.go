@@ -3,18 +3,17 @@ package controller
 import (
 	"net/http"
 	"unitly/internal/building"
-	"unitly/internal/building/membership"
 	"unitly/internal/domain"
 	"unitly/internal/service/identity"
 )
 
 var errToStatusCode = map[error]int{
-	domain.ErrUserNotFound:           http.StatusNotFound,
-	domain.ErrNotFound:               http.StatusNotFound,
-	building.ErrBuildingNotFound:     http.StatusNotFound,
-	membership.ErrMembershipNotFound: http.StatusNotFound,
+	domain.ErrUserNotFound:       http.StatusNotFound,
+	domain.ErrNotFound:           http.StatusNotFound,
+	building.ErrBuildingNotFound: http.StatusNotFound,
+	domain.ErrMembershipNotFound: http.StatusNotFound,
 
-	membership.ErrMembershipConflict: http.StatusConflict,
+	domain.ErrMembershipConflict: http.StatusConflict,
 
 	domain.ErrTooManyAttempts:    http.StatusTooManyRequests,
 	domain.ErrInvalidOTP:         http.StatusUnauthorized,
