@@ -101,3 +101,15 @@ func InternalServerError(w http.ResponseWriter, err error) error {
 func BadRequestError(w http.ResponseWriter, err error) error {
 	return WriteErrJSON(w, http.StatusBadRequest, err)
 }
+
+func ForbiddenError(w http.ResponseWriter, err error) error {
+	return WriteErrJSON(w, http.StatusForbidden, err)
+}
+
+func NotFoundError(w http.ResponseWriter, err error) error {
+	return WriteErrJSON(w, http.StatusNotFound, err)
+}
+
+func UnauthorizedError(w http.ResponseWriter, err error) error {
+	return WriteErrJSON(w, http.StatusUnauthorized, err)
+}
