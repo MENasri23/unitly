@@ -46,7 +46,9 @@ var (
 	ErrInvalidCredentials = NewError("INVALID_CREDENTIALS", "invalid username or password")
 	ErrRateLimit          = NewError("TOO_MANY_REQUESTS", "too many request")
 	ErrTooManyAttempts    = NewError("TOO_MANY_ATTEMPTS", "too many failed attempts, please try again later")
+	ErrForbidden          = NewError("FORBIDDEN", "forbidden")
 	ErrNotFound           = NewNotFoundError("record")
+	
 )
 
 func NewError(code ErrorCode, msg string) Error {
