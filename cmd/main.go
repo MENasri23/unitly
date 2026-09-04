@@ -37,6 +37,7 @@ func main() {
 		Auth:           c.Controllers.Auth,
 		Profile:        c.Controllers.Profile,
 		Session:        c.Controllers.Session,
+		Building:       c.Controllers.Building,
 	})
 
 	if app.DebugMode() {

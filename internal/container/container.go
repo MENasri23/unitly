@@ -39,7 +39,7 @@ func New(app *bootstrap.Application, logger log.Logger) (*Container, func(), err
 	}
 
 	authMW := middleware.NewAuthMiddleware(services.Token, repos.User)
-	controllers := newControllers(app, logger, services, authMW)
+	controllers := newControllers(app, logger, services, repos, authMW)
 
 	return &Container{
 		Repos:       repos,

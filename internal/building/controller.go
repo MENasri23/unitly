@@ -30,8 +30,12 @@ type BuildingController struct {
 	authMW      func(http.Handler) http.Handler
 }
 
-func NewBuildingController(b BuildingService, m membership.MembershipRepository) *BuildingController {
-	return &BuildingController{buildings: b, memberships: m}
+func NewBuildingController(
+	b BuildingService,
+	m membership.MembershipRepository,
+	authMW func(http.Handler) http.Handler,
+) *BuildingController {
+	return &BuildingController{buildings: b, memberships: m, authMW: authMW}
 }
 
 // BuildingContext loads the building by :buildingGUID and the caller's
@@ -89,7 +93,7 @@ func (c *BuildingController) Routes(r chi.Router) {
 
 func (c *BuildingController) create(w http.ResponseWriter, r *http.Request) {
 	userID, _ := reqctx.GetUserInternalID(r.Context())
-	
+
 	req, err := apphttp.BindAndValidate[CreateBuildingRequest](r)
 	if err != nil {
 		apphttp.BadRequestError(w, err)

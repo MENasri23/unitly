@@ -31,6 +31,7 @@ type Params struct {
 	Auth           RouteRegistrar
 	Profile        RouteRegistrar
 	Session        RouteRegistrar
+	Building	   RouteRegistrar
 }
 
 func New(p Params) *chi.Mux {
@@ -64,6 +65,7 @@ func New(p Params) *chi.Mux {
 
 	r.Route("/api/v1", func(r chi.Router) {
 		p.Auth.Routes(r)
+		p.Building.Routes(r)
 		r.Route("/me", func(r chi.Router) {
 			p.Profile.Routes(r)
 			p.Session.Routes(r)
