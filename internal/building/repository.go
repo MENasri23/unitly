@@ -11,6 +11,7 @@ type BuildingRepository interface {
 	GetByID(ctx context.Context, id int64) (*Building, error)
 	GetByGUID(ctx context.Context, guid uuid.UUID) (*Building, error)
 	GetInternalID(ctx context.Context, guid uuid.UUID) (int64, error)
+	ListSummaryByUser(ctx context.Context, userID int64) ([]*BuildingSummary, error)
 	ListByUser(ctx context.Context, userID int64) ([]*Building, error)
-	SoftDelete(ctx context.Context, id uuid.UUID) error
+	SoftDelete(ctx context.Context, id int64) error
 }

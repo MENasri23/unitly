@@ -9,6 +9,11 @@ import (
 
 var ErrBuildingNotFound = domain.NewNotFoundError("building")
 
+type BuildingSummary struct {
+	ID   uuid.UUID
+	Name string
+}
+
 type Building struct {
 	ID        int64
 	GUID      uuid.UUID

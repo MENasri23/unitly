@@ -3,6 +3,7 @@ package http
 import (
 	"errors"
 	"reflect"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 	"unitly/internal/domain"
@@ -26,7 +27,7 @@ func init() {
 	en_translations.RegisterDefaultTranslations(v, transEn)
 
 	registerProfileNameValidation(v, transEn)
-
+	registerTrimmedNameValidator(v, transEn)
 }
 
 func jsonTagFieldName(fld reflect.StructField) string {
@@ -53,8 +54,6 @@ func registerProfileNameValidation(v *validator.Validate, transEn ut.Translator)
 			return t
 		},
 	)
-
-	v.RegisterTagNameFunc(jsonTagFieldName)
 }
 
 func validateProfileName(fl validator.FieldLevel) bool {
@@ -84,4 +83,67 @@ func translate(err error) string {
 		}
 	}
 	return err.Error()
+}
+
+func registerTrimmedNameValidator(v *validator.Validate, transEn ut.Translator) {
+	v.RegisterValidation("trimmed_name", trimmedNameValidator)
+	v.RegisterTranslation(
+		"trimmed_name",
+		transEn,
+		func(ut ut.Translator) error {
+			return ut.Add("trimmed_name", "{0} must be between {1} and {2} characters long after trimming", true)
+		},
+		func(ut ut.Translator, fe validator.FieldError) string {
+			params := strings.Split(fe.Param(), ":")
+
+			minVal, maxVal := "?", "?"
+			if len(params) == 2 {
+				minVal, maxVal = params[0], params[1]
+			} else {
+				return fe.Tag()
+			}
+
+			t, err := ut.T(fe.Tag(), fe.Field(), minVal, maxVal)
+			if err != nil {
+				return fe.Tag()
+			}
+			return t
+		},
+	)
+}
+
+// TrimmedNameValidator validates that a string, after stripping leading and trailing
+// whitespace, falls within [min, max] character length.
+//
+// Supported tag formats:
+//   - validate:"trimmed_name=2:50"
+func trimmedNameValidator(fl validator.FieldLevel) bool {
+	field := fl.Field()
+
+	// 1. Ensure target field is a string
+	if field.Kind() != reflect.String {
+		return false
+	}
+
+	params := strings.Split(fl.Param(), ":")
+
+	if len(params) != 2 {
+		return false
+	}
+
+	minLen, err := strconv.Atoi(params[0])
+	if err != nil {
+		return false
+	}
+
+	maxLen, err := strconv.Atoi(params[1])
+	if err != nil {
+		return false
+	}
+
+	trimmed := strings.TrimSpace(field.String())
+	len := utf8.RuneCountInString(trimmed)
+
+	// 5. Verify constraints
+	return len >= minLen && len <= maxLen
 }

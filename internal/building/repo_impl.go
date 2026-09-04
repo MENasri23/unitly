@@ -107,6 +107,32 @@ func (r *buildingRepository) GetInternalID(ctx context.Context, guid uuid.UUID) 
 	return id, nil
 }
 
+const getSummaryByID = `
+		SELECT DISTINCT b.guid, b.name
+		FROM buildings b
+		JOIN building_memberships m ON m.building_id = b.id
+		WHERE m.user_id = $1 AND m.status = 'active' AND b.deleted_at IS NULL
+		ORDER BY b.created_at DESC`
+
+func (r *buildingRepository) ListSummaryByUser(ctx context.Context, userID int64) ([]*BuildingSummary, error) {
+	rows, err := r.getQuerier(ctx).Query(ctx, getSummaryByID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []*BuildingSummary
+	for rows.Next() {
+		var summary BuildingSummary
+		err := rows.Scan(&summary.ID, &summary.Name)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, &summary)
+	}
+	return out, rows.Err()
+}
+
 const listByUser = `
 		SELECT DISTINCT ` + columns + `
 		FROM buildings b
@@ -134,9 +160,9 @@ func (r *buildingRepository) ListByUser(ctx context.Context, userID int64) ([]*B
 	return out, rows.Err()
 }
 
-const softDelete = `UPDATE buildings SET deleted_at=now() WHERE guid=$1 AND deleted_at IS NULL`
+const softDelete = `UPDATE buildings SET deleted_at=now() WHERE id=$1 AND deleted_at IS NULL`
 
-func (r *buildingRepository) SoftDelete(ctx context.Context, id uuid.UUID) error {
+func (r *buildingRepository) SoftDelete(ctx context.Context, id int64) error {
 	ct, err := r.getQuerier(ctx).Exec(ctx, softDelete, id)
 	if err != nil {
 		return err

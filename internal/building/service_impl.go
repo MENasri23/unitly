@@ -64,10 +64,10 @@ func (s *buildingService) GetInternalID(ctx context.Context, buildingID uuid.UUI
 	return s.buildings.GetInternalID(ctx, buildingID)
 }
 
-func (s *buildingService) ListMine(ctx context.Context, userID int64) ([]*Building, error) {
-	return s.buildings.ListByUser(ctx, userID)
+func (s *buildingService) ListMine(ctx context.Context, userID int64) ([]*BuildingSummary, error) {
+	return s.buildings.ListSummaryByUser(ctx, userID)
 }
-func (s *buildingService) Delete(ctx context.Context, buildingID uuid.UUID) error {
+func (s *buildingService) Delete(ctx context.Context, buildingID int64) error {
 	return s.buildings.SoftDelete(ctx, buildingID) // authz (admin-only) enforced by middleware
 }
 
