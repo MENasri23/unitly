@@ -3,7 +3,6 @@ package building
 import (
 	"context"
 	"unitly/internal/building/membership"
-	"unitly/internal/building/role"
 	"unitly/internal/domain"
 
 	"github.com/google/uuid"
@@ -41,7 +40,7 @@ func (s *buildingService) Create(ctx context.Context, actorUserID int64, in Crea
 			GUID:       membershipID,
 			UserID:     actorUserID,
 			BuildingID: b.ID,
-			Role:       role.RoleAdmin,
+			Role:       domain.RoleAdmin,
 			Status:     domain.MembershipStatusActive,
 		}
 		if err := s.memberships.Create(ctx, m); err != nil {

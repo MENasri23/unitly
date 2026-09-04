@@ -1,4 +1,4 @@
-package role
+package domain
 
 type RoleName string
 
