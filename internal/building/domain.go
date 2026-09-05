@@ -8,6 +8,7 @@ import (
 )
 
 var ErrBuildingNotFound = domain.NewNotFoundError("building")
+var ErrBuildingNameTaken = domain.NewError("BUILDING_EXIST", "a building with this name already exists")
 
 type BuildingSummary struct {
 	ID   uuid.UUID

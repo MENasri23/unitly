@@ -7,9 +7,13 @@ import (
 	"unitly/internal/domain"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+const nameUniqueConstraint = "idx_buildings_created_by_name"
 
 type buildingRepository struct {
 	db    *pgxpool.Pool
@@ -65,7 +69,7 @@ RETURNING id, version, created_at, updated_at
 // Create implements [BuildingRepository].
 func (r *buildingRepository) Create(ctx context.Context, b *Building) error {
 	querier := r.getQuerier(ctx)
-	return querier.QueryRow(
+	err := querier.QueryRow(
 		ctx,
 		createBuilding,
 		b.GUID,
@@ -78,6 +82,20 @@ func (r *buildingRepository) Create(ctx context.Context, b *Building) error {
 		&b.CreatedAt,
 		&b.UpdatedAt,
 	)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if isBuildingPerCreatorExists(pgErr) {
+				return ErrBuildingNameTaken
+			}
+		}
+	}
+
+	return err
+}
+
+func isBuildingPerCreatorExists(err *pgconn.PgError) bool {
+	return err.Code == pgerrcode.UniqueViolation && err.ConstraintName == nameUniqueConstraint
 }
 
 const getByID = buildingSelect + ` WHERE id=$1 AND deleted_at IS NULL`
