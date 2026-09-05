@@ -472,6 +472,8 @@ The HTTP API is mounted at `/api/v1`.
   - Validation:
     - `name` is required.
     - `address` is optional and must be 5–1000 characters when provided.
+  - Errors:
+    - `BUILDING_EXIST` — a building with this name already exists per creator
   - Behavior:
     - Creates a building for the authenticated user.
 
@@ -507,6 +509,10 @@ The HTTP API is mounted at `/api/v1`.
     - `buildingGUID` must be a valid UUID.
     - The authenticated user must have an active membership in the building.
     - The user must have the `Admin` role.
+  - Errors:
+    - `BAD_REQUEST` — invalid building ID
+    - `NOT_FOUND` — building does not exist
+    - `FORBIDDEN` — the user has no active membership in the building or lacks the `Admin` role
   - Behavior:
     - Deletes the specified building.
 
