@@ -113,3 +113,7 @@ func NotFoundError(w http.ResponseWriter, err error) error {
 func UnauthorizedError(w http.ResponseWriter, err error) error {
 	return WriteErrJSON(w, http.StatusUnauthorized, err)
 }
+
+func ConflictError(w http.ResponseWriter, err error) error {
+	return WriteErrJSON(w, http.StatusConflict, err)
+}

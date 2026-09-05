@@ -110,7 +110,11 @@ func (c *BuildingController) create(w http.ResponseWriter, r *http.Request) {
 
 	b, err := c.buildings.Create(r.Context(), userID, in)
 	if err != nil {
-		apphttp.InternalServerError(w, err)
+		if errors.Is(err, ErrBuildingNameTaken) {
+			apphttp.ConflictError(w, err)
+		} else {
+			apphttp.InternalServerError(w, err)
+		}
 		return
 	}
 
