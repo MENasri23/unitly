@@ -7,5 +7,6 @@ CREATE TABLE IF NOT EXISTS users(
     password_hash TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
+    CONSTRAINT users_password_hash_check 
     CHECK (password_hash <> '')
 );

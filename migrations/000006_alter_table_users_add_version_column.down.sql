@@ -1,1 +1,1 @@
-ALTER TABLE sessions DROP COLUMN version;
+ALTER TABLE users DROP COLUMN IF EXISTS  version;
