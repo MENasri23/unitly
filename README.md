@@ -452,6 +452,64 @@ The HTTP API is mounted at `/api/v1`.
   - The authenticated user is identified from the access token.
   - After revocation, the refresh token associated with the session becomes invalid.
 
+  ### Buildings
+
+  #### Create Building
+
+  - Method: `POST`
+  - Path: `/api/v1/buildings/`
+  - Authentication: `Bearer <access-token>`
+  - Request body:
+    ```json
+    {
+      "name": "Main Office",
+      "address": "123 Main Street"
+    }
+    ```
+  - Success response:
+    - Status: `201 Created`
+    - Response body: JSON string containing the building GUID
+  - Validation:
+    - `name` is required.
+    - `address` is optional and must be 5–1000 characters when provided.
+  - Behavior:
+    - Creates a building for the authenticated user.
+
+  #### List My Buildings
+
+  - Method: `GET`
+  - Path: `/api/v1/buildings/`
+  - Authentication: `Bearer <access-token>`
+  - Success response:
+    - Status: `200 OK`
+    - Response body:
+      ```json
+      [
+        {
+          "guid": "550e8400-e29b-41d4-a716-446655440000",
+          "name": "Main Office"
+        }
+      ]
+      ```
+  - Behavior:
+    - Returns the authenticated user's buildings.
+
+  #### Delete Building
+
+  - Method: `DELETE`
+  - Path: `/api/v1/buildings/{buildingGUID}/`
+  - Authentication: `Bearer <access-token>`
+  - Required role: `Admin`
+  - Success response:
+    - Status: `204 No Content`
+    - Response body: _(empty)_
+  - Validation:
+    - `buildingGUID` must be a valid UUID.
+    - The authenticated user must have an active membership in the building.
+    - The user must have the `Admin` role.
+  - Behavior:
+    - Deletes the specified building.
+
 ## Error Handling
 
 All errors are returned as JSON objects with a `code` and `message` field.
@@ -464,6 +522,8 @@ Example:
   "message": "invalid phone number"
 }
 ```
+
+
 
 ### Standard error response structure
 
