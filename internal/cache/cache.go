@@ -52,11 +52,13 @@ func NewCache(cfg *Config) (domain.Cache, error) {
 		return nil, err
 	}
 
-	return &redisCache{Client: rdb}, nil
+	slidingScr := redis.NewScript(slidingReadSrc)
+	return &redisCache{Client: rdb, slidingScript: slidingScr}, nil
 }
 
 type redisCache struct {
-	Client *redis.Client
+	Client        *redis.Client
+	slidingScript *redis.Script
 }
 
 var _ domain.Cache = (*redisCache)(nil)
@@ -113,6 +115,22 @@ func (c *redisCache) HIncrBy(ctx context.Context, key, field string, increment i
 
 func (c *redisCache) Expire(ctx context.Context, key string, expiration time.Duration) (bool, error) {
 	return c.Client.Expire(ctx, key, expiration).Result()
+}
+
+func (c *redisCache) SlidingGet(ctx context.Context, key string, exp time.Duration) (any, error) {
+	return c.slidingRead(ctx, key, exp, "GET")
+}
+
+func (c *redisCache) slidingRead(ctx context.Context, key string, ttl time.Duration, cmd string, args ...any) (any, error) {
+	argv := make([]any, 0, 2+len(args))
+	argv = append(argv, int(ttl.Seconds()), cmd)
+	argv = append(argv, args...)
+
+	v, err := c.slidingScript.Run(ctx, c.Client, []string{key}, argv).Result()
+	if err == redis.Nil {
+		return nil, domain.ErrNotFound
+	}
+	return v, err
 }
 
 // --- Transactional Pipeline Implementation ---

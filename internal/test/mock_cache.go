@@ -18,6 +18,7 @@ type MockCache struct {
 
 	CloseFn         func() error
 	GetFn           func(ctx context.Context, key string) (string, error)
+	SlidingGetFn    func(ctx context.Context, key string, expiration time.Duration) (string, error)
 	IncrFn          func(ctx context.Context, key string) (int64, error)
 	ExistsKeyFn     func(ctx context.Context, key string) (bool, error)
 	SetFn           func(ctx context.Context, key string, val any, exp time.Duration) error
@@ -64,6 +65,14 @@ func (m *MockCache) Get(ctx context.Context, key string) (string, error) {
 		return m.GetFn(ctx, key)
 	}
 	panic("MockCache.Get was called but not stubbed")
+}
+
+func (m *MockCache) SlidingGet(ctx context.Context, key string, expiration time.Duration) (any, error) {
+	m.trackCall("SlidingGet")
+	if m.SlidingGetFn != nil {
+		return m.SlidingGetFn(ctx, key, expiration)
+	}
+	panic("MockCache.SlidingGet was called but not stubbed")
 }
 
 func (m *MockCache) Incr(ctx context.Context, key string) (int64, error) {

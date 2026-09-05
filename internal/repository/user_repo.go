@@ -15,7 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const userIDCacheTTL = 24 * time.Hour
+const userIDCacheTTL = 1 * time.Minute
 
 type userRepository struct {
 	db    *pgxpool.Pool
@@ -81,8 +81,11 @@ const getIDByGUID = `SELECT id FROM users WHERE public_id = $1`
 
 func (u *userRepository) GetIDByGUID(ctx context.Context, guid uuid.UUID) (int64, error) {
 	key := userIDCacheKey(guid)
-	if id, err := u.cache.Get(ctx, key); err == nil {
-		return strconv.ParseInt(id, 10, 64)
+
+	if id, err := u.cache.SlidingGet(ctx, key, userIDCacheTTL); err == nil {
+		if idInt, ok := id.(string); ok {
+			return strconv.ParseInt(idInt, 10, 64)
+		}
 	}
 
 	querier := u.getQuerier(ctx)
@@ -98,7 +101,7 @@ func (u *userRepository) GetIDByGUID(ctx context.Context, guid uuid.UUID) (int64
 }
 
 func userIDCacheKey(guid uuid.UUID) string {
-	return "user:public_id:" + guid.String()
+	return "user:guid:" + guid.String()
 }
 
 func (u *userRepository) GetByPhone(ctx context.Context, phone string) (*domain.User, error) {

@@ -44,6 +44,8 @@ type Cache interface {
 	HIncrBy(ctx context.Context, key, field string, increment int64) (int64, error)
 	Expire(ctx context.Context, key string, expiration time.Duration) (bool, error)
 
+	SlidingGet(ctx context.Context, key string, exp time.Duration) (any, error)
+
 	// Transactional Pipeline
 	TxPipeline() TxPipeline
 
