@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/http"
 	"strings"
-	"unitly/internal/building/membership"
 	"unitly/internal/domain"
 	apphttp "unitly/internal/http"
 	"unitly/internal/http/middleware"
@@ -25,22 +24,20 @@ type BuildingSummaryDTO struct {
 }
 
 type BuildingController struct {
-	buildings   BuildingService
-	memberships membership.MembershipRepository
-	authMW      func(http.Handler) http.Handler
+	buildings BuildingService
+	authMW    func(http.Handler) http.Handler
 }
 
 func NewBuildingController(
 	b BuildingService,
-	m membership.MembershipRepository,
 	authMW func(http.Handler) http.Handler,
 ) *BuildingController {
-	return &BuildingController{buildings: b, memberships: m, authMW: authMW}
+	return &BuildingController{buildings: b, authMW: authMW}
 }
 
 // BuildingContext loads the building by :buildingGUID and the caller's
 // highest-privilege active membership, both stored on context.
-func BuildingContext(buildings BuildingService, memberships membership.MembershipRepository) func(http.Handler) http.Handler {
+func BuildingContext(buildings BuildingService) func(http.Handler) http.Handler {
 	f := func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			userID, ok := reqctx.GetUserInternalID(r.Context())
@@ -49,23 +46,22 @@ func BuildingContext(buildings BuildingService, memberships membership.Membershi
 				return
 			}
 
-			guid, err := uuid.Parse(chi.URLParam(r, "buildingGUID"))
+			buildingID, err := uuid.Parse(chi.URLParam(r, "buildingGUID"))
 			if err != nil {
 				apphttp.BadRequestError(w, domain.NewError("", "invalid building id"))
 				return
 			}
-			buildingID, err := buildings.GetInternalID(r.Context(), guid)
-			if err != nil {
-				apphttp.NotFoundError(w, domain.ErrNotFound)
-				return
-			}
 
-			m, err := memberships.GetHighestActiveByUserBuilding(r.Context(), userID, buildingID)
+			m, err := buildings.GetHighestLevelMembership(r.Context(), userID, buildingID)
 			if err != nil {
-				if errors.Is(err, domain.ErrMembershipNotFound) {
+				switch {
+				case errors.Is(err, domain.ErrMembershipNotFound):
 					apphttp.ForbiddenError(w, domain.ErrForbidden)
-				} else {
+				case errors.Is(err, ErrBuildingNotFound):
+					apphttp.NotFoundError(w, ErrBuildingNotFound)
+				default:
 					apphttp.InternalServerError(w, domain.ErrInternal)
+
 				}
 				return
 			}
@@ -85,7 +81,7 @@ func (c *BuildingController) Routes(r chi.Router) {
 		r.Get("/", c.listMine)
 
 		r.Route("/{buildingGUID}", func(r chi.Router) {
-			r.Use(BuildingContext(c.buildings, c.memberships))
+			r.Use(BuildingContext(c.buildings))
 			r.With(middleware.RequireMinRoleLevel(domain.RoleAdmin.Level)).Delete("/", c.delete)
 		})
 	})

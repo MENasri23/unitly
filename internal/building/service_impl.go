@@ -64,6 +64,14 @@ func (s *buildingService) GetInternalID(ctx context.Context, buildingID uuid.UUI
 	return s.buildings.GetInternalID(ctx, buildingID)
 }
 
+func (s *buildingService) GetHighestLevelMembership(ctx context.Context, userID int64, buildingID uuid.UUID) (*domain.Membership, error) {
+	id, err := s.buildings.GetInternalID(ctx, buildingID)
+	if err != nil {
+		return nil, err
+	}
+	return s.memberships.GetHighestActiveByUserBuilding(ctx, userID, id)
+}
+
 func (s *buildingService) ListMine(ctx context.Context, userID int64) ([]*BuildingSummary, error) {
 	return s.buildings.ListSummaryByUser(ctx, userID)
 }

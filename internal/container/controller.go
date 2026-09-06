@@ -19,7 +19,6 @@ func newControllers(
 	app *bootstrap.Application,
 	logger log.Logger,
 	s Services,
-	r Repositories,
 	authMW *middleware.AuthMiddleware,
 ) Controllers {
 	return Controllers{
@@ -30,6 +29,6 @@ func newControllers(
 		}),
 		Profile:  controller.NewProfileController(s.Auth, s.Identity, authMW, logger),
 		Session:  controller.NewSessionController(s.Session, authMW, logger),
-		Building: building.NewBuildingController(s.Building, r.Membership, authMW.RequireAuth),
+		Building: building.NewBuildingController(s.Building, authMW.RequireAuth),
 	}
 }
