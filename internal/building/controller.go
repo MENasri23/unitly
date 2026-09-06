@@ -14,7 +14,7 @@ import (
 )
 
 type CreateBuildingRequest struct {
-	Name    string  `json:"name" validate:"required"`
+	Name    string  `json:"name" validate:"required,trimmed_name=2:100"`
 	Address *string `json:"address" validate:"omitzero,trimmed_name=5:1000"`
 }
 
