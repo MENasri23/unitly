@@ -470,7 +470,7 @@ The HTTP API is mounted at `/api/v1`.
     - Status: `201 Created`
     - Response body: JSON string containing the building GUID
   - Validation:
-    - `name` is required.
+    - `name` is required and must be 2-100 characters long.
     - `address` is optional and must be 5–1000 characters when provided.
   - Errors:
     - `BUILDING_EXIST` — a building with this name already exists per creator
