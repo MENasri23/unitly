@@ -31,7 +31,7 @@ type Params struct {
 	Auth           RouteRegistrar
 	Profile        RouteRegistrar
 	Session        RouteRegistrar
-	Building	   RouteRegistrar
+	Building       RouteRegistrar
 }
 
 func New(p Params) *chi.Mux {
@@ -64,11 +64,9 @@ func New(p Params) *chi.Mux {
 	r.Use(middleware.RequestSize(maxReadBytes))
 
 	r.Route("/api/v1", func(r chi.Router) {
-		p.Auth.Routes(r)
-		p.Building.Routes(r)
+		Register(r, p.Auth, p.Building)
 		r.Route("/me", func(r chi.Router) {
-			p.Profile.Routes(r)
-			p.Session.Routes(r)
+			Register(r, p.Profile, p.Session)
 		})
 		r.Group(func(r chi.Router) {
 			r.Use(p.AuthMiddleware.RequireAuth, p.AuthMiddleware.RequireUser)
@@ -77,4 +75,10 @@ func New(p Params) *chi.Mux {
 	})
 
 	return r
+}
+
+func Register(r chi.Router, registrars ...RouteRegistrar) {
+	for _, registrar := range registrars {
+		registrar.Routes(r)
+	}
 }
