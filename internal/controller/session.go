@@ -31,7 +31,7 @@ func NewSessionController(
 // Routes mounts the session endpoints. Wire this under whatever router
 // group already applies your access-token auth middleware.
 func (c *SessionController) Routes(r chi.Router) {
-	r.Route("/sessions", func(r chi.Router) {
+	r.Route("/me/sessions", func(r chi.Router) {
 		r.Use(c.authMiddleware.RequireAuth)
 		r.Get("/", c.List)
 		r.Delete("/{sessionID}", c.Revoke)

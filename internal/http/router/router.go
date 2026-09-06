@@ -64,10 +64,13 @@ func New(p Params) *chi.Mux {
 	r.Use(middleware.RequestSize(maxReadBytes))
 
 	r.Route("/api/v1", func(r chi.Router) {
-		Register(r, p.Auth, p.Building)
-		r.Route("/me", func(r chi.Router) {
-			Register(r, p.Profile, p.Session)
-		})
+		Register(
+			r, 
+			p.Auth, 
+			p.Building,
+			p.Profile, 
+			p.Session,
+		)
 		r.Group(func(r chi.Router) {
 			r.Use(p.AuthMiddleware.RequireAuth, p.AuthMiddleware.RequireUser)
 			r.Get("/healthcheck", controller.HealthCheck)
