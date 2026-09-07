@@ -4,7 +4,6 @@ import (
 	"context"
 	"unitly/internal/domain"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -35,12 +34,3 @@ func (m *txManager) Do(ctx context.Context, fn func(ctx context.Context) error) 
 
 	return tx.Commit(ctx)
 }
-
-func GetTxOrNil(ctx context.Context) pgx.Tx {
-	tx, _ := ctx.Value(txKey).(pgx.Tx)
-	return tx
-}
-
-type contextKey string
-
-const txKey contextKey = "dbContextKey"
