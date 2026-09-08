@@ -2,6 +2,7 @@ package building
 
 import (
 	"context"
+	"unitly/internal/building/floor"
 	"unitly/internal/building/membership"
 	"unitly/internal/domain"
 
@@ -11,6 +12,7 @@ import (
 type buildingService struct {
 	buildings   BuildingRepository
 	memberships membership.MembershipRepository
+	floors      floor.FloorRepository
 	tx          domain.UnitOfWork
 }
 
@@ -60,10 +62,6 @@ func (s *buildingService) Get(ctx context.Context, id int64) (*Building, error) 
 	return s.buildings.GetByID(ctx, id)
 }
 
-func (s *buildingService) GetInternalID(ctx context.Context, buildingID uuid.UUID) (int64, error) {
-	return s.buildings.GetInternalID(ctx, buildingID)
-}
-
 func (s *buildingService) GetHighestLevelMembership(ctx context.Context, userID int64, buildingID uuid.UUID) (*domain.Membership, error) {
 	id, err := s.buildings.GetInternalID(ctx, buildingID)
 	if err != nil {
@@ -75,16 +73,25 @@ func (s *buildingService) GetHighestLevelMembership(ctx context.Context, userID 
 func (s *buildingService) ListMine(ctx context.Context, userID int64) ([]*BuildingSummary, error) {
 	return s.buildings.ListSummaryByUser(ctx, userID)
 }
+
 func (s *buildingService) Delete(ctx context.Context, buildingID int64) error {
 	return s.buildings.SoftDelete(ctx, buildingID) // authz (admin-only) enforced by middleware
 }
 
-func NewBuildingService(buildings BuildingRepository, memberships membership.MembershipRepository, tx domain.UnitOfWork) BuildingService {
+func NewBuildingService(
+	buildings BuildingRepository,
+	memberships membership.MembershipRepository,
+	floors floor.FloorRepository,
+	tx domain.UnitOfWork,
+) BuildingService {
 	if buildings == nil {
 		panic("buildings cannot be nil")
 	}
 	if memberships == nil {
 		panic("memberships cannot be nil")
+	}
+	if floors == nil {
+		panic("floors cannot be nil")
 	}
 	if tx == nil {
 		panic("tx cannot be nil")
@@ -92,6 +99,7 @@ func NewBuildingService(buildings BuildingRepository, memberships membership.Mem
 	return &buildingService{
 		buildings:   buildings,
 		memberships: memberships,
+		floors:      floors,
 		tx:          tx,
 	}
 }
