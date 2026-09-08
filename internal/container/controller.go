@@ -2,7 +2,7 @@ package container
 
 import (
 	"unitly/internal/bootstrap"
-	"unitly/internal/building"
+	bldgimpl "unitly/internal/building/building"
 	"unitly/internal/controller"
 	"unitly/internal/http/middleware"
 	"unitly/internal/log"
@@ -12,7 +12,7 @@ type Controllers struct {
 	Auth     *controller.AuthController
 	Profile  *controller.ProfileController
 	Session  *controller.SessionController
-	Building *building.BuildingController
+	Building *bldgimpl.BuildingController
 }
 
 func newControllers(
@@ -29,6 +29,6 @@ func newControllers(
 		}),
 		Profile:  controller.NewProfileController(s.Auth, s.Identity, authMW, logger),
 		Session:  controller.NewSessionController(s.Session, authMW, logger),
-		Building: building.NewBuildingController(s.Building, authMW.RequireAuth),
+		Building: bldgimpl.NewBuildingController(s.Building, authMW.RequireAuth),
 	}
 }

@@ -1,8 +1,9 @@
-package building
+package bldgimpl
 
 import (
 	"context"
 	"errors"
+	"unitly/internal/building"
 	"unitly/internal/db"
 	"unitly/internal/domain"
 
@@ -20,7 +21,7 @@ type buildingRepository struct {
 	cache domain.Cache
 }
 
-func NewBuildingRepository(db *pgxpool.Pool, cache domain.Cache) BuildingRepository {
+func NewBuildingRepository(db *pgxpool.Pool, cache domain.Cache) building.BuildingRepository {
 	if db == nil {
 		panic("db cannot be nil")
 	}
@@ -39,13 +40,13 @@ const buildingSelect = `
 	SELECT ` + columns + `
 	FROM buildings`
 
-func scanBuilding(row db.Row) (*Building, error) {
-	var b Building
+func scanBuilding(row db.Row) (*building.Building, error) {
+	var b building.Building
 	err := row.Scan(&b.ID, &b.GUID, &b.Name, &b.Address,
 		&b.CreatedBy, &b.Version, &b.CreatedAt, &b.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrBuildingNotFound
+			return nil, building.ErrBuildingNotFound
 		}
 		return nil, err
 	}
@@ -67,7 +68,7 @@ RETURNING id, version, created_at, updated_at
 `
 
 // Create implements [BuildingRepository].
-func (r *buildingRepository) Create(ctx context.Context, b *Building) error {
+func (r *buildingRepository) Create(ctx context.Context, b *building.Building) error {
 	querier := r.getQuerier(ctx)
 	err := querier.QueryRow(
 		ctx,
@@ -86,7 +87,7 @@ func (r *buildingRepository) Create(ctx context.Context, b *Building) error {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			if isBuildingPerCreatorExists(pgErr) {
-				return ErrBuildingNameTaken
+				return building.ErrBuildingNameTaken
 			}
 		}
 	}
@@ -100,13 +101,13 @@ func isBuildingPerCreatorExists(err *pgconn.PgError) bool {
 
 const getByID = buildingSelect + ` WHERE id=$1 AND deleted_at IS NULL`
 
-func (r *buildingRepository) GetByID(ctx context.Context, id int64) (*Building, error) {
+func (r *buildingRepository) GetByID(ctx context.Context, id int64) (*building.Building, error) {
 	return scanBuilding(r.getQuerier(ctx).QueryRow(ctx, getByID, id))
 }
 
 const getByGUID = buildingSelect + ` WHERE guid=$1 AND deleted_at IS NULL`
 
-func (r *buildingRepository) GetByGUID(ctx context.Context, guid uuid.UUID) (*Building, error) {
+func (r *buildingRepository) GetByGUID(ctx context.Context, guid uuid.UUID) (*building.Building, error) {
 	return scanBuilding(r.getQuerier(ctx).QueryRow(ctx, getByGUID, guid))
 }
 
@@ -118,7 +119,7 @@ func (r *buildingRepository) GetInternalID(ctx context.Context, guid uuid.UUID) 
 	err := row.Scan(&id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return 0, ErrBuildingNotFound
+			return 0, building.ErrBuildingNotFound
 		}
 		return 0, err
 	}
@@ -138,16 +139,16 @@ const getSummaryByID = `
   		)
 	ORDER BY b.created_at DESC`
 
-func (r *buildingRepository) ListSummaryByUser(ctx context.Context, userID int64) ([]*BuildingSummary, error) {
+func (r *buildingRepository) ListSummaryByUser(ctx context.Context, userID int64) ([]*building.BuildingSummary, error) {
 	rows, err := r.getQuerier(ctx).Query(ctx, getSummaryByID, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var out []*BuildingSummary
+	var out []*building.BuildingSummary
 	for rows.Next() {
-		var summary BuildingSummary
+		var summary building.BuildingSummary
 		err := rows.Scan(&summary.ID, &summary.Name)
 		if err != nil {
 			return nil, err
@@ -172,14 +173,14 @@ const listByUser = `
 
 // ListByUser: DISTINCT because a user can hold more than one active
 // membership row (e.g. owner + tenant) in the same building.
-func (r *buildingRepository) ListByUser(ctx context.Context, userID int64) ([]*Building, error) {
+func (r *buildingRepository) ListByUser(ctx context.Context, userID int64) ([]*building.Building, error) {
 	rows, err := r.getQuerier(ctx).Query(ctx, listByUser, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var out []*Building
+	var out []*building.Building
 	for rows.Next() {
 		b, err := scanBuilding(rows)
 		if err != nil {
@@ -198,7 +199,7 @@ func (r *buildingRepository) SoftDelete(ctx context.Context, id int64) error {
 		return err
 	}
 	if ct.RowsAffected() == 0 {
-		return ErrBuildingNotFound
+		return building.ErrBuildingNotFound
 	}
 	return nil
 }

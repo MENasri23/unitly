@@ -16,7 +16,7 @@ type floorController struct {
 	buildings BuildingService
 }
 
-func newFloorController(b BuildingService) router.RouteRegistrar {
+func NewFloorController(b BuildingService) router.RouteRegistrar {
 	return &floorController{buildings: b}
 }
 

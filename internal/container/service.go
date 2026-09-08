@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"unitly/internal/bootstrap"
 	"unitly/internal/building"
+	bldgimpl "unitly/internal/building/building"
 	"unitly/internal/db"
 	"unitly/internal/domain"
 	"unitly/internal/log"
@@ -49,7 +50,7 @@ func newServices(app *bootstrap.Application, logger log.Logger, pgxDB *pgxpool.P
 	otpSvc := otpsvc.NewOTPService(repos.OTP, smsSvc, otpRateLimiter)
 	identitySvc := identity.NewIdentityService(repos.User, sessionSvc, otpSvc)
 	authSvc := auth.NewAuthService(otpSvc, identitySvc, sessionSvc, smsSvc, tokenSvc, txManager)
-	buildingSvc := building.NewBuildingService(repos.Building, repos.Membership, repos.Floor, repos.BuildingDetail, txManager)
+	buildingSvc := bldgimpl.NewBuildingService(repos.Building, repos.Membership, repos.Floor, repos.BuildingDetail, txManager)
 
 	return Services{
 		Token:    tokenSvc,

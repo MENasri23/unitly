@@ -3,6 +3,7 @@ package container
 import (
 	"unitly/internal/bootstrap"
 	"unitly/internal/building"
+	bldgimpl "unitly/internal/building/building"
 	"unitly/internal/building/detail"
 	"unitly/internal/building/floor"
 	"unitly/internal/building/membership"
@@ -28,7 +29,7 @@ func newRepositories(app *bootstrap.Application, pgxDB *pgxpool.Pool, cache doma
 		User:           repository.NewUserRepository(pgxDB, cache),
 		OTP:            newOtpRepository(app, cache),
 		Session:        repository.NewSessionRepository(pgxDB),
-		Building:       building.NewBuildingRepository(pgxDB, cache),
+		Building:       bldgimpl.NewBuildingRepository(pgxDB, cache),
 		Membership:     membership.NewMembershipRepository(pgxDB, cache),
 		Floor:          floor.NewFloorRepository(pgxDB),
 		BuildingDetail: detail.NewBuildingDetailRepository(pgxDB),

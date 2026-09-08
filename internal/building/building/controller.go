@@ -1,9 +1,10 @@
-package building
+package bldgimpl
 
 import (
 	"errors"
 	"net/http"
 	"strings"
+	"unitly/internal/building"
 	"unitly/internal/domain"
 	apphttp "unitly/internal/http"
 	"unitly/internal/http/middleware"
@@ -24,12 +25,12 @@ type BuildingSummaryDTO struct {
 }
 
 type BuildingController struct {
-	buildings BuildingService
+	buildings building.BuildingService
 	authMW    func(http.Handler) http.Handler
 }
 
 func NewBuildingController(
-	b BuildingService,
+	b building.BuildingService,
 	authMW func(http.Handler) http.Handler,
 ) *BuildingController {
 	return &BuildingController{buildings: b, authMW: authMW}
@@ -37,7 +38,7 @@ func NewBuildingController(
 
 // BuildingContext loads the building by :buildingGUID and the caller's
 // highest-privilege active membership, both stored on context.
-func BuildingContext(buildings BuildingService) func(http.Handler) http.Handler {
+func BuildingContext(buildings building.BuildingService) func(http.Handler) http.Handler {
 	f := func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			userID, ok := reqctx.GetUserInternalID(r.Context())
@@ -57,8 +58,8 @@ func BuildingContext(buildings BuildingService) func(http.Handler) http.Handler 
 				switch {
 				case errors.Is(err, domain.ErrMembershipNotFound):
 					apphttp.ForbiddenError(w, domain.ErrForbidden)
-				case errors.Is(err, ErrBuildingNotFound):
-					apphttp.NotFoundError(w, ErrBuildingNotFound)
+				case errors.Is(err, building.ErrBuildingNotFound):
+					apphttp.NotFoundError(w, building.ErrBuildingNotFound)
 				default:
 					apphttp.InternalServerError(w, domain.ErrInternal)
 
@@ -75,7 +76,7 @@ func BuildingContext(buildings BuildingService) func(http.Handler) http.Handler 
 }
 
 func (c *BuildingController) Routes(r chi.Router) {
-	floors := newFloorController(c.buildings)
+	floors := building.NewFloorController(c.buildings)
 
 	r.Route("/buildings", func(r chi.Router) {
 		r.Use(c.authMW)
@@ -107,7 +108,7 @@ func (c *BuildingController) create(w http.ResponseWriter, r *http.Request) {
 	if address != nil {
 		*address = strings.TrimSpace(*address)
 	}
-	in := CreateBuildingInput{
+	in := building.CreateBuildingInput{
 		Name:    strings.TrimSpace(req.Name),
 		Address: req.Address,
 	}
@@ -152,7 +153,7 @@ type floorDetailDTO struct {
 	Caption     *string `json:"caption"`
 }
 
-func toBuildingDetailDTO(b *BuildingDetail) buildingDetailDTO {
+func toBuildingDetailDTO(b *building.BuildingDetail) buildingDetailDTO {
 	return buildingDetailDTO{
 		ID:            b.GUID,
 		Name:          b.Name,
@@ -162,7 +163,7 @@ func toBuildingDetailDTO(b *BuildingDetail) buildingDetailDTO {
 	}
 }
 
-func toFloorDetailDTOs(floors []FloorDetail) []floorDetailDTO {
+func toFloorDetailDTOs(floors []building.FloorDetail) []floorDetailDTO {
 	if len(floors) == 0 {
 		return nil
 	}
@@ -201,9 +202,9 @@ func (c *BuildingController) delete(w http.ResponseWriter, r *http.Request) {
 
 func writeBuildingErr(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, ErrBuildingNotFound):
+	case errors.Is(err, building.ErrBuildingNotFound):
 		apphttp.NotFoundError(w, err)
-	case errors.Is(err, ErrBuildingNameTaken):
+	case errors.Is(err, building.ErrBuildingNameTaken):
 		apphttp.ConflictError(w, err)
 	default:
 		apphttp.InternalServerError(w, domain.ErrInternal)

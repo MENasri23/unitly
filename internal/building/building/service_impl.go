@@ -1,8 +1,9 @@
-package building
+package bldgimpl
 
 import (
 	"context"
 	"errors"
+	b "unitly/internal/building"
 	"unitly/internal/building/floor"
 	"unitly/internal/building/membership"
 	"unitly/internal/domain"
@@ -11,19 +12,19 @@ import (
 )
 
 type buildingService struct {
-	buildings   BuildingRepository
+	buildings   b.BuildingRepository
 	memberships membership.MembershipRepository
 	floors      floor.FloorRepository
-	details     BuildingDetailRepository
+	details     b.BuildingDetailRepository
 	tx          domain.UnitOfWork
 }
 
-func (s *buildingService) Create(ctx context.Context, actorUserID int64, in CreateBuildingInput) (*Building, error) {
+func (s *buildingService) Create(ctx context.Context, actorUserID int64, in b.CreateBuildingInput) (*b.Building, error) {
 	buildingID, err := uuid.NewV7()
 	if err != nil {
 		return nil, err
 	}
-	b := &Building{
+	b := &b.Building{
 		GUID:      buildingID,
 		Name:      in.Name,
 		Address:   in.Address,
@@ -60,15 +61,15 @@ func (s *buildingService) Create(ctx context.Context, actorUserID int64, in Crea
 	return b, nil
 }
 
-func (s *buildingService) Get(ctx context.Context, id int64) (*Building, error) {
+func (s *buildingService) Get(ctx context.Context, id int64) (*b.Building, error) {
 	return s.buildings.GetByID(ctx, id)
 }
 
-func (s *buildingService) GetDetail(ctx context.Context, buildingID int64) (*BuildingDetail, error) {
+func (s *buildingService) GetDetail(ctx context.Context, buildingID int64) (*b.BuildingDetail, error) {
 	detail, err := s.details.GetBuildingDetail(ctx, buildingID)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
-			return nil, ErrBuildingNotFound
+			return nil, b.ErrBuildingNotFound
 		}
 	}
 	return detail, err
@@ -82,7 +83,7 @@ func (s *buildingService) GetHighestLevelMembership(ctx context.Context, userID 
 	return s.memberships.GetHighestActiveByUserBuilding(ctx, userID, id)
 }
 
-func (s *buildingService) ListMine(ctx context.Context, userID int64) ([]*BuildingSummary, error) {
+func (s *buildingService) ListMine(ctx context.Context, userID int64) ([]*b.BuildingSummary, error) {
 	return s.buildings.ListSummaryByUser(ctx, userID)
 }
 
@@ -90,7 +91,7 @@ func (s *buildingService) Delete(ctx context.Context, buildingID int64) error {
 	return s.buildings.SoftDelete(ctx, buildingID) // authz (admin-only) enforced by middleware
 }
 
-func (s *buildingService) AddFloors(ctx context.Context, buildingID int64, in []NewFloor) ([]*floor.Floor, error) {
+func (s *buildingService) AddFloors(ctx context.Context, buildingID int64, in []b.NewFloor) ([]*floor.Floor, error) {
 	if len(in) == 0 {
 		return nil, floor.ErrNoFloorsProvided
 	}
@@ -115,12 +116,12 @@ func (s *buildingService) AddFloors(ctx context.Context, buildingID int64, in []
 }
 
 func NewBuildingService(
-	buildings BuildingRepository,
+	buildings b.BuildingRepository,
 	memberships membership.MembershipRepository,
 	floors floor.FloorRepository,
-	details BuildingDetailRepository,
+	details b.BuildingDetailRepository,
 	tx domain.UnitOfWork,
-) BuildingService {
+) b.BuildingService {
 	if buildings == nil {
 		panic("buildings cannot be nil")
 	}
