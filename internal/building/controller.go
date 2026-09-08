@@ -82,7 +82,9 @@ func (c *BuildingController) Routes(r chi.Router) {
 
 		r.Route("/{buildingGUID}", func(r chi.Router) {
 			r.Use(BuildingContext(c.buildings))
-			r.With(middleware.RequireMinRoleLevel(domain.RoleAdmin.Level)).Delete("/", c.delete)
+
+			admin := r.With(middleware.RequireMinRoleLevel(domain.RoleAdmin.Level))
+			admin.Delete("/", c.delete)
 		})
 	})
 }
