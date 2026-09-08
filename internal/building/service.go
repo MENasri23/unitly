@@ -2,7 +2,6 @@ package building
 
 import (
 	"context"
-	"unitly/internal/building/floor"
 	"unitly/internal/domain"
 
 	"github.com/google/uuid"
@@ -27,5 +26,5 @@ type BuildingService interface {
 
 	GetHighestLevelMembership(ctx context.Context, userID int64, buildingID uuid.UUID) (*domain.Membership, error)
 
-	AddFloors(ctx context.Context, buildingID int64, floors []NewFloor) ([]*floor.Floor, error)
+	AddFloors(ctx context.Context, buildingID int64, floors []NewFloor) ([]*Floor, error)
 }

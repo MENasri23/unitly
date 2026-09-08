@@ -1,4 +1,4 @@
-package floor
+package building
 
 import (
 	"time"

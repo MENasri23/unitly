@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 	"unitly/internal/building"
+	"unitly/internal/building/floor"
 	"unitly/internal/domain"
 	apphttp "unitly/internal/http"
 	"unitly/internal/http/middleware"
@@ -76,7 +77,7 @@ func BuildingContext(buildings building.BuildingService) func(http.Handler) http
 }
 
 func (c *BuildingController) Routes(r chi.Router) {
-	floors := building.NewFloorController(c.buildings)
+	floors := floor.NewFloorController(c.buildings)
 
 	r.Route("/buildings", func(r chi.Router) {
 		r.Use(c.authMW)

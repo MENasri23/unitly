@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"unitly/internal/building"
 	"unitly/internal/db"
 	"unitly/internal/domain"
 
@@ -29,7 +30,7 @@ const createBatch = `
 		VALUES ($1,$2,$3,1) 
 		RETURNING id, created_at, updated_at`
 
-func (r *floorRepository) CreateBatch(ctx context.Context, floors []*Floor) error {
+func (r *floorRepository) CreateBatch(ctx context.Context, floors []*building.Floor) error {
 	if len(floors) == 0 {
 		return nil
 	}
@@ -52,16 +53,16 @@ func (r *floorRepository) CreateBatch(ctx context.Context, floors []*Floor) erro
 	return nil
 }
 
-func mapCreateBatchError(err error, f *Floor) error {
+func mapCreateBatchError(err error, f *building.Floor) error {
 	err = mapDBError(err)
 	switch {
-	case errors.Is(err, ErrFloorNumberTaken):
+	case errors.Is(err, building.ErrFloorNumberTaken):
 		msg := fmt.Sprintf("%s. floor_number: %d", err.Error(), f.FloorNumber)
-		return domain.NewError(ErrFloorNumberTaken.Code(), msg)
+		return domain.NewError(building.ErrFloorNumberTaken.Code(), msg)
 
-	case errors.Is(err, ErrFloorCaptionTaken):
+	case errors.Is(err, building.ErrFloorCaptionTaken):
 		msg := fmt.Sprintf("%s. caption: %v", err.Error(), f.Caption)
-		return domain.NewError(ErrFloorCaptionTaken.Code(), msg)
+		return domain.NewError(building.ErrFloorCaptionTaken.Code(), msg)
 
 	default:
 		return err
@@ -75,9 +76,9 @@ func mapDBError(err error) error {
 
 	switch {
 	case db.IsUniqueViolation(err, "uq_floor_building_number_active"):
-		return ErrFloorNumberTaken
+		return building.ErrFloorNumberTaken
 	case db.IsUniqueViolation(err, "uq_floor_building_caption_active"):
-		return ErrFloorCaptionTaken
+		return building.ErrFloorCaptionTaken
 	default:
 		return err
 	}

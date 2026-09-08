@@ -1,9 +1,9 @@
-package building
+package floor
 
 import (
 	"errors"
 	"net/http"
-	"unitly/internal/building/floor"
+	"unitly/internal/building"
 	"unitly/internal/domain"
 	apphttp "unitly/internal/http"
 	"unitly/internal/http/reqctx"
@@ -13,10 +13,10 @@ import (
 )
 
 type floorController struct {
-	buildings BuildingService
+	buildings building.BuildingService
 }
 
-func NewFloorController(b BuildingService) router.RouteRegistrar {
+func NewFloorController(b building.BuildingService) router.RouteRegistrar {
 	return &floorController{buildings: b}
 }
 
@@ -38,7 +38,7 @@ type floorSummary struct {
 	Caption     *string `json:"caption"`
 }
 
-func toFloorSummary(f *floor.Floor) *floorSummary {
+func toFloorSummary(f *building.Floor) *floorSummary {
 	return &floorSummary{FloorNumber: f.FloorNumber, Caption: f.Caption}
 }
 
@@ -49,9 +49,9 @@ func (c *floorController) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	inputs := make([]NewFloor, len(req.Floors))
+	inputs := make([]building.NewFloor, len(req.Floors))
 	for i, f := range req.Floors {
-		inputs[i] = NewFloor{FloorNumber: f.FloorNumber, Caption: f.Caption}
+		inputs[i] = building.NewFloor{FloorNumber: f.FloorNumber, Caption: f.Caption}
 	}
 
 	m := reqctx.GetMembership(r.Context())
@@ -71,12 +71,12 @@ func (c *floorController) Add(w http.ResponseWriter, r *http.Request) {
 
 func writeErr(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, floor.ErrFloorNotFound):
+	case errors.Is(err, building.ErrFloorNotFound):
 		apphttp.NotFoundError(w, err)
-	case errors.Is(err, floor.ErrNoFloorsProvided):
+	case errors.Is(err, building.ErrNoFloorsProvided):
 		apphttp.BadRequestError(w, err)
-	case errors.Is(err, floor.ErrFloorNumberTaken),
-		errors.Is(err, floor.ErrFloorCaptionTaken):
+	case errors.Is(err, building.ErrFloorNumberTaken),
+		errors.Is(err, building.ErrFloorCaptionTaken):
 		apphttp.ConflictError(w, err)
 	default:
 		apphttp.InternalServerError(w, domain.ErrInternal)

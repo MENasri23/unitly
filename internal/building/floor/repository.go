@@ -1,7 +1,10 @@
 package floor
 
-import "context"
+import (
+	"context"
+	"unitly/internal/building"
+)
 
 type FloorRepository interface {
-	CreateBatch(ctx context.Context, floors []*Floor) error
+	CreateBatch(ctx context.Context, floors []*building.Floor) error
 }
