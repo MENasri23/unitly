@@ -33,6 +33,15 @@ func (e *errorCode) Params() map[string]any {
 	return e.params
 }
 
+func (e *errorCode) Is(target error) bool {
+	t, ok := target.(*errorCode)
+	if !ok {
+		return false
+	}
+
+	return e.code == t.code
+}
+
 // Sentinel Errors
 var (
 	ErrInternal           = NewError("INTERNAL", "something went wrong")
@@ -48,7 +57,6 @@ var (
 	ErrTooManyAttempts    = NewError("TOO_MANY_ATTEMPTS", "too many failed attempts, please try again later")
 	ErrForbidden          = NewError("FORBIDDEN", "forbidden")
 	ErrNotFound           = NewNotFoundError("record")
-	
 )
 
 func NewError(code ErrorCode, msg string) Error {
