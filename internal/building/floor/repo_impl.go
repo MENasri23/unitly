@@ -17,7 +17,7 @@ type floorRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewFloorRepository(pool *pgxpool.Pool) FloorRepository {
+func NewFloorRepository(pool *pgxpool.Pool) building.FloorRepository {
 	return &floorRepository{db: pool}
 }
 

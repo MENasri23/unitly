@@ -1,6 +1,7 @@
 package building
 
 import (
+	"context"
 	"time"
 	"unitly/internal/domain"
 )
@@ -24,3 +25,7 @@ type Floor struct {
 }
 
 func (f *Floor) IsSoftDeleted() bool { return f.DeletedAt != nil }
+
+type FloorRepository interface {
+	CreateBatch(ctx context.Context, floors []*Floor) error
+}

@@ -20,7 +20,7 @@ type Repositories struct {
 	Session        domain.SessionRepository
 	Building       building.BuildingRepository
 	Membership     membership.MembershipRepository
-	Floor          floor.FloorRepository
+	Floor          building.FloorRepository
 	BuildingDetail building.BuildingDetailRepository
 }
 
