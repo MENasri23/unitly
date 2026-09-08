@@ -25,7 +25,7 @@ const floorSelect = `
 	FROM floors`
 
 const createBatch = `
-	INSERT INTO floors (building_id, floor_number caption, version)
+	INSERT INTO floors (building_id, floor_number, caption, version)
 		VALUES ($1,$2,$3,1) 
 		RETURNING id, created_at, updated_at`
 
@@ -42,7 +42,7 @@ func (r *floorRepository) CreateBatch(ctx context.Context, floors []*Floor) erro
 
 	br := q.SendBatch(ctx, batch)
 	defer br.Close()
-	
+
 	for _, f := range floors {
 		if err := br.QueryRow().Scan(&f.ID, &f.CreatedAt, &f.UpdatedAt); err != nil {
 			return mapCreateBatchError(err, f)
