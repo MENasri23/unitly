@@ -25,9 +25,8 @@ type BuildingService interface {
 	GetDetail(ctx context.Context, buildingID int64) (*detail.BuildingDetail, error)
 	ListMine(ctx context.Context, userID int64) ([]*BuildingSummary, error)
 	Delete(ctx context.Context, buildingID int64) error
-	
+
 	GetHighestLevelMembership(ctx context.Context, userID int64, buildingID uuid.UUID) (*domain.Membership, error)
-	
-	AddFloor(ctx context.Context, buildingID int64, floorNumber int16, caption *string) (*floor.Floor, error)
+
 	AddFloors(ctx context.Context, buildingID int64, floors []NewFloor) ([]*floor.Floor, error)
 }
