@@ -20,7 +20,7 @@ type Repositories struct {
 	Building       building.BuildingRepository
 	Membership     membership.MembershipRepository
 	Floor          floor.FloorRepository
-	BuildingDetail detail.BuildingDetailRepository
+	BuildingDetail building.BuildingDetailRepository
 }
 
 func newRepositories(app *bootstrap.Application, pgxDB *pgxpool.Pool, cache domain.Cache) Repositories {

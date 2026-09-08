@@ -3,7 +3,6 @@ package building
 import (
 	"context"
 	"errors"
-	"unitly/internal/building/detail"
 	"unitly/internal/building/floor"
 	"unitly/internal/building/membership"
 	"unitly/internal/domain"
@@ -15,7 +14,7 @@ type buildingService struct {
 	buildings   BuildingRepository
 	memberships membership.MembershipRepository
 	floors      floor.FloorRepository
-	details     detail.BuildingDetailRepository
+	details     BuildingDetailRepository
 	tx          domain.UnitOfWork
 }
 
@@ -65,7 +64,7 @@ func (s *buildingService) Get(ctx context.Context, id int64) (*Building, error) 
 	return s.buildings.GetByID(ctx, id)
 }
 
-func (s *buildingService) GetDetail(ctx context.Context, buildingID int64) (*detail.BuildingDetail, error) {
+func (s *buildingService) GetDetail(ctx context.Context, buildingID int64) (*BuildingDetail, error) {
 	detail, err := s.details.GetBuildingDetail(ctx, buildingID)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
@@ -119,7 +118,7 @@ func NewBuildingService(
 	buildings BuildingRepository,
 	memberships membership.MembershipRepository,
 	floors floor.FloorRepository,
-	details detail.BuildingDetailRepository,
+	details BuildingDetailRepository,
 	tx domain.UnitOfWork,
 ) BuildingService {
 	if buildings == nil {

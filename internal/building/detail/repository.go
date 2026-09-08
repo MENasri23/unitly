@@ -3,6 +3,7 @@ package detail
 import (
 	"context"
 	"database/sql"
+	"unitly/internal/building"
 	"unitly/internal/db"
 	"unitly/internal/domain"
 
@@ -10,15 +11,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type BuildingDetailRepository interface {
-	GetBuildingDetail(ctx context.Context, buildingID int64) (*BuildingDetail, error)
-}
-
 type buildingDetailRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewBuildingDetailRepository(db *pgxpool.Pool) BuildingDetailRepository {
+func NewBuildingDetailRepository(db *pgxpool.Pool) building.BuildingDetailRepository {
 	return &buildingDetailRepository{db: db}
 }
 
@@ -56,12 +53,12 @@ WHERE b.id = $1 AND b.deleted_at IS NULL
 ORDER BY
 	f.floor_number`
 
-func (r *buildingDetailRepository) GetBuildingDetail(ctx context.Context, buildingID int64) (*BuildingDetail, error) {
+func (r *buildingDetailRepository) GetBuildingDetail(ctx context.Context, buildingID int64) (*building.BuildingDetail, error) {
 	var (
 		founded  bool
-		detail   BuildingDetail
-		floors   []*FloorDetail
-		floorMap = make(map[int16]*FloorDetail)
+		detail   building.BuildingDetail
+		floors   []*building.FloorDetail
+		floorMap = make(map[int16]*building.FloorDetail)
 	)
 
 	q := db.GetQuerier(ctx, r.db)
@@ -87,7 +84,7 @@ func (r *buildingDetailRepository) GetBuildingDetail(ctx context.Context, buildi
 			floorNumber := row.FloorNumber.Int16
 			floor, exist := floorMap[floorNumber]
 			if !exist {
-				floor = &FloorDetail{
+				floor = &building.FloorDetail{
 					FloorNumber: floorNumber,
 				}
 				if row.FloorCaption.Valid {
@@ -110,7 +107,7 @@ func (r *buildingDetailRepository) GetBuildingDetail(ctx context.Context, buildi
 		return nil, domain.ErrNotFound
 	}
 
-	detail.Floors = make([]FloorDetail, 0, len(floors))
+	detail.Floors = make([]building.FloorDetail, 0, len(floors))
 	for _, f := range floors {
 		detail.Floors = append(detail.Floors, *f)
 	}

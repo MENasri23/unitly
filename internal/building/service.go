@@ -2,7 +2,6 @@ package building
 
 import (
 	"context"
-	"unitly/internal/building/detail"
 	"unitly/internal/building/floor"
 	"unitly/internal/domain"
 
@@ -22,7 +21,7 @@ type NewFloor struct {
 type BuildingService interface {
 	Create(ctx context.Context, actorUserID int64, in CreateBuildingInput) (*Building, error)
 	Get(ctx context.Context, buildingID int64) (*Building, error)
-	GetDetail(ctx context.Context, buildingID int64) (*detail.BuildingDetail, error)
+	GetDetail(ctx context.Context, buildingID int64) (*BuildingDetail, error)
 	ListMine(ctx context.Context, userID int64) ([]*BuildingSummary, error)
 	Delete(ctx context.Context, buildingID int64) error
 

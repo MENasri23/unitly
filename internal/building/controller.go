@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/http"
 	"strings"
-	"unitly/internal/building/detail"
 	"unitly/internal/domain"
 	apphttp "unitly/internal/http"
 	"unitly/internal/http/middleware"
@@ -153,7 +152,7 @@ type floorDetailDTO struct {
 	Caption     *string `json:"caption"`
 }
 
-func toBuildingDetailDTO(b *detail.BuildingDetail) buildingDetailDTO {
+func toBuildingDetailDTO(b *BuildingDetail) buildingDetailDTO {
 	return buildingDetailDTO{
 		ID:            b.GUID,
 		Name:          b.Name,
@@ -163,7 +162,7 @@ func toBuildingDetailDTO(b *detail.BuildingDetail) buildingDetailDTO {
 	}
 }
 
-func toFloorDetailDTOs(floors []detail.FloorDetail) []floorDetailDTO {
+func toFloorDetailDTOs(floors []FloorDetail) []floorDetailDTO {
 	if len(floors) == 0 {
 		return nil
 	}
