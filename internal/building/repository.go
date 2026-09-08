@@ -15,7 +15,3 @@ type BuildingRepository interface {
 	ListByUser(ctx context.Context, userID int64) ([]*Building, error)
 	SoftDelete(ctx context.Context, id int64) error
 }
-
-type BuildingDetailRepository interface {
-	GetBuildingDetail(ctx context.Context, buildingID int64) (*BuildingDetail, error)
-}
