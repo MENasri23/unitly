@@ -23,21 +23,33 @@ type Role struct {
 }
 
 var (
-	RoleNone   = Role{ID: 0, Name: "", Level: -1}
 	RoleTenant = Role{ID: 1, Name: roleNameTenant, Level: levelTenant}
 	RoleOwner  = Role{ID: 2, Name: roleNameOwner, Level: levelOwner}
 	RoleAdmin  = Role{ID: 3, Name: roleNameAdmin, Level: levelAdmin}
 )
 
-func GetRoleByName(name RoleName) Role {
+func GetRoleByName(name RoleName) (Role, bool) {
 	switch name {
 	case roleNameTenant:
-		return RoleTenant
+		return RoleTenant, true
 	case roleNameOwner:
-		return RoleOwner
+		return RoleOwner, true
 	case roleNameAdmin:
-		return RoleAdmin
+		return RoleAdmin, true
 	default:
-		return RoleNone
+		return Role{}, false
+	}
+}
+
+func GetRoleByID(id int16) (Role, bool) {
+	switch id {
+	case RoleTenant.ID:
+		return RoleTenant, true
+	case RoleOwner.ID:
+		return RoleOwner, true
+	case RoleAdmin.ID:
+		return RoleAdmin, true
+	default:
+		return Role{}, false
 	}
 }
