@@ -4,7 +4,7 @@ import (
 	"unitly/internal/bootstrap"
 	"unitly/internal/building"
 	bldgimpl "unitly/internal/building/building"
-	"unitly/internal/building/detail"
+	bldgdetail "unitly/internal/building/detail"
 	"unitly/internal/building/floor"
 	"unitly/internal/building/membership"
 	"unitly/internal/domain"
@@ -32,7 +32,7 @@ func newRepositories(app *bootstrap.Application, pgxDB *pgxpool.Pool, cache doma
 		Building:       bldgimpl.NewBuildingRepository(pgxDB, cache),
 		Membership:     membership.NewMembershipRepository(pgxDB, cache),
 		Floor:          floor.NewFloorRepository(pgxDB),
-		BuildingDetail: detail.NewBuildingDetailRepository(pgxDB),
+		BuildingDetail: bldgdetail.NewBuildingDetailRepository(pgxDB),
 	}
 }
 
