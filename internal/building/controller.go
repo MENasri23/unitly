@@ -75,6 +75,8 @@ func BuildingContext(buildings BuildingService) func(http.Handler) http.Handler 
 }
 
 func (c *BuildingController) Routes(r chi.Router) {
+	floors := newFloorController(c.buildings)
+
 	r.Route("/buildings", func(r chi.Router) {
 		r.Use(c.authMW)
 		r.Post("/", c.create)
@@ -82,9 +84,11 @@ func (c *BuildingController) Routes(r chi.Router) {
 
 		r.Route("/{buildingGUID}", func(r chi.Router) {
 			r.Use(BuildingContext(c.buildings))
-
+			
 			admin := r.With(middleware.RequireMinRoleLevel(domain.RoleAdmin.Level))
 			admin.Delete("/", c.delete)
+			
+			floors.Routes(r)
 		})
 	})
 }
