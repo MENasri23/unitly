@@ -1,4 +1,4 @@
-package membership
+package building
 
 import (
 	"context"

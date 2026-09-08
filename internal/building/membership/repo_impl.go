@@ -3,6 +3,7 @@ package membership
 import (
 	"context"
 	"errors"
+	"unitly/internal/building"
 	"unitly/internal/db"
 	"unitly/internal/domain"
 
@@ -85,7 +86,7 @@ func (r *membershipRepository) GetHighestActiveByUserBuilding(ctx context.Contex
 
 const listByBuilding = membershipSelect + ` WHERE m.building_id=$1`
 
-func (r *membershipRepository) ListByBuilding(ctx context.Context, buildingID int64, f MembershipFilter) ([]*domain.Membership, error) {
+func (r *membershipRepository) ListByBuilding(ctx context.Context, buildingID int64, f building.MembershipFilter) ([]*domain.Membership, error) {
 	qb := db.NewQueryBuilder(listByBuilding, buildingID)
 	if f.RoleName != nil {
 		qb.And("r.name", *f.RoleName)
@@ -131,7 +132,7 @@ func (r *membershipRepository) UpdateStatus(ctx context.Context, id int64, statu
 	return nil
 }
 
-func NewMembershipRepository(db *pgxpool.Pool, cache domain.Cache) MembershipRepository {
+func NewMembershipRepository(db *pgxpool.Pool, cache domain.Cache) building.MembershipRepository {
 	if db == nil {
 		panic("db cannot be nil")
 	}

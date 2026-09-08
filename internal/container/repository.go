@@ -19,7 +19,7 @@ type Repositories struct {
 	OTP            domain.OTPRepository
 	Session        domain.SessionRepository
 	Building       building.BuildingRepository
-	Membership     membership.MembershipRepository
+	Membership     building.MembershipRepository
 	Floor          building.FloorRepository
 	BuildingDetail building.BuildingDetailRepository
 }

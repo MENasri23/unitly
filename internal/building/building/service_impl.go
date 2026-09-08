@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	b "unitly/internal/building"
-	"unitly/internal/building/membership"
 	"unitly/internal/domain"
 
 	"github.com/google/uuid"
@@ -12,7 +11,7 @@ import (
 
 type buildingService struct {
 	buildings   b.BuildingRepository
-	memberships membership.MembershipRepository
+	memberships b.MembershipRepository
 	floors      b.FloorRepository
 	details     b.BuildingDetailRepository
 	tx          domain.UnitOfWork
@@ -116,7 +115,7 @@ func (s *buildingService) AddFloors(ctx context.Context, buildingID int64, in []
 
 func NewBuildingService(
 	buildings b.BuildingRepository,
-	memberships membership.MembershipRepository,
+	memberships b.MembershipRepository,
 	floors b.FloorRepository,
 	details b.BuildingDetailRepository,
 	tx domain.UnitOfWork,
