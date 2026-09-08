@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"unitly/internal/building/detail"
 	"unitly/internal/domain"
 	apphttp "unitly/internal/http"
 	"unitly/internal/http/middleware"
@@ -84,10 +85,12 @@ func (c *BuildingController) Routes(r chi.Router) {
 
 		r.Route("/{buildingGUID}", func(r chi.Router) {
 			r.Use(BuildingContext(c.buildings))
-			
+			tenant := r.With(middleware.RequireMinRoleLevel(domain.RoleTenant.Level))
+			tenant.Get("/", c.detail)
+
 			admin := r.With(middleware.RequireMinRoleLevel(domain.RoleAdmin.Level))
 			admin.Delete("/", c.delete)
-			
+
 			floors.Routes(r)
 		})
 	})
@@ -112,11 +115,7 @@ func (c *BuildingController) create(w http.ResponseWriter, r *http.Request) {
 
 	b, err := c.buildings.Create(r.Context(), userID, in)
 	if err != nil {
-		if errors.Is(err, ErrBuildingNameTaken) {
-			apphttp.ConflictError(w, err)
-		} else {
-			apphttp.InternalServerError(w, err)
-		}
+		writeBuildingErr(w, err)
 		return
 	}
 
@@ -127,11 +126,7 @@ func (c *BuildingController) listMine(w http.ResponseWriter, r *http.Request) {
 	userID, _ := reqctx.GetUserInternalID(r.Context())
 	buildings, err := c.buildings.ListMine(r.Context(), userID)
 	if err != nil {
-		if errors.Is(err, ErrBuildingNotFound) {
-			apphttp.NotFoundError(w, domain.ErrNotFound)
-		} else {
-			apphttp.InternalServerError(w, err)
-		}
+		writeBuildingErr(w, err)
 		return
 	}
 
@@ -145,16 +140,73 @@ func (c *BuildingController) listMine(w http.ResponseWriter, r *http.Request) {
 	apphttp.WriteJSON(w, http.StatusOK, BuildingDTOs)
 }
 
+type buildingDetailDTO struct {
+	ID            uuid.UUID        `json:"id"`
+	Name          string           `json:"name"`
+	TotalUnits    int              `json:"total_units"`
+	TotalOccupied int              `json:"total_occupied"`
+	Floors        []floorDetailDTO `json:"floors"`
+}
+
+type floorDetailDTO struct {
+	FloorNumber int16   `json:"floor_number"`
+	Caption     *string `json:"caption"`
+}
+
+func toBuildingDetailDTO(b *detail.BuildingDetail) buildingDetailDTO {
+	return buildingDetailDTO{
+		ID:            b.GUID,
+		Name:          b.Name,
+		TotalUnits:    b.TotalUnits,
+		TotalOccupied: b.OccupiedUnits,
+		Floors:        toFloorDetailDTOs(b.Floors),
+	}
+}
+
+func toFloorDetailDTOs(floors []detail.FloorDetail) []floorDetailDTO {
+	if len(floors) == 0 {
+		return nil
+	}
+
+	result := make([]floorDetailDTO, len(floors))
+	for i, f := range floors {
+		result[i] = floorDetailDTO{
+			FloorNumber: f.FloorNumber,
+			Caption:     f.Caption,
+		}
+	}
+	return result
+}
+
+func (c *BuildingController) detail(w http.ResponseWriter, r *http.Request) {
+	m := reqctx.GetMembership(r.Context())
+	detail, err := c.buildings.GetDetail(r.Context(), m.BuildingID)
+	if err != nil {
+		writeBuildingErr(w, err)
+		return
+	}
+
+	detailDTO := toBuildingDetailDTO(detail)
+	apphttp.WriteJSON(w, http.StatusOK, detailDTO)
+}
+
 func (c *BuildingController) delete(w http.ResponseWriter, r *http.Request) {
 	m := reqctx.GetMembership(r.Context())
 	if err := c.buildings.Delete(r.Context(), m.BuildingID); err != nil {
-		if errors.Is(err, ErrBuildingNotFound) {
-			apphttp.NotFoundError(w, domain.ErrNotFound)
-		} else {
-			apphttp.InternalServerError(w, domain.ErrInternal)
-		}
+		writeBuildingErr(w, err)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func writeBuildingErr(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, ErrBuildingNotFound):
+		apphttp.NotFoundError(w, err)
+	case errors.Is(err, ErrBuildingNameTaken):
+		apphttp.ConflictError(w, err)
+	default:
+		apphttp.InternalServerError(w, domain.ErrInternal)
+	}
 }

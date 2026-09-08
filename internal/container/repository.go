@@ -3,6 +3,7 @@ package container
 import (
 	"unitly/internal/bootstrap"
 	"unitly/internal/building"
+	"unitly/internal/building/detail"
 	"unitly/internal/building/floor"
 	"unitly/internal/building/membership"
 	"unitly/internal/domain"
@@ -13,22 +14,24 @@ import (
 )
 
 type Repositories struct {
-	User       domain.UserRepository
-	OTP        domain.OTPRepository
-	Session    domain.SessionRepository
-	Building   building.BuildingRepository
-	Membership membership.MembershipRepository
-	Floor      floor.FloorRepository
+	User           domain.UserRepository
+	OTP            domain.OTPRepository
+	Session        domain.SessionRepository
+	Building       building.BuildingRepository
+	Membership     membership.MembershipRepository
+	Floor          floor.FloorRepository
+	BuildingDetail detail.BuildingDetailRepository
 }
 
 func newRepositories(app *bootstrap.Application, pgxDB *pgxpool.Pool, cache domain.Cache) Repositories {
 	return Repositories{
-		User:       repository.NewUserRepository(pgxDB, cache),
-		OTP:        newOtpRepository(app, cache),
-		Session:    repository.NewSessionRepository(pgxDB),
-		Building:   building.NewBuildingRepository(pgxDB, cache),
-		Membership: membership.NewMembershipRepository(pgxDB, cache),
-		Floor:      floor.NewFloorRepository(pgxDB),
+		User:           repository.NewUserRepository(pgxDB, cache),
+		OTP:            newOtpRepository(app, cache),
+		Session:        repository.NewSessionRepository(pgxDB),
+		Building:       building.NewBuildingRepository(pgxDB, cache),
+		Membership:     membership.NewMembershipRepository(pgxDB, cache),
+		Floor:          floor.NewFloorRepository(pgxDB),
+		BuildingDetail: detail.NewBuildingDetailRepository(pgxDB),
 	}
 }
 

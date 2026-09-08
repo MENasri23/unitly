@@ -2,6 +2,8 @@ package building
 
 import (
 	"context"
+	"errors"
+	"unitly/internal/building/detail"
 	"unitly/internal/building/floor"
 	"unitly/internal/building/membership"
 	"unitly/internal/domain"
@@ -13,6 +15,7 @@ type buildingService struct {
 	buildings   BuildingRepository
 	memberships membership.MembershipRepository
 	floors      floor.FloorRepository
+	details     detail.BuildingDetailRepository
 	tx          domain.UnitOfWork
 }
 
@@ -62,6 +65,16 @@ func (s *buildingService) Get(ctx context.Context, id int64) (*Building, error) 
 	return s.buildings.GetByID(ctx, id)
 }
 
+func (s *buildingService) GetDetail(ctx context.Context, buildingID int64) (*detail.BuildingDetail, error) {
+	detail, err := s.details.GetBuildingDetail(ctx, buildingID)
+	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			return nil, ErrBuildingNotFound
+		}
+	}
+	return detail, err
+}
+
 func (s *buildingService) GetHighestLevelMembership(ctx context.Context, userID int64, buildingID uuid.UUID) (*domain.Membership, error) {
 	id, err := s.buildings.GetInternalID(ctx, buildingID)
 	if err != nil {
@@ -90,7 +103,7 @@ func (s *buildingService) AddFloors(ctx context.Context, buildingID int64, in []
 	if len(in) == 0 {
 		return nil, floor.ErrNoFloorsProvided
 	}
-	
+
 	floors := make([]*floor.Floor, len(in))
 	for i, nf := range in {
 		floors[i] = &floor.Floor{
@@ -114,6 +127,7 @@ func NewBuildingService(
 	buildings BuildingRepository,
 	memberships membership.MembershipRepository,
 	floors floor.FloorRepository,
+	details detail.BuildingDetailRepository,
 	tx domain.UnitOfWork,
 ) BuildingService {
 	if buildings == nil {
@@ -125,6 +139,9 @@ func NewBuildingService(
 	if floors == nil {
 		panic("floors cannot be nil")
 	}
+	if details == nil {
+		panic("details cannot be nil")
+	}
 	if tx == nil {
 		panic("tx cannot be nil")
 	}
@@ -132,6 +149,7 @@ func NewBuildingService(
 		buildings:   buildings,
 		memberships: memberships,
 		floors:      floors,
+		details:     details,
 		tx:          tx,
 	}
 }
