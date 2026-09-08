@@ -24,28 +24,6 @@ const floorSelect = `
 	SELECT id, building_id, floor_number, caption, version, created_at, updated_at
 	FROM floors`
 
-const createFloor = `
-	INSERT INTO floors (building_id, floor_number, caption)
-		VALUES ($1, $2, $3)
-		RETURNING id, version, created_at, updated_at`
-
-func (r *floorRepository) Create(ctx context.Context, f *Floor) error {
-	q := db.GetQuerier(ctx, r.db)
-	err := q.QueryRow(
-		ctx, createFloor,
-		f.BuildingID,
-		f.FloorNumber,
-		f.Caption,
-	).Scan(
-		&f.ID,
-		&f.Version,
-		&f.CreatedAt,
-		&f.UpdatedAt,
-	)
-
-	return mapDBError(err)
-}
-
 const createBatch = `
 	INSERT INTO floors (building_id, floor_number caption, version)
 		VALUES ($1,$2,$3,1) 
@@ -64,6 +42,7 @@ func (r *floorRepository) CreateBatch(ctx context.Context, floors []*Floor) erro
 
 	br := q.SendBatch(ctx, batch)
 	defer br.Close()
+	
 	for _, f := range floors {
 		if err := br.QueryRow().Scan(&f.ID, &f.CreatedAt, &f.UpdatedAt); err != nil {
 			return mapCreateBatchError(err, f)
