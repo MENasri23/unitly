@@ -29,7 +29,6 @@ func parseUserAgent(rawUA string) DeviceInfo {
 	}
 
 	ua := useragent.Parse(rawUA)
-	log.Printf("%+v\n", ua)
 
 	d := DeviceInfo{
 		OSName:    ua.OS,
