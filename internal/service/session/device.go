@@ -1,7 +1,6 @@
 package sessionsvc
 
 import (
-	"log"
 	"unitly/internal/domain"
 
 	"github.com/mileusna/useragent"

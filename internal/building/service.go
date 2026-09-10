@@ -17,6 +17,11 @@ type NewFloor struct {
 	Caption     *string
 }
 
+type NewUnit struct {
+	UnitNumber string
+	Caption *string
+}
+
 type BuildingService interface {
 	Create(ctx context.Context, actorUserID int64, in CreateBuildingInput) (*Building, error)
 	Get(ctx context.Context, buildingID int64) (*Building, error)
@@ -27,4 +32,7 @@ type BuildingService interface {
 	GetHighestLevelMembership(ctx context.Context, userID int64, buildingID uuid.UUID) (*domain.Membership, error)
 
 	AddFloors(ctx context.Context, buildingID int64, floors []NewFloor) ([]*Floor, error)
+	GetFloor(ctx context.Context, buildingID int64, floorNumber int16) (*Floor, error)
+
+	AddUnits(ctx context.Context, floorID int64, unitNumbers []string) ([]Unit, error)
 }

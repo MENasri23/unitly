@@ -2,10 +2,13 @@ package floor
 
 import (
 	"errors"
+	"log"
 	"net/http"
+	"strconv"
 	"unitly/internal/building"
 	"unitly/internal/domain"
 	apphttp "unitly/internal/http"
+	"unitly/internal/http/middleware"
 	"unitly/internal/http/reqctx"
 	"unitly/internal/http/router"
 
@@ -13,17 +16,49 @@ import (
 )
 
 type floorController struct {
-	buildings building.BuildingService
+	buildings  building.BuildingService
+	unitRouter router.RouteRegistrar
 }
 
-func NewFloorController(b building.BuildingService) router.RouteRegistrar {
-	return &floorController{buildings: b}
+func NewFloorController(b building.BuildingService, uRouter router.RouteRegistrar) router.RouteRegistrar {
+	return &floorController{buildings: b, unitRouter: uRouter}
 }
 
 func (c *floorController) Routes(r chi.Router) {
+	adminOnly := middleware.RequireMinRoleLevel(domain.RoleAdmin.Level)
+
 	r.Route("/floors", func(r chi.Router) {
-		r.Post("/", c.Add)
+		r.With(adminOnly).Post("/", c.Add)
+
+		r.Route("/{floorNumber}", func(r chi.Router) {
+			r.Use(c.floorContext)
+			c.unitRouter.Routes(r)
+		})
 	})
+}
+
+func (c *floorController) floorContext(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		m := reqctx.GetMembership(r.Context())
+
+		num, err := parseFloorNumber(r)
+		if err != nil {
+			apphttp.BadRequestError(w, domain.NewError("", "invalid floor number"))
+			return
+		}
+
+		f, err := c.buildings.GetFloor(r.Context(), m.BuildingID, num)
+		if err != nil {
+			writeErr(w, err)
+			return
+		}
+		next.ServeHTTP(w, r.WithContext(withFloor(r.Context(), f)))
+	})
+}
+
+func parseFloorNumber(r *http.Request) (int16, error) {
+	n, err := strconv.ParseInt(chi.URLParam(r, "floorNumber"), 10, 16)
+	return int16(n), err
 }
 
 type addFloorsRequest struct {

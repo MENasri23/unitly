@@ -13,6 +13,7 @@ type buildingService struct {
 	buildings   b.BuildingRepository
 	memberships b.MembershipRepository
 	floors      b.FloorRepository
+	units       b.UnitRepository
 	details     b.BuildingDetailRepository
 	tx          domain.UnitOfWork
 }
@@ -113,10 +114,51 @@ func (s *buildingService) AddFloors(ctx context.Context, buildingID int64, in []
 	return floors, nil
 }
 
+func (s *buildingService) GetFloor(ctx context.Context, buildingID int64, floorNumber int16) (*b.Floor, error) {
+	return s.floors.GetByNumber(ctx, buildingID, floorNumber)
+}
+
+func (s *buildingService) AddUnits(ctx context.Context, floorID int64, unitNumbers []string) ([]b.Unit, error) {
+	if len(unitNumbers) == 0 {
+		return nil, b.ErrNoUnitsProvided
+	}
+
+	seen := make(map[string]bool, len(unitNumbers))
+	for _, n := range unitNumbers {
+		if seen[n] {
+			return nil, b.ErrUnitNumbersDuplicate
+		}
+		seen[n] = true
+	}
+
+	units := make([]*b.Unit, len(unitNumbers))
+	for i, num := range unitNumbers {
+		units[i] = &b.Unit{
+			FloorID:    floorID,
+			UnitNumber: num,
+			Status:     b.UnitStatusVacant,
+		}
+	}
+
+	if err := s.tx.Do(ctx, func(ctx context.Context) error {
+		return s.units.CreateBatch(ctx, units)
+	}); err != nil {
+		return nil, err
+	}
+
+	out := make([]b.Unit, len(units))
+	for i, u := range units {
+		out[i] = *u
+	}
+
+	return out, nil
+}
+
 func NewBuildingService(
 	buildings b.BuildingRepository,
 	memberships b.MembershipRepository,
 	floors b.FloorRepository,
+	units b.UnitRepository,
 	details b.BuildingDetailRepository,
 	tx domain.UnitOfWork,
 ) b.BuildingService {
@@ -129,6 +171,9 @@ func NewBuildingService(
 	if floors == nil {
 		panic("floors cannot be nil")
 	}
+	if units == nil {
+		panic("units cannot be nil")
+	}
 	if details == nil {
 		panic("details cannot be nil")
 	}
@@ -139,6 +184,7 @@ func NewBuildingService(
 		buildings:   buildings,
 		memberships: memberships,
 		floors:      floors,
+		units:       units,
 		details:     details,
 		tx:          tx,
 	}

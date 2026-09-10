@@ -7,6 +7,7 @@ import (
 	bldgdetail "unitly/internal/building/detail"
 	"unitly/internal/building/floor"
 	"unitly/internal/building/membership"
+	"unitly/internal/building/unit"
 	"unitly/internal/domain"
 	"unitly/internal/repository"
 	otprepo "unitly/internal/repository/otp"
@@ -21,6 +22,7 @@ type Repositories struct {
 	Building       building.BuildingRepository
 	Membership     building.MembershipRepository
 	Floor          building.FloorRepository
+	Unit           building.UnitRepository
 	BuildingDetail building.BuildingDetailRepository
 }
 
@@ -32,6 +34,7 @@ func newRepositories(app *bootstrap.Application, pgxDB *pgxpool.Pool, cache doma
 		Building:       bldgimpl.NewBuildingRepository(pgxDB, cache),
 		Membership:     membership.NewMembershipRepository(pgxDB, cache),
 		Floor:          floor.NewFloorRepository(pgxDB),
+		Unit:           unit.NewUnitRepository(pgxDB),
 		BuildingDetail: bldgdetail.NewBuildingDetailRepository(pgxDB),
 	}
 }

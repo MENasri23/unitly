@@ -22,7 +22,7 @@ func NewFloorRepository(pool *pgxpool.Pool) building.FloorRepository {
 }
 
 const floorSelect = `
-	SELECT id, building_id, floor_number, caption, version, created_at, updated_at
+	SELECT id, building_id, floor_number, caption, version, created_at, updated_at, deleted_at
 	FROM floors`
 
 const createBatch = `
@@ -74,8 +74,7 @@ const getByNumber = floorSelect + ` WHERE building_id = $1 AND floor_number = $2
 func (r *floorRepository) GetByNumber(ctx context.Context, buildingID int64, floorNumber int16) (*building.Floor, error) {
 	q := db.GetQuerier(ctx, r.db)
 	var f building.Floor
-	err := q.QueryRow(ctx, getByNumber,
-		buildingID, floorNumber,
+	err := q.QueryRow(ctx, getByNumber, buildingID, floorNumber,
 	).Scan(
 		&f.ID,
 		&f.BuildingID,

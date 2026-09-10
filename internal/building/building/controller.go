@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unitly/internal/building"
 	"unitly/internal/building/floor"
+	"unitly/internal/building/unit"
 	"unitly/internal/domain"
 	apphttp "unitly/internal/http"
 	"unitly/internal/http/middleware"
@@ -77,7 +78,8 @@ func BuildingContext(buildings building.BuildingService) func(http.Handler) http
 }
 
 func (c *BuildingController) Routes(r chi.Router) {
-	floors := floor.NewFloorController(c.buildings)
+	units := unit.NewUnitController(c.buildings)
+	floors := floor.NewFloorController(c.buildings, units)
 
 	r.Route("/buildings", func(r chi.Router) {
 		r.Use(c.authMW)
@@ -86,13 +88,14 @@ func (c *BuildingController) Routes(r chi.Router) {
 
 		r.Route("/{buildingGUID}", func(r chi.Router) {
 			r.Use(BuildingContext(c.buildings))
+			floors.Routes(r)
+			
 			tenant := r.With(middleware.RequireMinRoleLevel(domain.RoleTenant.Level))
 			tenant.Get("/", c.detail)
 
 			admin := r.With(middleware.RequireMinRoleLevel(domain.RoleAdmin.Level))
 			admin.Delete("/", c.delete)
 
-			floors.Routes(r)
 		})
 	})
 }
