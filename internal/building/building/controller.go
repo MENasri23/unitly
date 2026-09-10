@@ -89,7 +89,7 @@ func (c *BuildingController) Routes(r chi.Router) {
 		r.Route("/{buildingGUID}", func(r chi.Router) {
 			r.Use(BuildingContext(c.buildings))
 			floors.Routes(r)
-			
+
 			tenant := r.With(middleware.RequireMinRoleLevel(domain.RoleTenant.Level))
 			tenant.Get("/", c.detail)
 
@@ -153,8 +153,16 @@ type buildingDetailDTO struct {
 }
 
 type floorDetailDTO struct {
-	FloorNumber int16   `json:"floor_number"`
-	Caption     *string `json:"caption"`
+	FloorNumber int16           `json:"floor_number"`
+	Caption     *string         `json:"caption"`
+	Units       []unitDetailDTO `json:"units"`
+}
+
+type unitDetailDTO struct {
+	UnitNumber string              `json:"unit_number"`
+	Caption    *string             `json:"caption"`
+	Status     building.UnitStatus `json:"status"`
+	HasParking bool                `json:"has_parking"`
 }
 
 func toBuildingDetailDTO(b *building.BuildingDetail) buildingDetailDTO {
@@ -177,6 +185,23 @@ func toFloorDetailDTOs(floors []building.FloorDetail) []floorDetailDTO {
 		result[i] = floorDetailDTO{
 			FloorNumber: f.FloorNumber,
 			Caption:     f.Caption,
+			Units: toUnitDetailDTOs(f.Units),
+		}
+	}
+	return result
+}
+
+func toUnitDetailDTOs(units []building.UnitDetail) []unitDetailDTO {
+	if len(units) == 0 {
+		return nil
+	}
+	result := make([]unitDetailDTO, len(units))
+	for i, u := range units {
+		result[i] = unitDetailDTO{
+			UnitNumber: u.UnitNumber,
+			Caption:    u.Caption,
+			Status:     u.Status,
+			HasParking: u.HasParking,
 		}
 	}
 	return result
