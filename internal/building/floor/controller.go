@@ -2,7 +2,6 @@ package floor
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"strconv"
 	"unitly/internal/building"
