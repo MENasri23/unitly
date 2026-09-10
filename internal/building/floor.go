@@ -28,4 +28,6 @@ func (f *Floor) IsSoftDeleted() bool { return f.DeletedAt != nil }
 
 type FloorRepository interface {
 	CreateBatch(ctx context.Context, floors []*Floor) error
+
+	GetByNumber(ctx context.Context, buildingID int64, floorNumber int16) (*Floor, error)
 }

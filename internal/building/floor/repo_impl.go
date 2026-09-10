@@ -69,12 +69,39 @@ func mapCreateBatchError(err error, f *building.Floor) error {
 	}
 }
 
+const getByNumber = floorSelect + ` WHERE building_id = $1 AND floor_number = $2 AND deleted_at IS NULL`
+
+func (r *floorRepository) GetByNumber(ctx context.Context, buildingID int64, floorNumber int16) (*building.Floor, error) {
+	q := db.GetQuerier(ctx, r.db)
+	var f building.Floor
+	err := q.QueryRow(ctx, getByNumber,
+		buildingID, floorNumber,
+	).Scan(
+		&f.ID,
+		&f.BuildingID,
+		&f.FloorNumber,
+		&f.Caption,
+		&f.Version,
+		&f.CreatedAt,
+		&f.UpdatedAt,
+		&f.DeletedAt,
+	)
+
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+
+	return &f, nil
+}
+
 func mapDBError(err error) error {
 	if err == nil {
 		return nil
 	}
 
 	switch {
+	case db.IsNoRows(err):
+		return building.ErrFloorNotFound
 	case db.IsUniqueViolation(err, "uq_floor_building_number_active"):
 		return building.ErrFloorNumberTaken
 	case db.IsUniqueViolation(err, "uq_floor_building_caption_active"):
