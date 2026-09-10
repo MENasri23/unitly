@@ -2,9 +2,11 @@ package floor
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 	"unitly/internal/building"
+	bldgdto "unitly/internal/building/dto"
 	"unitly/internal/domain"
 	apphttp "unitly/internal/http"
 	"unitly/internal/http/middleware"
@@ -31,6 +33,7 @@ func (c *floorController) Routes(r chi.Router) {
 
 		r.Route("/{floorNumber}", func(r chi.Router) {
 			r.Use(c.floorContext)
+			r.With(adminOnly).Get("/", c.detail)
 			c.unitRouter.Routes(r)
 		})
 	})
@@ -67,15 +70,6 @@ type addFloorsRequest struct {
 	} `json:"floors" validate:"required,min=1,dive"`
 }
 
-type floorSummary struct {
-	FloorNumber int16   `json:"floor_number"`
-	Caption     *string `json:"caption"`
-}
-
-func toFloorSummary(f *building.Floor) floorSummary {
-	return floorSummary{FloorNumber: f.FloorNumber, Caption: f.Caption}
-}
-
 func (c *floorController) Add(w http.ResponseWriter, r *http.Request) {
 	req, err := apphttp.BindAndValidate[addFloorsRequest](r)
 	if err != nil {
@@ -95,12 +89,23 @@ func (c *floorController) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	floorSummaries := make([]floorSummary, len(floors))
-	for i, f := range floors {
-		floorSummaries[i] = toFloorSummary(f)
+	floorDTOs := bldgdto.MapFloorsToDTOs(floors)
+	apphttp.WriteJSON(w, http.StatusCreated, floorDTOs)
+}
+
+func (c *floorController) detail(w http.ResponseWriter, r *http.Request) {
+	m := reqctx.GetMembership(r.Context())
+	f, _ := FromContext(r.Context())
+
+	detail, err := c.buildings.GetFloorDetail(r.Context(), m.BuildingID, f.ID)
+	if err != nil {
+		log.Println("error: ", err)
+		writeErr(w, err)
+		return
 	}
 
-	apphttp.WriteJSON(w, http.StatusCreated, floorSummaries)
+	detailDTO := bldgdto.MapFloorDetailToDTO(detail)
+	apphttp.WriteJSON(w, http.StatusOK, detailDTO)
 }
 
 func writeErr(w http.ResponseWriter, err error) {

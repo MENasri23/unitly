@@ -31,8 +31,9 @@ type BuildingService interface {
 
 	GetHighestLevelMembership(ctx context.Context, userID int64, buildingID uuid.UUID) (*domain.Membership, error)
 
-	AddFloors(ctx context.Context, buildingID int64, floors []NewFloor) ([]*Floor, error)
+	AddFloors(ctx context.Context, buildingID int64, floors []NewFloor) ([]Floor, error)
 	GetFloor(ctx context.Context, buildingID int64, floorNumber int16) (*Floor, error)
+	GetFloorDetail(ctx context.Context, buildingID, floorID int64) (*FloorDetail, error)
 
 	AddUnits(ctx context.Context, floorID int64, unitNumbers []string) ([]Unit, error)
 }

@@ -7,10 +7,10 @@ import (
 )
 
 type UnitDetail struct {
-	UnitNumber  string
-	Caption *string
-	Status  UnitStatus
-	HasParking  bool
+	UnitNumber string
+	Caption    *string
+	Status     UnitStatus
+	HasParking bool
 }
 
 type FloorDetail struct {
@@ -35,4 +35,5 @@ type ResidentSummary struct {
 
 type BuildingDetailRepository interface {
 	GetBuildingDetail(ctx context.Context, buildingID int64) (*BuildingDetail, error)
+	GetFloorDetail(ctx context.Context, buildingID, floorID int64) (*FloorDetail, error)
 }

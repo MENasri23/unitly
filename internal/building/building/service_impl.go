@@ -90,7 +90,7 @@ func (s *buildingService) Delete(ctx context.Context, buildingID int64) error {
 	return s.buildings.SoftDelete(ctx, buildingID) // authz (admin-only) enforced by middleware
 }
 
-func (s *buildingService) AddFloors(ctx context.Context, buildingID int64, in []b.NewFloor) ([]*b.Floor, error) {
+func (s *buildingService) AddFloors(ctx context.Context, buildingID int64, in []b.NewFloor) ([]b.Floor, error) {
 	if len(in) == 0 {
 		return nil, b.ErrNoFloorsProvided
 	}
@@ -111,11 +111,20 @@ func (s *buildingService) AddFloors(ctx context.Context, buildingID int64, in []
 		return nil, err
 	}
 
-	return floors, nil
+	out := make([]b.Floor, len(floors))
+	for i, f := range floors {
+		out[i] = *f
+	}
+
+	return out, nil
 }
 
 func (s *buildingService) GetFloor(ctx context.Context, buildingID int64, floorNumber int16) (*b.Floor, error) {
 	return s.floors.GetByNumber(ctx, buildingID, floorNumber)
+}
+
+func (s *buildingService) GetFloorDetail(ctx context.Context, buildingID, floorID int64) (*b.FloorDetail, error) {
+	return s.details.GetFloorDetail(ctx, buildingID, floorID)
 }
 
 func (s *buildingService) AddUnits(ctx context.Context, floorID int64, unitNumbers []string) ([]b.Unit, error) {

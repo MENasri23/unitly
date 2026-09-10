@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"unitly/internal/building"
+	bldgdto "unitly/internal/building/dto"
 	"unitly/internal/building/floor"
 	"unitly/internal/domain"
 	apphttp "unitly/internal/http"
@@ -33,15 +34,6 @@ type addUnitsRequest struct {
 	UnitNumbers []string `json:"unit_numbers" validate:"required,gt=0,lt=20,dive,required,trimmed_name=1:20"`
 }
 
-type UnitSummary struct {
-	UnitNumber string  `json:"unit_number"`
-	Caption    *string `json:"caption"`
-}
-
-func toUnitSummary(u building.Unit) UnitSummary {
-	return UnitSummary{UnitNumber: u.UnitNumber, Caption: u.Caption}
-}
-
 func (c *UnitController) Add(w http.ResponseWriter, r *http.Request) {
 	f, _ := floor.FromContext(r.Context())
 
@@ -51,18 +43,14 @@ func (c *UnitController) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Units, err := c.buildings.AddUnits(r.Context(), f.ID, req.UnitNumbers)
+	units, err := c.buildings.AddUnits(r.Context(), f.ID, req.UnitNumbers)
 	if err != nil {
 		writeErr(w, err)
 		return
 	}
 
-	UnitSummaries := make([]UnitSummary, len(Units))
-	for i, u := range Units {
-		UnitSummaries[i] = toUnitSummary(u)
-	}
-
-	apphttp.WriteJSON(w, http.StatusCreated, UnitSummaries)
+	unitDTos := bldgdto.MapUnitsToUnitDTOs(units)
+	apphttp.WriteJSON(w, http.StatusCreated, unitDTos)
 }
 
 func writeErr(w http.ResponseWriter, err error) {

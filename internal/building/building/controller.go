@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 	"unitly/internal/building"
+	bldgdto "unitly/internal/building/dto"
 	"unitly/internal/building/floor"
 	"unitly/internal/building/unit"
 	"unitly/internal/domain"
@@ -145,17 +146,11 @@ func (c *BuildingController) listMine(w http.ResponseWriter, r *http.Request) {
 }
 
 type buildingDetailDTO struct {
-	ID            uuid.UUID        `json:"id"`
-	Name          string           `json:"name"`
-	TotalUnits    int              `json:"total_units"`
-	TotalOccupied int              `json:"total_occupied"`
-	Floors        []floorDetailDTO `json:"floors"`
-}
-
-type floorDetailDTO struct {
-	FloorNumber int16           `json:"floor_number"`
-	Caption     *string         `json:"caption"`
-	Units       []unitDetailDTO `json:"units"`
+	ID            uuid.UUID          `json:"id"`
+	Name          string             `json:"name"`
+	TotalUnits    int                `json:"total_units"`
+	TotalOccupied int                `json:"total_occupied"`
+	Floors        []bldgdto.FloorDTO `json:"floors"`
 }
 
 type unitDetailDTO struct {
@@ -171,40 +166,8 @@ func toBuildingDetailDTO(b *building.BuildingDetail) buildingDetailDTO {
 		Name:          b.Name,
 		TotalUnits:    b.TotalUnits,
 		TotalOccupied: b.OccupiedUnits,
-		Floors:        toFloorDetailDTOs(b.Floors),
+		Floors:        bldgdto.MapFloorDetailsToDTOs(b.Floors),
 	}
-}
-
-func toFloorDetailDTOs(floors []building.FloorDetail) []floorDetailDTO {
-	if len(floors) == 0 {
-		return nil
-	}
-
-	result := make([]floorDetailDTO, len(floors))
-	for i, f := range floors {
-		result[i] = floorDetailDTO{
-			FloorNumber: f.FloorNumber,
-			Caption:     f.Caption,
-			Units: toUnitDetailDTOs(f.Units),
-		}
-	}
-	return result
-}
-
-func toUnitDetailDTOs(units []building.UnitDetail) []unitDetailDTO {
-	if len(units) == 0 {
-		return nil
-	}
-	result := make([]unitDetailDTO, len(units))
-	for i, u := range units {
-		result[i] = unitDetailDTO{
-			UnitNumber: u.UnitNumber,
-			Caption:    u.Caption,
-			Status:     u.Status,
-			HasParking: u.HasParking,
-		}
-	}
-	return result
 }
 
 func (c *BuildingController) detail(w http.ResponseWriter, r *http.Request) {
