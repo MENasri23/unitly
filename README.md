@@ -516,6 +516,106 @@ The HTTP API is mounted at `/api/v1`.
   - Behavior:
     - Deletes the specified building.
 
+  #### Get Building Details
+
+  - Method: `GET`
+  - Path: `/api/v1/buildings/{buildingGUID}`
+  - Authentication: `Bearer <access-token>`
+  - Success response:
+    - Status: `200 OK`
+    - Response body: details for the requested building.
+  - Validation:
+    - `buildingGUID` must be a valid UUID.
+    - The authenticated user must have an active membership in the building.
+  - Errors:
+    - `BAD_REQUEST` — invalid building ID
+    - `BUILDING_NOT_FOUND` — building does not exist
+    - `FORBIDDEN` — the user has no active membership in the building
+  - Behavior:
+    - Returns details for an accessible building.
+
+  #### Create Floors
+
+  - Method: `POST`
+  - Path: `/api/v1/buildings/{buildingGUID}/floors`
+  - Authentication: `Bearer <access-token>`
+  - Request body:
+    ```json
+    [
+      { "floor_number": 0, "caption": "Ground floor" },
+      { "floor_number": 1, "caption": "Floor 1" }
+    ]
+    ```
+  - Success response:
+    - Status: `201 Created`
+    - Response body: created floors.
+  - Validation:
+    - `buildingGUID` must be a valid UUID.
+    - The body must be a valid JSON array of floors.
+    - The authenticated user must be allowed to manage the building.
+  - Errors:
+    - `BAD_REQUEST` — invalid building ID or floor data
+    - `BUILDING_NOT_FOUND` — building does not exist
+    - `FORBIDDEN` — the user cannot manage the building
+    - `FLOOR_CONFLICT` — a floor already exists
+  - Behavior:
+    - Creates the submitted floors in the specified building.
+
+  #### Get Floor Details
+
+  - Method: `GET`
+  - Path: `/api/v1/buildings/{buildingGUID}/floors/{floorNumber}`
+  - Authentication: `Bearer <access-token>`
+  - Success response:
+    - Status: `200 OK`
+    - Response body: details for the requested floor.
+  - Validation:
+    - `buildingGUID` must be a valid UUID.
+    - `floorNumber` must be a valid floor number.
+    - The authenticated user must have an active membership in the building.
+  - Errors:
+    - `BAD_REQUEST` — invalid building ID or floor number
+    - `NOT_FOUND` — building or floor does not exist
+    - `FORBIDDEN` — the user has no active membership in the building
+  - Behavior:
+    - Returns details for the requested floor.
+
+  #### Create Units
+
+  - Method: `POST`
+  - Path: `/api/v1/buildings/{buildingGUID}/floors`
+  - Authentication: `Bearer <access-token>`
+  - Request body: a JSON array describing the units to create.
+  - Success response:
+    - Status: `201 Created`
+    - Response body: created units.
+  - Validation:
+    - `buildingGUID` must be a valid UUID.
+    - The body must be a valid JSON array.
+    - The authenticated user must be allowed to manage the building.
+  - Errors:
+    - `BAD_REQUEST` — invalid building ID or unit data
+    - `NOT_FOUND` — building or floor does not exist
+    - `FORBIDDEN` — the user cannot manage the building
+    - `CONFLICT` — a unit already exists
+  - Behavior:
+    - Creates the submitted units in the specified building.
+
+#### Revoke All Sessions
+
+- Method: `DELETE`
+- Path: `/api/v1/me/sessions`
+- Authentication: `Bearer <access-token>`
+- Success response:
+  - Status: `204 No Content`
+  - Response body: _(empty)_
+- Errors:
+  - `UNAUTHORIZED` — access token is missing or invalid
+  - `INTERNAL` — sessions could not be revoked
+- Behavior:
+  - Revokes all active sessions for the authenticated user.
+
+
 ## Error Handling
 
 All errors are returned as JSON objects with a `code` and `message` field.
