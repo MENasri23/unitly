@@ -38,8 +38,8 @@ type floorSummary struct {
 	Caption     *string `json:"caption"`
 }
 
-func toFloorSummary(f *building.Floor) *floorSummary {
-	return &floorSummary{FloorNumber: f.FloorNumber, Caption: f.Caption}
+func toFloorSummary(f *building.Floor) floorSummary {
+	return floorSummary{FloorNumber: f.FloorNumber, Caption: f.Caption}
 }
 
 func (c *floorController) Add(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +61,7 @@ func (c *floorController) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	floorSummaries := make([]*floorSummary, len(floors))
+	floorSummaries := make([]floorSummary, len(floors))
 	for i, f := range floors {
 		floorSummaries[i] = toFloorSummary(f)
 	}
