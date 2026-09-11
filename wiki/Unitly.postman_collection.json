@@ -252,14 +252,15 @@
 							}
 						},
 						"url": {
-							"raw": "{{base_url}}/api/v1/buildings",
+							"raw": "{{base_url}}/api/v1/buildings/{{building_id}}",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
 								"v1",
-								"buildings"
+								"buildings",
+								"{{building_id}}"
 							]
 						}
 					},
