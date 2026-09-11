@@ -2,7 +2,7 @@ package container
 
 import (
 	"unitly/internal/bootstrap"
-	bldgimpl "unitly/internal/building/building"
+	bldgimpl "unitly/internal/building/bldg"
 	"unitly/internal/controller"
 	"unitly/internal/http/middleware"
 	"unitly/internal/log"

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"unitly/internal/bootstrap"
 	"unitly/internal/building"
-	bldgimpl "unitly/internal/building/building"
+	bldgimpl "unitly/internal/building/bldg"
 	"unitly/internal/db"
 	"unitly/internal/domain"
 	"unitly/internal/log"

@@ -3,7 +3,7 @@ package container
 import (
 	"unitly/internal/bootstrap"
 	"unitly/internal/building"
-	bldgimpl "unitly/internal/building/building"
+	bldgimpl "unitly/internal/building/bldg"
 	bldgdetail "unitly/internal/building/detail"
 	"unitly/internal/building/floor"
 	"unitly/internal/building/membership"
