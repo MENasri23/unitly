@@ -9,7 +9,8 @@ import (
 var ErrFloorNotFound = domain.NewNotFoundError("floor")
 var ErrFloorNumberTaken = domain.NewError("FLOOR_NUMBER_EXISTS", "a floor with this number already exists in this building")
 var ErrFloorCaptionTaken = domain.NewError("FLOOR_CAPTION_EXISTS", "a floor with this caption already exists in this building")
-var ErrFloorNumbersDuplicate = domain.NewError("FLOOR_NUMBERS_DUPLICATE", "floor numbers must be unique")
+var ErrFloorNumberDuplicate = domain.NewError("FLOOR_NUMBERS_DUPLICATE", "floor numbers must be unique")
+var ErrFloorCaptionDuplicate = domain.NewError("FLOOR_CAPTIONS_DUPLICATE", "floor captions must be unique if provided, otherwise null")
 var ErrNoFloorsProvided = domain.NewError("FLOORS_REQUIRED", "at least one floor is required")
 
 type Floor struct {

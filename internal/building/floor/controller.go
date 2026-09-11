@@ -113,7 +113,8 @@ func writeErr(w http.ResponseWriter, err error) {
 	case errors.Is(err, building.ErrFloorNotFound):
 		apphttp.NotFoundError(w, err)
 	case errors.Is(err, building.ErrNoFloorsProvided),
-		errors.Is(err, building.ErrFloorNumbersDuplicate):
+		errors.Is(err, building.ErrFloorNumberDuplicate),
+		errors.Is(err, building.ErrFloorCaptionDuplicate):
 		apphttp.BadRequestError(w, err)
 	case errors.Is(err, building.ErrFloorNumberTaken),
 		errors.Is(err, building.ErrFloorCaptionTaken):

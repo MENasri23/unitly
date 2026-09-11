@@ -135,7 +135,7 @@ func (s *buildingService) AddFloors(ctx context.Context, buildingID int64, in []
 		return nil, b.ErrNoFloorsProvided
 	}
 
-	if err := s.validateUniqueFloorNumbers(in); err != nil {
+	if err := s.validateNewFloors(in); err != nil {
 		return nil, err
 	}
 
@@ -163,13 +163,21 @@ func (s *buildingService) AddFloors(ctx context.Context, buildingID int64, in []
 	return out, nil
 }
 
-func (s *buildingService) validateUniqueFloorNumbers(in []b.NewFloor) error {
-	seen := make(map[int16]bool, len(in))
+func (s *buildingService) validateNewFloors(in []b.NewFloor) error {
+	numbers := make(map[int16]bool, len(in))
+	captions := make(map[string]bool, len(in))
 	for _, nf := range in {
-		if seen[nf.FloorNumber] {
-			return b.ErrFloorNumbersDuplicate
+		if numbers[nf.FloorNumber] {
+			return b.ErrFloorNumberDuplicate
 		}
-		seen[nf.FloorNumber] = true
+		numbers[nf.FloorNumber] = true
+
+		if nf.Caption != nil {
+			if captions[*nf.Caption] {
+				return b.ErrFloorCaptionDuplicate
+			}
+			captions[*nf.Caption] = true
+		}
 	}
 	return nil
 }

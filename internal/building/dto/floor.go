@@ -3,9 +3,9 @@ package bldgdto
 import "unitly/internal/building"
 
 type FloorDTO struct {
-	FloorNumber int16
-	Caption     *string
-	Units       []UnitDTO
+	FloorNumber int16     `json:"floor_number"`
+	Caption     *string   `json:"caption"`
+	Units       []UnitDTO `json:"units"`
 }
 
 func MapFloorDetailToDTO(f *building.FloorDetail) FloorDTO {

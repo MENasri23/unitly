@@ -567,6 +567,7 @@ The HTTP API is mounted at `/api/v1`.
     - `FLOOR_NUMBER_EXISTS` — a floor with this number already exists in this building
     - `FLOOR_CAPTION_EXISTS` — a floor with this caption already exists in this building
     - `FLOOR_NUMBERS_DUPLICATE` — floor numbers must be unique
+    - `FLOOR_CAPTIONS_DUPLICATE` - floor captions must be unique if provided, otherwise null
 
   #### Get Floor Details
   - Method: `GET`

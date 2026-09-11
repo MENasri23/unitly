@@ -57,12 +57,10 @@ func mapCreateBatchError(err error, f *building.Floor) error {
 	err = mapDBError(err)
 	switch {
 	case errors.Is(err, building.ErrFloorNumberTaken):
-		msg := fmt.Sprintf("%s. floor_number: %d", err.Error(), f.FloorNumber)
-		return domain.NewError(building.ErrFloorNumberTaken.Code(), msg)
+		return fmt.Errorf("floor number %d: %w", f.FloorNumber, building.ErrFloorNumberTaken)
 
 	case errors.Is(err, building.ErrFloorCaptionTaken):
-		msg := fmt.Sprintf("%s. caption: %v", err.Error(), f.Caption)
-		return domain.NewError(building.ErrFloorCaptionTaken.Code(), msg)
+		return fmt.Errorf("floor caption '%s': %w", *f.Caption, building.ErrFloorCaptionTaken)
 
 	default:
 		return err
