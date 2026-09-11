@@ -35,5 +35,4 @@ type ResidentSummary struct {
 
 type BuildingDetailRepository interface {
 	GetBuildingDetail(ctx context.Context, buildingID int64) (*BuildingDetail, error)
-	GetFloorDetail(ctx context.Context, buildingID, floorID int64) (*FloorDetail, error)
 }

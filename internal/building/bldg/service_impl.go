@@ -165,7 +165,7 @@ func (s *buildingService) GetFloor(ctx context.Context, buildingID int64, floorN
 }
 
 func (s *buildingService) GetFloorDetail(ctx context.Context, buildingID, floorID int64) (*b.FloorDetail, error) {
-	return s.details.GetFloorDetail(ctx, buildingID, floorID)
+	return s.floors.GetDetail(ctx, buildingID, floorID)
 }
 
 func (s *buildingService) AddUnits(ctx context.Context, floorID int64, unitNumbers []string) ([]b.Unit, error) {

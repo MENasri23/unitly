@@ -93,6 +93,73 @@ func (r *floorRepository) GetByNumber(ctx context.Context, buildingID int64, flo
 	return &f, nil
 }
 
+const floorDetail = `
+SELECT
+    f.floor_number,
+    f.caption,
+
+    u.unit_number,
+    u.caption,
+    u.status,
+    u.has_parking
+FROM floors f
+LEFT JOIN units u
+    ON u.floor_id = f.id
+    AND u.deleted_at IS NULL
+WHERE f.building_id = $1 AND f.id = $2
+ORDER BY u.id`
+
+func (r *floorRepository) GetDetail(ctx context.Context, buildingID, floorID int64) (*building.FloorDetail, error) {
+q := db.GetQuerier(ctx, r.db)
+	rows, err := q.Query(ctx, floorDetail, buildingID, floorID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var (
+		found  bool
+		detail building.FloorDetail
+	)
+
+	for rows.Next() {
+		var row FloorUnitRow
+		if err := rows.Scan(
+			&row.FloorNumber,
+			&row.FloorCaption,
+			&row.UnitNumber,
+			&row.UnitCaption,
+			&row.UnitStatus,
+			&row.UnitHasParking,
+		); err != nil {
+			return nil, err
+		}
+
+		if !found && row.FloorNumber.Valid {
+			found = true
+			detail.FloorNumber = row.FloorNumber.Int16
+			detail.Caption = db.NullString(row.FloorCaption)
+		}
+
+		if unit, ok := row.toUnitDetail(); ok {
+			detail.Units = append(detail.Units, unit)
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		if db.IsNoRows(err) {
+			return nil, domain.ErrNotFound
+		}
+		return nil, err
+	}
+
+	if !found {
+		return nil, domain.ErrNotFound
+	}
+
+	return &detail, nil
+}
+
 func mapDBError(err error) error {
 	if err == nil {
 		return nil

@@ -30,4 +30,5 @@ type FloorRepository interface {
 	CreateBatch(ctx context.Context, floors []*Floor) error
 
 	GetByNumber(ctx context.Context, buildingID int64, floorNumber int16) (*Floor, error)
+	GetDetail(ctx context.Context, buildingID, floorID int64) (*FloorDetail, error)
 }
