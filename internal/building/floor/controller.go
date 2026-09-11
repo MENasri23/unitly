@@ -65,9 +65,9 @@ func parseFloorNumber(r *http.Request) (int16, error) {
 
 type addFloorsRequest struct {
 	Floors []struct {
-		FloorNumber int16   `json:"floor_number"`
-		Caption     *string `json:"caption"`
-	} `json:"floors" validate:"required,min=1,dive"`
+		FloorNumber int16   `json:"floor_number" validate:"required"`
+		Caption     *string `json:"caption" validate:"omitzero,trimmed_name=1:100"`
+	} `json:"floors" validate:"required,min=1,max=20"`
 }
 
 func (c *floorController) Add(w http.ResponseWriter, r *http.Request) {
@@ -112,7 +112,8 @@ func writeErr(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, building.ErrFloorNotFound):
 		apphttp.NotFoundError(w, err)
-	case errors.Is(err, building.ErrNoFloorsProvided):
+	case errors.Is(err, building.ErrNoFloorsProvided),
+		errors.Is(err, building.ErrFloorNumbersDuplicate):
 		apphttp.BadRequestError(w, err)
 	case errors.Is(err, building.ErrFloorNumberTaken),
 		errors.Is(err, building.ErrFloorCaptionTaken):

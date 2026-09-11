@@ -542,25 +542,31 @@ The HTTP API is mounted at `/api/v1`.
   - Authentication: `Bearer <access-token>`
   - Request body:
     ```json
-    [
-      { "floor_number": 0, "caption": "Ground floor" },
-      { "floor_number": 1, "caption": "Floor 1" }
-    ]
+    {
+      "floors": [
+        { "floor_number": 0, "caption": "Ground floor" },
+        { "floor_number": 1, "caption": "Floor 1" }
+      ]
+    }
     ```
   - Success response:
     - Status: `201 Created`
     - Response body: created floors.
   - Validation:
     - `buildingGUID` must be a valid UUID.
-    - The body must be a valid JSON array of floors.
+    - The body must contain a required `floors` array with 1 to 20 items.
+    - Each `floor_number` is required and must be an `int16` value.
+    - Each `caption` is optional; when provided, it must be trimmed text from 1 to 100 characters.
     - The authenticated user must be allowed to manage the building.
+    
   - Errors:
     - `BAD_REQUEST` — invalid building ID or floor data
     - `BUILDING_NOT_FOUND` — building does not exist
     - `FORBIDDEN` — the user cannot manage the building
-    - `FLOOR_CONFLICT` — a floor already exists
-  - Behavior:
-    - Creates the submitted floors in the specified building.
+    - `FLOORS_REQUIRED` — at least one floor is required
+    - `FLOOR_NUMBER_EXISTS` — a floor with this number already exists in this building
+    - `FLOOR_CAPTION_EXISTS` — a floor with this caption already exists in this building
+    - `FLOOR_NUMBERS_DUPLICATE` — floor numbers must be unique
 
   #### Get Floor Details
   - Method: `GET`
@@ -575,7 +581,7 @@ The HTTP API is mounted at `/api/v1`.
     - The authenticated user must have an active membership in the building.
   - Errors:
     - `BAD_REQUEST` — invalid building ID or floor number
-    - `NOT_FOUND` — building or floor does not exist
+    - `FLOOR_NOT_FOUND` — building or floor does not exist
     - `FORBIDDEN` — the user has no active membership in the building
   - Behavior:
     - Returns details for the requested floor.
@@ -592,11 +598,15 @@ The HTTP API is mounted at `/api/v1`.
     - `buildingGUID` must be a valid UUID.
     - The body must be a valid JSON array.
     - The authenticated user must be allowed to manage the building.
+
   - Errors:
     - `BAD_REQUEST` — invalid building ID or unit data
-    - `NOT_FOUND` — building or floor does not exist
+    - `BUILDING_NOT_FOUND` — building does not exist
+    - `FLOOR_NOT_FOUND` — floor does not exist
     - `FORBIDDEN` — the user cannot manage the building
-    - `CONFLICT` — a unit already exists
+    - `UNITS_REQUIRED` — at least one unit is required
+    - `UNIT_NUMBER_EXISTS` — a unit with this number already exists on this floor
+    - `UNIT_NUMBERS_DUPLICATE` — unit numbers must be unique
   - Behavior:
     - Creates the submitted units in the specified building.
 
@@ -647,6 +657,10 @@ Example:
 - `VALIDATION_ERROR` — request validation failed
 - `INVALID_JSON` — malformed JSON request
 - `EMPTY_FULLNAME` - both first name and last name are empty
+- `UNIT_NOT_FOUND` — unit does not exist
+- `UNITS_REQUIRED` — at least one unit is required
+- `UNIT_NUMBER_EXISTS` — a unit with this number already exists on this floor
+- `UNITS_NUMBER_DUPLICATE` — unit numbers must be unique
 - `INTERNAL` — generic server error
 
 ### HTTP status codes

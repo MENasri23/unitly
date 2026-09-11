@@ -8,7 +8,7 @@ import (
 
 var ErrUnitNotFound = domain.NewNotFoundError("unit")
 var ErrUnitNumberTaken = domain.NewError("UNIT_NUMBER_EXISTS", "a unit with this number already exists on this floor")
-var ErrUnitNumbersDuplicate = domain.NewError("UNITS_NUMBER_DUPLICATE", "unit numbers must be unique")
+var ErrUnitNumbersDuplicate = domain.NewError("UNIT_NUMBERS_DUPLICATE", "unit numbers must be unique")
 var ErrNoUnitsProvided = domain.NewError("UNITS_REQUIRED", "at least one unit is required")
 
 type UnitStatus string

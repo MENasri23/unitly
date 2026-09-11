@@ -135,6 +135,10 @@ func (s *buildingService) AddFloors(ctx context.Context, buildingID int64, in []
 		return nil, b.ErrNoFloorsProvided
 	}
 
+	if err := s.validateUniqueFloorNumbers(in); err != nil {
+		return nil, err
+	}
+
 	floors := make([]*b.Floor, len(in))
 	for i, nf := range in {
 		floors[i] = &b.Floor{
@@ -157,6 +161,17 @@ func (s *buildingService) AddFloors(ctx context.Context, buildingID int64, in []
 	}
 
 	return out, nil
+}
+
+func (s *buildingService) validateUniqueFloorNumbers(in []b.NewFloor) error {
+	seen := make(map[int16]bool, len(in))
+	for _, nf := range in {
+		if seen[nf.FloorNumber] {
+			return b.ErrFloorNumbersDuplicate
+		}
+		seen[nf.FloorNumber] = true
+	}
+	return nil
 }
 
 func (s *buildingService) GetFloor(ctx context.Context, buildingID int64, floorNumber int16) (*b.Floor, error) {
