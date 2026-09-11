@@ -455,7 +455,6 @@ The HTTP API is mounted at `/api/v1`.
   ### Buildings
 
   #### Create Building
-
   - Method: `POST`
   - Path: `/api/v1/buildings/`
   - Authentication: `Bearer <access-token>`
@@ -463,7 +462,10 @@ The HTTP API is mounted at `/api/v1`.
     ```json
     {
       "name": "Main Office",
-      "address": "123 Main Street"
+      "address": "123 Main Street",
+      "floors_ground_and_top": 2,
+      "floors_underground": 1,
+      "units_per_floor": 2
     }
     ```
   - Success response:
@@ -472,13 +474,15 @@ The HTTP API is mounted at `/api/v1`.
   - Validation:
     - `name` is required and must be 2-100 characters long.
     - `address` is optional and must be 5–1000 characters when provided.
+    - `floors_ground_and_top` is optional and must be greater than 0 if provided.
+    - `floors_underground` is optional and must be 0 or greater if provided.
+    - `units_per_floor` is optional and must be greater than 0 if provided.
   - Errors:
     - `BUILDING_EXIST` — a building with this name already exists per creator
   - Behavior:
-    - Creates a building for the authenticated user.
+    - Creates a building for the authenticated user using the supplied floor and unit counts.
 
   #### List My Buildings
-
   - Method: `GET`
   - Path: `/api/v1/buildings/`
   - Authentication: `Bearer <access-token>`
@@ -497,7 +501,6 @@ The HTTP API is mounted at `/api/v1`.
     - Returns the authenticated user's buildings.
 
   #### Delete Building
-
   - Method: `DELETE`
   - Path: `/api/v1/buildings/{buildingGUID}/`
   - Authentication: `Bearer <access-token>`
@@ -517,7 +520,6 @@ The HTTP API is mounted at `/api/v1`.
     - Deletes the specified building.
 
   #### Get Building Details
-
   - Method: `GET`
   - Path: `/api/v1/buildings/{buildingGUID}`
   - Authentication: `Bearer <access-token>`
@@ -535,7 +537,6 @@ The HTTP API is mounted at `/api/v1`.
     - Returns details for an accessible building.
 
   #### Create Floors
-
   - Method: `POST`
   - Path: `/api/v1/buildings/{buildingGUID}/floors`
   - Authentication: `Bearer <access-token>`
@@ -562,7 +563,6 @@ The HTTP API is mounted at `/api/v1`.
     - Creates the submitted floors in the specified building.
 
   #### Get Floor Details
-
   - Method: `GET`
   - Path: `/api/v1/buildings/{buildingGUID}/floors/{floorNumber}`
   - Authentication: `Bearer <access-token>`
@@ -581,7 +581,6 @@ The HTTP API is mounted at `/api/v1`.
     - Returns details for the requested floor.
 
   #### Create Units
-
   - Method: `POST`
   - Path: `/api/v1/buildings/{buildingGUID}/floors`
   - Authentication: `Bearer <access-token>`
@@ -615,7 +614,6 @@ The HTTP API is mounted at `/api/v1`.
 - Behavior:
   - Revokes all active sessions for the authenticated user.
 
-
 ## Error Handling
 
 All errors are returned as JSON objects with a `code` and `message` field.
@@ -628,8 +626,6 @@ Example:
   "message": "invalid phone number"
 }
 ```
-
-
 
 ### Standard error response structure
 

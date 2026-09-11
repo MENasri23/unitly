@@ -18,8 +18,11 @@ import (
 )
 
 type CreateBuildingRequest struct {
-	Name    string  `json:"name" validate:"required,trimmed_name=2:100"`
-	Address *string `json:"address" validate:"omitzero,trimmed_name=5:1000"`
+	Name                 string  `json:"name" validate:"required,trimmed_name=2:100"`
+	Address              *string `json:"address" validate:"omitzero,trimmed_name=5:1000"`
+	FloorsGroundAndTop   *int16  `json:"floors_ground_and_top" validate:"omitempty,min=1,max=20"`
+	FloorsUnderGround    *int16  `json:"floors_underground" validate:"omitempty,min=1,max=10"`
+	DefaultUnitsPerFloor *int16  `json:"units_per_floor" validate:"omitempty,min=1,max=20"`
 }
 
 type BuildingSummaryDTO struct {
@@ -114,8 +117,11 @@ func (c *BuildingController) create(w http.ResponseWriter, r *http.Request) {
 		*address = strings.TrimSpace(*address)
 	}
 	in := building.CreateBuildingInput{
-		Name:    strings.TrimSpace(req.Name),
-		Address: req.Address,
+		Name:                 strings.TrimSpace(req.Name),
+		Address:              req.Address,
+		FloorsGroundAndTop:   req.FloorsGroundAndTop,
+		FloorsUnderGround:    req.FloorsUnderGround,
+		DefaultUnitsPerFloor: req.DefaultUnitsPerFloor,
 	}
 
 	b, err := c.buildings.Create(r.Context(), userID, in)

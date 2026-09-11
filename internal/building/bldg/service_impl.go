@@ -3,6 +3,7 @@ package bldgimpl
 import (
 	"context"
 	"errors"
+	"strconv"
 	b "unitly/internal/building"
 	"unitly/internal/domain"
 
@@ -51,13 +52,53 @@ func (s *buildingService) Create(ctx context.Context, actorUserID int64, in b.Cr
 			return err
 		}
 
-		return nil
+		return s.provision(ctx, b.ID, in)
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return b, nil
+}
+
+// provision auto-generates floors/units from the optional counts supplied
+// at creation. Floor 0 is always ground; floors_ground_and_top
+// is the total count from ground upward inclusive (e.g. 5 -> floors
+// 0,1,2,3,4), floors_under_ground the count below it, numbered -1,-2,...
+// Runs inside the same transaction as Create, via the shared ctx.
+func (s *buildingService) provision(ctx context.Context, buildingID int64, in b.CreateBuildingInput) error {
+	if in.FloorsGroundAndTop == nil {
+		return nil
+	}
+
+	newFloors := make([]b.NewFloor, 0, int(*in.FloorsGroundAndTop))
+	for n := int16(0); n < *in.FloorsGroundAndTop; n++ {
+		newFloors = append(newFloors, b.NewFloor{FloorNumber: n})
+	}
+	if in.FloorsUnderGround != nil {
+		for n := int16(1); n <= *in.FloorsUnderGround; n++ {
+			newFloors = append(newFloors, b.NewFloor{FloorNumber: -n})
+		}
+	}
+
+	floors, err := s.AddFloors(ctx, buildingID, newFloors)
+	if err != nil {
+		return err
+	}
+	if in.DefaultUnitsPerFloor == nil {
+		return nil
+	}
+
+	unitNumbers := make([]string, *in.DefaultUnitsPerFloor)
+	for i := range unitNumbers {
+		unitNumbers[i] = strconv.Itoa(i + 1)
+	}
+	for _, f := range floors {
+		if _, err := s.AddUnits(ctx, f.ID, unitNumbers); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *buildingService) Get(ctx context.Context, id int64) (*b.Building, error) {

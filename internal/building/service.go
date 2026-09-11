@@ -10,6 +10,9 @@ import (
 type CreateBuildingInput struct {
 	Name    string
 	Address *string
+	FloorsGroundAndTop   *int16
+	FloorsUnderGround    *int16
+	DefaultUnitsPerFloor *int16
 }
 
 type NewFloor struct {
