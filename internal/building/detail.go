@@ -1,8 +1,6 @@
 package building
 
 import (
-	"context"
-
 	"github.com/google/uuid"
 )
 
@@ -31,8 +29,4 @@ type ResidentSummary struct {
 	ID        uuid.UUID
 	FirstName *string
 	LastName  *string
-}
-
-type BuildingDetailRepository interface {
-	GetBuildingDetail(ctx context.Context, buildingID int64) (*BuildingDetail, error)
 }

@@ -141,7 +141,7 @@ q := db.GetQuerier(ctx, r.db)
 			detail.Caption = db.NullString(row.FloorCaption)
 		}
 
-		if unit, ok := row.toUnitDetail(); ok {
+		if unit, ok := row.ToUnitDetail(); ok {
 			detail.Units = append(detail.Units, unit)
 		}
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"unitly/internal/building"
+	"unitly/internal/building/floor"
 	"unitly/internal/db"
 	"unitly/internal/domain"
 
@@ -124,6 +125,103 @@ func (r *buildingRepository) GetInternalID(ctx context.Context, guid uuid.UUID) 
 		return 0, err
 	}
 	return id, nil
+}
+
+const detailByID = `
+SELECT 
+    b.guid,
+    b.name,
+
+    f.floor_number,
+    f.caption,
+    
+	u.unit_number,
+    u.caption,
+    u.status,
+    u.has_parking
+FROM buildings b
+LEFT JOIN floors f 
+    ON f.building_id = b.id
+LEFT JOIN units u 
+    ON u.floor_id = f.id 
+    AND u.deleted_at IS NULL
+WHERE b.id = $1
+ORDER BY f.floor_number, u.id`
+
+func (r *buildingRepository) GetDetail(ctx context.Context, id int64) (*building.BuildingDetail, error) {
+	q := db.GetQuerier(ctx, r.db)
+	rows, err := q.Query(ctx, detailByID, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var (
+		found      bool
+		detail     building.BuildingDetail
+		floorIndex = make(map[int16]int) // maps floorNumber to its index in detail.Floors
+	)
+
+	for rows.Next() {
+		var (
+			bGUID uuid.UUID
+			bName string
+			row   floor.FloorUnitRow
+		)
+
+		if err := rows.Scan(
+			&bGUID,
+			&bName,
+			&row.FloorNumber,
+			&row.FloorCaption,
+			&row.UnitNumber,
+			&row.UnitCaption,
+			&row.UnitStatus,
+			&row.UnitHasParking,
+		); err != nil {
+			return nil, err
+		}
+
+		if !found {
+			found = true
+			detail.GUID = bGUID
+			detail.Name = bName
+		}
+
+		if row.FloorNumber.Valid {
+			fNum := row.FloorNumber.Int16
+			idx, exists := floorIndex[fNum]
+			if !exists {
+				idx = len(detail.Floors)
+				detail.Floors = append(detail.Floors, building.FloorDetail{
+					FloorNumber: fNum,
+					Caption:     db.NullString(row.FloorCaption),
+				})
+				floorIndex[fNum] = idx
+			}
+
+			if unit, ok := row.ToUnitDetail(); ok {
+				detail.Floors[idx].Units = append(detail.Floors[idx].Units, unit)
+				detail.TotalUnits++
+				if unit.Status == building.UnitStatusOccupied {
+					detail.OccupiedUnits++
+				}
+			}
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		if db.IsNoRows(err) {
+			return nil, domain.ErrNotFound
+		}
+		return nil, err
+	}
+
+	if !found {
+		return nil, domain.ErrNotFound
+	}
+
+	return &detail, nil
 }
 
 const getSummaryByID = `

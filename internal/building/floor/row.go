@@ -16,7 +16,7 @@ type FloorUnitRow struct {
 	UnitHasParking sql.NullBool
 }
 
-func (r *FloorUnitRow) toUnitDetail() (building.UnitDetail, bool) {
+func (r *FloorUnitRow) ToUnitDetail() (building.UnitDetail, bool) {
 	if !r.UnitNumber.Valid {
 		return building.UnitDetail{}, false
 	}

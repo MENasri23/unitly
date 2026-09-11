@@ -50,7 +50,7 @@ func newServices(app *bootstrap.Application, logger log.Logger, pgxDB *pgxpool.P
 	otpSvc := otpsvc.NewOTPService(repos.OTP, smsSvc, otpRateLimiter)
 	identitySvc := identity.NewIdentityService(repos.User, sessionSvc, otpSvc)
 	authSvc := auth.NewAuthService(otpSvc, identitySvc, sessionSvc, smsSvc, tokenSvc, txManager)
-	buildingSvc := bldgimpl.NewBuildingService(repos.Building, repos.Membership, repos.Floor, repos.Unit, repos.BuildingDetail, txManager)
+	buildingSvc := bldgimpl.NewBuildingService(repos.Building, repos.Membership, repos.Floor, repos.Unit, txManager)
 
 	return Services{
 		Token:    tokenSvc,

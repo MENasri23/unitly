@@ -15,7 +15,6 @@ type buildingService struct {
 	memberships b.MembershipRepository
 	floors      b.FloorRepository
 	units       b.UnitRepository
-	details     b.BuildingDetailRepository
 	tx          domain.UnitOfWork
 }
 
@@ -106,7 +105,7 @@ func (s *buildingService) Get(ctx context.Context, id int64) (*b.Building, error
 }
 
 func (s *buildingService) GetDetail(ctx context.Context, buildingID int64) (*b.BuildingDetail, error) {
-	detail, err := s.details.GetBuildingDetail(ctx, buildingID)
+	detail, err := s.buildings.GetDetail(ctx, buildingID)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
 			return nil, b.ErrBuildingNotFound
@@ -209,7 +208,6 @@ func NewBuildingService(
 	memberships b.MembershipRepository,
 	floors b.FloorRepository,
 	units b.UnitRepository,
-	details b.BuildingDetailRepository,
 	tx domain.UnitOfWork,
 ) b.BuildingService {
 	if buildings == nil {
@@ -224,9 +222,6 @@ func NewBuildingService(
 	if units == nil {
 		panic("units cannot be nil")
 	}
-	if details == nil {
-		panic("details cannot be nil")
-	}
 	if tx == nil {
 		panic("tx cannot be nil")
 	}
@@ -235,7 +230,6 @@ func NewBuildingService(
 		memberships: memberships,
 		floors:      floors,
 		units:       units,
-		details:     details,
 		tx:          tx,
 	}
 }
