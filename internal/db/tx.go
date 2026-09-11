@@ -17,6 +17,10 @@ func NewSqlTxManager(db *pgxpool.Pool) domain.UnitOfWork {
 }
 
 func (m *txManager) Do(ctx context.Context, fn func(ctx context.Context) error) error {
+	if GetQuerier(ctx, nil) != nil {
+		return fn(ctx)
+	}
+
 	tx, err := m.db.Begin(ctx)
 	if err != nil {
 		return err
