@@ -20,11 +20,6 @@ type NewFloor struct {
 	Caption     *string
 }
 
-type NewUnit struct {
-	UnitNumber string
-	Caption *string
-}
-
 type BuildingService interface {
 	Create(ctx context.Context, actorUserID int64, in CreateBuildingInput) (*Building, error)
 	Get(ctx context.Context, buildingID int64) (*Building, error)
