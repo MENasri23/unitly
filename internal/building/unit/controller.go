@@ -31,7 +31,7 @@ func (c *UnitController) Routes(r chi.Router) {
 }
 
 type addUnitsRequest struct {
-	UnitNumbers []string `json:"unit_numbers" validate:"required,gt=0,lt=20,dive,required,trimmed_name=1:20"`
+	UnitNumbers []string `json:"unit_numbers" validate:"required,gt=0,lt=21,dive,required,trimmed_name=1:20"`
 }
 
 func (c *UnitController) Add(w http.ResponseWriter, r *http.Request) {
