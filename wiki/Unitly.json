@@ -1,0 +1,565 @@
+{
+  "info": {
+    "name": "Unitly",
+    "description": null,
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Account",
+      "item": [
+        {
+          "name": "auth",
+          "item": [
+            {
+              "name": "by-otp/request",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-Client-Platform",
+                    "value": "{{client_platform}}",
+                    "description": "",
+                    "disabled": false,
+                    "type": "default"
+                  }
+                ],
+                "description": "",
+                "url": {
+                  "raw": "{{base_url}}/api/v1/auth/by-otp/request",
+                  "protocol": "",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "by-otp",
+                    "request"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"phone\": \"+989186191404\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "const body = pm.response.json();",
+                      "",
+                      "pm.environment.set(\"sign\", body);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "by-otp/verify",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-Client-Platform",
+                    "value": "{{client_platform}}",
+                    "description": "",
+                    "disabled": false,
+                    "type": "default"
+                  }
+                ],
+                "description": "",
+                "url": {
+                  "raw": "{{base_url}}/api/v1/auth/by-otp/verify",
+                  "protocol": "",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "by-otp",
+                    "verify"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"sign\": \"{{sign}}\",\n    \"otp\": \"123456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "const body = pm.response.json();",
+                      "",
+                      "pm.environment.set(\"access_token\", body[\"access-token\"]);",
+                      "pm.environment.set(\"refresh_token\", body[\"refresh-token\"]);"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Session",
+      "item": [
+        {
+          "name": "me/sessions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Client-Platform",
+                "value": "WebClient",
+                "description": "",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "description": "",
+            "url": {
+              "raw": "{{base_url}}/api/v1/me/sessions?page=1&page_size=2",
+              "protocol": "",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "sessions?page=1&page_size=2"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "2"
+                }
+              ],
+              "variable": []
+            }
+          }
+        },
+        {
+          "name": "me/sessions_1",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "description": "",
+            "url": {
+              "raw": "",
+              "protocol": "",
+              "host": [],
+              "path": [],
+              "query": [],
+              "variable": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Building",
+      "item": [
+        {
+          "name": "Create Building",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Client-Platform",
+                "value": "{{client_platform}}",
+                "description": "",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "description": "",
+            "url": {
+              "raw": "{{base_url}}/api/v1/buildings",
+              "protocol": "",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "buildings"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"K4\",\r\n    \"address\": null\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Summary List",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Client-Platform",
+                "value": "{{client_platform}}",
+                "description": "",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "description": "",
+            "url": {
+              "raw": "{{base_url}}/api/v1/buildings",
+              "protocol": "",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "buildings"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get Detail",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Client-Platform",
+                "value": "{{client_platform}}",
+                "description": "",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "description": "",
+            "url": {
+              "raw": "{{base_url}}/api/v1/buildings/{{building_id}}",
+              "protocol": "",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "buildings",
+                "{{building_id}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete Building",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-Client-Platform",
+                "value": "{{client_platform}}",
+                "description": "",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "description": "",
+            "url": {
+              "raw": "{{base_url}}/api/v1/buildings/01a07295-c4bf-711e-b03c-b8ae3e9ebef7",
+              "protocol": "",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "buildings",
+                "01a07295-c4bf-711e-b03c-b8ae3e9ebef7"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Floor",
+      "item": [
+        {
+          "name": "Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Client-Platform",
+                "value": "{{client_platform}}",
+                "description": "",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "description": "",
+            "url": {
+              "raw": "{{base_url}}/api/v1/buildings/{{building_id}}/floors",
+              "protocol": "",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "buildings",
+                "{{building_id}}",
+                "floors"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"floors\": [\n    {\n      \"floor_number\": 1,\n      \"caption\": \"طبقه اول\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get Detail",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Client-Platform",
+                "value": "{{client_platform}}",
+                "description": "",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "description": "",
+            "url": {
+              "raw": "{{base_url}}/api/v1/buildings/{{building_id}}/floors/1",
+              "protocol": "",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "buildings",
+                "{{building_id}}",
+                "floors",
+                "1"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-Client-Platform",
+                "value": "{{client_platform}}",
+                "description": "",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "description": "",
+            "url": {
+              "raw": "{{base_url}}/api/v1/buildings/{{building_id}}/floors/1",
+              "protocol": "",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "buildings",
+                "{{building_id}}",
+                "floors",
+                "1"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Unit",
+      "item": [
+        {
+          "name": "Create units",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Client-Platform",
+                "value": "{{client_platform}}",
+                "description": "",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "description": "",
+            "url": {
+              "raw": "{{base_url}}/api/v1/buildings/{{building_id}}/floors/1/units",
+              "protocol": "",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "buildings",
+                "{{building_id}}",
+                "floors",
+                "1",
+                "units"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unit_numbers\": [\"1\", \"2\", \"3\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "client_platform",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "sign",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "building_id",
+      "value": "",
+      "type": "default"
+    }
+  ]
+}
