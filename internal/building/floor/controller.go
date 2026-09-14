@@ -2,7 +2,6 @@ package floor
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"strconv"
 	"unitly/internal/building"
@@ -100,7 +99,6 @@ func (c *floorController) detail(w http.ResponseWriter, r *http.Request) {
 
 	detail, err := c.buildings.GetFloorDetail(r.Context(), m.BuildingID, f.ID)
 	if err != nil {
-		log.Println("error: ", err)
 		writeErr(w, err)
 		return
 	}
