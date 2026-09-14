@@ -142,6 +142,7 @@ SELECT
 FROM buildings b
 LEFT JOIN floors f 
     ON f.building_id = b.id
+	AND f.deleted_at IS NULL
 LEFT JOIN units u 
     ON u.floor_id = f.id 
     AND u.deleted_at IS NULL
