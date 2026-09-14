@@ -174,25 +174,28 @@ func (r *floorRepository) SoftDelete(ctx context.Context, id int64, expectedVers
 		return nil
 	}
 
-	return r.diagnoseDeleteFailure(ctx, id, expectedVersion)
+	return r.diagnoseDeleteFailure(ctx, id)
 }
 
-const getVersion = `SELECT version FROM floors WHERE id = $1 AND deleted_at IS NULL`
+const diagnoseDelete = `
+	SELECT f.version, EXISTS(SELECT 1 FROM units u WHERE u.floor_id = f.id AND u.deleted_at IS NULL)
+	FROM floors f WHERE f.id = $1 AND f.deleted_at IS NULL`
 
-func (r *floorRepository) diagnoseDeleteFailure(ctx context.Context, floorID int64, expectedVersion int) error {
+func (r *floorRepository) diagnoseDeleteFailure(ctx context.Context, floorID int64) error {
 	q := db.GetQuerier(ctx, r.db)
 	var version int
-	err := q.QueryRow(ctx, getVersion, floorID).Scan(&version)
+	var hasUnits bool
+	err := q.QueryRow(ctx, diagnoseDelete, floorID).Scan(&version, &hasUnits)
 	if db.IsNoRows(err) {
 		return building.ErrFloorNotFound
 	}
 	if err != nil {
 		return err
 	}
-	if version != expectedVersion {
-		return domain.ErrVersionConflict
+	if hasUnits {
+		return building.ErrFloorHasUnits
 	}
-	return building.ErrFloorHasUnits
+	return domain.ErrVersionConflict
 }
 
 func mapDBError(err error) error {
