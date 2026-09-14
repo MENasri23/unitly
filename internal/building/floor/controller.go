@@ -34,6 +34,7 @@ func (c *floorController) Routes(r chi.Router) {
 		r.Route("/{floorNumber}", func(r chi.Router) {
 			r.Use(c.floorContext)
 			r.With(adminOnly).Get("/", c.detail)
+			r.With(adminOnly).Delete("/", c.delete)
 			c.unitRouter.Routes(r)
 		})
 	})
@@ -108,6 +109,21 @@ func (c *floorController) detail(w http.ResponseWriter, r *http.Request) {
 	apphttp.WriteJSON(w, http.StatusOK, detailDTO)
 }
 
+func (c *floorController) delete(w http.ResponseWriter, r *http.Request) {
+	c.doRemove(w, r, false)
+}
+
+func (c *floorController) doRemove(w http.ResponseWriter, r *http.Request, force bool) {
+	f, _ := FromContext(r.Context())
+
+	if err := c.buildings.RemoveFloor(r.Context(), f.ID, f.Version, force); err != nil {
+		writeErr(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func writeErr(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, building.ErrFloorNotFound):
@@ -117,7 +133,9 @@ func writeErr(w http.ResponseWriter, err error) {
 		errors.Is(err, building.ErrFloorCaptionDuplicate):
 		apphttp.BadRequestError(w, err)
 	case errors.Is(err, building.ErrFloorNumberTaken),
-		errors.Is(err, building.ErrFloorCaptionTaken):
+		errors.Is(err, building.ErrFloorCaptionTaken),
+		errors.Is(err, building.ErrFloorHasUnits),
+		errors.Is(err, domain.ErrVersionConflict):
 		apphttp.ConflictError(w, err)
 	default:
 		apphttp.InternalServerError(w, domain.ErrInternal)

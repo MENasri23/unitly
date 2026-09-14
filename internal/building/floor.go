@@ -12,6 +12,7 @@ var ErrFloorCaptionTaken = domain.NewError("FLOOR_CAPTION_EXISTS", "a floor with
 var ErrFloorNumberDuplicate = domain.NewError("FLOOR_NUMBERS_DUPLICATE", "floor numbers must be unique")
 var ErrFloorCaptionDuplicate = domain.NewError("FLOOR_CAPTIONS_DUPLICATE", "floor captions must be unique if provided, otherwise null")
 var ErrNoFloorsProvided = domain.NewError("FLOORS_REQUIRED", "at least one floor is required")
+var ErrFloorHasUnits = domain.NewConflictError("floor_has_units")
 
 type Floor struct {
 	ID         int64
@@ -33,4 +34,6 @@ type FloorRepository interface {
 
 	GetByNumber(ctx context.Context, buildingID int64, floorNumber int16) (*Floor, error)
 	GetDetail(ctx context.Context, buildingID, floorID int64) (*FloorDetail, error)
+
+	SoftDelete(ctx context.Context, id int64, expectedVersion int) error
 }

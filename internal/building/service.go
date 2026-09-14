@@ -32,6 +32,7 @@ type BuildingService interface {
 	AddFloors(ctx context.Context, buildingID int64, floors []NewFloor) ([]Floor, error)
 	GetFloor(ctx context.Context, buildingID int64, floorNumber int16) (*Floor, error)
 	GetFloorDetail(ctx context.Context, buildingID, floorID int64) (*FloorDetail, error)
+	RemoveFloor(ctx context.Context, floorID int64, expectedVersion int, force bool) error
 
 	AddUnits(ctx context.Context, floorID int64, unitNumbers []string) ([]Unit, error)
 }

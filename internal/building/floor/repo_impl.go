@@ -72,8 +72,7 @@ const getByNumber = floorSelect + ` WHERE building_id = $1 AND floor_number = $2
 func (r *floorRepository) GetByNumber(ctx context.Context, buildingID int64, floorNumber int16) (*building.Floor, error) {
 	q := db.GetQuerier(ctx, r.db)
 	var f building.Floor
-	err := q.QueryRow(ctx, getByNumber, buildingID, floorNumber,
-	).Scan(
+	err := q.QueryRow(ctx, getByNumber, buildingID, floorNumber).Scan(
 		&f.ID,
 		&f.BuildingID,
 		&f.FloorNumber,
@@ -108,7 +107,7 @@ WHERE f.building_id = $1 AND f.id = $2
 ORDER BY u.id`
 
 func (r *floorRepository) GetDetail(ctx context.Context, buildingID, floorID int64) (*building.FloorDetail, error) {
-q := db.GetQuerier(ctx, r.db)
+	q := db.GetQuerier(ctx, r.db)
 	rows, err := q.Query(ctx, floorDetail, buildingID, floorID)
 	if err != nil {
 		return nil, err
@@ -156,6 +155,44 @@ q := db.GetQuerier(ctx, r.db)
 	}
 
 	return &detail, nil
+}
+
+const softDelete = `
+	UPDATE floors SET deleted_at = now(), version = version + 1
+	WHERE id = $1 AND version = $2 AND deleted_at IS NULL
+		AND NOT EXISTS (
+			SELECT 1 FROM units WHERE floor_id = $1 AND deleted_at IS NULL
+		)`
+
+func (r *floorRepository) SoftDelete(ctx context.Context, id int64, expectedVersion int) error {
+	q := db.GetQuerier(ctx, r.db)
+	tag, err := q.Exec(ctx, softDelete, id, expectedVersion)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() > 0 {
+		return nil
+	}
+
+	return r.diagnoseDeleteFailure(ctx, id, expectedVersion)
+}
+
+const getVersion = `SELECT version FROM floors WHERE id = $1 AND deleted_at IS NULL`
+
+func (r *floorRepository) diagnoseDeleteFailure(ctx context.Context, floorID int64, expectedVersion int) error {
+	q := db.GetQuerier(ctx, r.db)
+	var version int
+	err := q.QueryRow(ctx, getVersion, floorID).Scan(&version)
+	if db.IsNoRows(err) {
+		return building.ErrFloorNotFound
+	}
+	if err != nil {
+		return err
+	}
+	if version != expectedVersion {
+		return domain.ErrVersionConflict
+	}
+	return building.ErrFloorHasUnits
 }
 
 func mapDBError(err error) error {

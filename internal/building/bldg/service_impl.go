@@ -190,6 +190,10 @@ func (s *buildingService) GetFloorDetail(ctx context.Context, buildingID, floorI
 	return s.floors.GetDetail(ctx, buildingID, floorID)
 }
 
+func (s *buildingService) RemoveFloor(ctx context.Context, floorID int64, expectedVersion int, force bool) error {
+	return s.floors.SoftDelete(ctx, floorID, expectedVersion)
+}
+
 func (s *buildingService) AddUnits(ctx context.Context, floorID int64, unitNumbers []string) ([]b.Unit, error) {
 	if len(unitNumbers) == 0 {
 		return nil, b.ErrNoUnitsProvided

@@ -57,6 +57,7 @@ var (
 	ErrTooManyAttempts    = NewError("TOO_MANY_ATTEMPTS", "too many failed attempts, please try again later")
 	ErrForbidden          = NewError("FORBIDDEN", "forbidden")
 	ErrNotFound           = NewNotFoundError("record")
+	ErrVersionConflict    = NewConflictError("version")
 )
 
 func NewError(code ErrorCode, msg string) Error {
