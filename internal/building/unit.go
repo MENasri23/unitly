@@ -38,4 +38,8 @@ func (u *Unit) IsSoftDeleted() bool {
 
 type UnitRepository interface {
 	CreateBatch(ctx context.Context, units []*Unit) error
+
+	GetByNumber(ctx context.Context, floorID int64, unitNumber string) (*Unit, error)
+
+	SoftDelete(ctx context.Context, id int64, expectedVersion int) error
 }

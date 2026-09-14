@@ -230,6 +230,14 @@ func (s *buildingService) AddUnits(ctx context.Context, floorID int64, unitNumbe
 	return out, nil
 }
 
+func (s *buildingService) RemoveUnit(ctx context.Context, floorID int64, unitNumber string, force bool) error {
+	u, err := s.units.GetByNumber(ctx, floorID, unitNumber)
+	if err != nil {
+		return err
+	}
+	return s.units.SoftDelete(ctx, u.ID, u.Version)
+}
+
 func NewBuildingService(
 	buildings b.BuildingRepository,
 	memberships b.MembershipRepository,

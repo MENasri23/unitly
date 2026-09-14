@@ -35,4 +35,5 @@ type BuildingService interface {
 	RemoveFloor(ctx context.Context, floorID int64, expectedVersion int, force bool) error
 
 	AddUnits(ctx context.Context, floorID int64, unitNumbers []string) ([]Unit, error)
+	RemoveUnit(ctx context.Context, floorID int64, unitNumber string, force bool) error
 }
