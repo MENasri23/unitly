@@ -605,7 +605,7 @@ The HTTP API is mounted at `/api/v1`.
     - `BAD_REQUEST` — invalid building ID or floor number
     - `FLOOR_NOT_FOUND` — floor does not exist
     - `FORBIDDEN` — user cannot manage the building or is not an admin
-    - `FLOOR_HAS_UNITS` — floor contains units and cannot be soft-deleted
+    - `FLOOR_HAS_UNITS_CONFLICT` — floor contains units and cannot be soft-deleted
     - `VERSION_CONFLICT` — version mismatch during delete
   - Behavior:
     - Soft-deletes the floor if it has no active units.
