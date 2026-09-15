@@ -49,14 +49,14 @@ func MapUnitSummaryToDTO(u *building.UnitSummary) UnitDTO {
 	}
 }
 
-func MapUnitSummariesToDTOs(units []building.UnitSummary) []UnitDTO {
+func MapUnitSummariesToDTOs(units []building.UnitSummary) []UnitSummaryDTO {
 	if len(units) == 0 {
 		return nil
 	}
 
-	result := make([]UnitDTO, len(units))
+	result := make([]UnitSummaryDTO, len(units))
 	for i, u := range units {
-		result[i] = UnitDTO{
+		result[i] = UnitSummaryDTO{
 			UnitNumber: u.UnitNumber,
 			Caption:    u.Caption,
 			Status:     u.Status,
