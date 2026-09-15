@@ -2,6 +2,7 @@ package building
 
 import (
 	"context"
+	"strings"
 	"time"
 	"unitly/internal/domain"
 )
@@ -9,6 +10,7 @@ import (
 var ErrUnitNotFound = domain.NewNotFoundError("unit")
 var ErrUnitNumberTaken = domain.NewError("UNIT_NUMBER_EXISTS", "a unit with this number already exists on this floor")
 var ErrUnitNumbersDuplicate = domain.NewError("UNIT_NUMBERS_DUPLICATE", "unit numbers must be unique")
+var ErrUnitNumberInvalid = domain.NewError("INVALID_UNIT_NUMBER", "unit number must be between 1 and 20 characters long")
 var ErrNoUnitsProvided = domain.NewError("UNITS_REQUIRED", "at least one unit is required")
 
 type UnitStatus string
@@ -22,7 +24,7 @@ type Unit struct {
 	ID         int64
 	BuildingID int64
 	FloorID    int64
-	UnitNumber string
+	unitNumber string
 	Caption    *string
 	Status     UnitStatus
 	HasParking bool
@@ -34,6 +36,19 @@ type Unit struct {
 
 func (u *Unit) IsSoftDeleted() bool {
 	return u.DeletedAt != nil
+}
+
+func (u *Unit) SetUnitNumber(num string) error {
+	un := strings.TrimSpace(num)
+	if un == "" || len(un) > 20 {
+		return ErrUnitNumberInvalid
+	}
+	u.unitNumber = un
+	return nil
+}
+
+func (u *Unit) UnitNumber() string {
+	return u.unitNumber
 }
 
 type UnitRepository interface {

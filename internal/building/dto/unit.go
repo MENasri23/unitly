@@ -11,7 +11,7 @@ type UnitDTO struct {
 
 func MapUnitToDTO(u *building.Unit) UnitDTO {
 	return UnitDTO{
-		UnitNumber: u.UnitNumber,
+		UnitNumber: u.UnitNumber(),
 		Caption:    u.Caption,
 		Status:     u.Status,
 		HasParking: u.HasParking,
@@ -26,7 +26,7 @@ func MapUnitsToUnitDTOs(units []building.Unit) []UnitDTO {
 	result := make([]UnitDTO, len(units))
 	for i, u := range units {
 		result[i] = UnitDTO{
-			UnitNumber: u.UnitNumber,
+			UnitNumber: u.UnitNumber(),
 			Caption:    u.Caption,
 			Status:     u.Status,
 			HasParking: u.HasParking,

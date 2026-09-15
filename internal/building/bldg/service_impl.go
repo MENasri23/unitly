@@ -214,8 +214,10 @@ func (s *buildingService) AddUnits(ctx context.Context, floorID int64, unitNumbe
 	for i, num := range unitNumbers {
 		units[i] = &b.Unit{
 			FloorID:    floorID,
-			UnitNumber: num,
 			Status:     b.UnitStatusVacant,
+		}
+		if err := units[i].SetUnitNumber(num); err != nil {
+			return nil, err
 		}
 	}
 

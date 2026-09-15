@@ -23,14 +23,18 @@ const selectColumns = `
 func (r *unitRepository) scanUnit(ctx context.Context, query string, args ...any) (*building.Unit, error) {
 	q := db.GetQuerier(ctx, r.db)
 	var u building.Unit
+	var unitNumber string
 	err := q.QueryRow(ctx, query, args...).Scan(
-		&u.ID, &u.BuildingID, &u.FloorID, &u.UnitNumber, &u.Caption, &u.Status, &u.HasParking,
+		&u.ID, &u.BuildingID, &u.FloorID, &unitNumber, &u.Caption, &u.Status, &u.HasParking,
 		&u.Version, &u.CreatedAt, &u.UpdatedAt, &u.DeletedAt,
 	)
 	if db.IsNoRows(err) {
 		return nil, building.ErrUnitNotFound
 	}
 	if err != nil {
+		return nil, err
+	}
+	if err = u.SetUnitNumber(unitNumber); err != nil {
 		return nil, err
 	}
 	return &u, nil
@@ -54,7 +58,7 @@ func (r *unitRepository) CreateBatch(ctx context.Context, units []*building.Unit
 		batch.Queue(
 			createBatch,
 			u.FloorID,
-			u.UnitNumber,
+			u.UnitNumber(),
 			u.Caption,
 			u.Status,
 			u.HasParking,
@@ -67,7 +71,7 @@ func (r *unitRepository) CreateBatch(ctx context.Context, units []*building.Unit
 	for _, u := range units {
 		err := br.QueryRow().Scan(&u.ID, &u.BuildingID, &u.Version, &u.CreatedAt, &u.UpdatedAt)
 		if db.IsUniqueViolation(err, "uq_unit_floor_number_active") {
-			return fmt.Errorf("unit number %q: %w", u.UnitNumber, building.ErrUnitNumberTaken)
+			return fmt.Errorf("unit number %q: %w", u.UnitNumber(), building.ErrUnitNumberTaken)
 		}
 		if err != nil {
 			return err
