@@ -61,7 +61,7 @@ func (c *UnitController) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	unitDTos := bldgdto.MapUnitsToUnitDTOs(units)
+	unitDTos := bldgdto.MapUnitsToSummaryDTOs(units)
 	apphttp.WriteJSON(w, http.StatusCreated, unitDTos)
 }
 
