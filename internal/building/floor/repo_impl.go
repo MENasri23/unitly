@@ -198,6 +198,51 @@ func (r *floorRepository) diagnoseDeleteFailure(ctx context.Context, floorID int
 	return domain.ErrVersionConflict
 }
 
+const forceSoftDelete = `
+WITH updated_floor AS (
+    UPDATE floors
+    SET 
+		deleted_at = now(),
+		updated_at = now(),
+		version = version + 1
+    WHERE id = $1
+      AND version = $2
+      AND deleted_at IS NULL
+    RETURNING id
+)
+UPDATE units u
+SET 
+	deleted_at = now(),
+    updated_at = now(),
+    version = version + 1,
+    status = 'vacant'
+FROM updated_floor f
+WHERE u.floor_id = f.id
+  AND u.deleted_at IS NULL`
+
+const getVersion = `SELECT version FROM floors WHERE id = $1 AND deleted_at IS NULL`
+
+func (r *floorRepository) ForceSoftDelete(ctx context.Context, id int64, expectedVersion int) error {
+	q := db.GetQuerier(ctx, r.db)
+	tag, err := q.Exec(ctx, forceSoftDelete, id, expectedVersion)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() > 0 {
+		return nil
+	}
+
+	var version int
+	err = q.QueryRow(ctx, getVersion, id).Scan(&version)
+	if db.IsNoRows(err) {
+		return building.ErrFloorNotFound
+	}
+	if err != nil {
+		return err
+	}
+	return domain.ErrVersionConflict
+}
+
 func mapDBError(err error) error {
 	if err == nil {
 		return nil

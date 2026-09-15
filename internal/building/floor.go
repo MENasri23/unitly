@@ -36,4 +36,5 @@ type FloorRepository interface {
 	GetDetail(ctx context.Context, buildingID, floorID int64) (*FloorDetail, error)
 
 	SoftDelete(ctx context.Context, id int64, expectedVersion int) error
+	ForceSoftDelete(ctx context.Context, id int64, expectedVersion int) error
 }

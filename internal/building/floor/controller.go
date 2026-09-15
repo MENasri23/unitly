@@ -33,7 +33,8 @@ func (c *floorController) Routes(r chi.Router) {
 		r.Route("/{floorNumber}", func(r chi.Router) {
 			r.Use(c.floorContext)
 			r.With(adminOnly).Get("/", c.detail)
-			r.With(adminOnly).Delete("/", c.delete)
+			r.With(adminOnly).Delete("/", c.remove)
+			r.With(adminOnly).Delete("/force", c.forceRemove)
 			c.unitRouter.Routes(r)
 		})
 	})
@@ -107,8 +108,12 @@ func (c *floorController) detail(w http.ResponseWriter, r *http.Request) {
 	apphttp.WriteJSON(w, http.StatusOK, detailDTO)
 }
 
-func (c *floorController) delete(w http.ResponseWriter, r *http.Request) {
+func (c *floorController) remove(w http.ResponseWriter, r *http.Request) {
 	c.doRemove(w, r, false)
+}
+
+func (c *floorController) forceRemove(w http.ResponseWriter, r *http.Request) {
+	c.doRemove(w, r, true)
 }
 
 func (c *floorController) doRemove(w http.ResponseWriter, r *http.Request, force bool) {

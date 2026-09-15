@@ -191,6 +191,9 @@ func (s *buildingService) GetFloorDetail(ctx context.Context, buildingID, floorI
 }
 
 func (s *buildingService) RemoveFloor(ctx context.Context, floorID int64, expectedVersion int, force bool) error {
+	if force {
+		return s.floors.ForceSoftDelete(ctx, floorID, expectedVersion)
+	}
 	return s.floors.SoftDelete(ctx, floorID, expectedVersion)
 }
 

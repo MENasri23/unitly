@@ -575,7 +575,7 @@ The HTTP API is mounted at `/api/v1`.
   - Authentication: `Bearer <access-token>`
   - Success response:
     - Status: `200 OK`
-    - Response body: details for the requested floor.
+    - Response body: details for the requested floor, including its units.
   - Validation:
     - `buildingGUID` must be a valid UUID.
     - `floorNumber` must be a valid floor number.
@@ -587,9 +587,53 @@ The HTTP API is mounted at `/api/v1`.
   - Behavior:
     - Returns details for the requested floor.
 
+  #### Delete Floor
+  - Method: `DELETE`
+  - Path: `/api/v1/buildings/{buildingGUID}/floors/{floorNumber}`
+  - Authentication: `Bearer <access-token>`
+  - Required role: `Admin`
+  - Success response:
+    - Status: `204 No Content`
+    - Response body: _(empty)_
+  - Validation:
+    - `buildingGUID` must be a valid UUID.
+    - `floorNumber` must be a valid floor number.
+    - The authenticated user must have an active membership in the building.
+    - The user must have the `Admin` role.
+    - The floor must not contain active units.
+  - Errors:
+    - `BAD_REQUEST` — invalid building ID or floor number
+    - `FLOOR_NOT_FOUND` — floor does not exist
+    - `FORBIDDEN` — user cannot manage the building or is not an admin
+    - `FLOOR_HAS_UNITS` — floor contains units and cannot be soft-deleted
+    - `VERSION_CONFLICT` — version mismatch during delete
+  - Behavior:
+    - Soft-deletes the floor if it has no active units.
+
+  #### Force Delete Floor
+  - Method: `DELETE`
+  - Path: `/api/v1/buildings/{buildingGUID}/floors/{floorNumber}/force`
+  - Authentication: `Bearer <access-token>`
+  - Required role: `Admin`
+  - Success response:
+    - Status: `204 No Content`
+    - Response body: _(empty)_
+  - Validation:
+    - `buildingGUID` must be a valid UUID.
+    - `floorNumber` must be a valid floor number.
+    - The authenticated user must have an active membership in the building.
+    - The user must have the `Admin` role.
+  - Errors:
+    - `BAD_REQUEST` — invalid building ID or floor number
+    - `FLOOR_NOT_FOUND` — floor does not exist
+    - `FORBIDDEN` — user cannot manage the building or is not an admin
+    - `VERSION_CONFLICT` — version mismatch during delete
+  - Behavior:
+    - Soft-deletes the floor and soft-deletes all active units on it, setting their status to `vacant`.
+
   #### Create Units
   - Method: `POST`
-  - Path: `/api/v1/buildings/{buildingGUID}/floors`
+  - Path: `/api/v1/buildings/{buildingGUID}/floors/{floorNumber}/units`
   - Authentication: `Bearer <access-token>`
   - Request body: a JSON array describing the units to create.
   - Success response:
@@ -597,11 +641,12 @@ The HTTP API is mounted at `/api/v1`.
     - Response body: created units.
   - Validation:
     - `buildingGUID` must be a valid UUID.
+    - `floorNumber` must be a valid floor number.
     - The body must be a valid JSON array.
     - The authenticated user must be allowed to manage the building.
 
   - Errors:
-    - `BAD_REQUEST` — invalid building ID or unit data
+    - `BAD_REQUEST` — invalid building ID, floor number, or unit data
     - `BUILDING_NOT_FOUND` — building does not exist
     - `FLOOR_NOT_FOUND` — floor does not exist
     - `FORBIDDEN` — the user cannot manage the building
@@ -609,7 +654,7 @@ The HTTP API is mounted at `/api/v1`.
     - `UNIT_NUMBER_EXISTS` — a unit with this number already exists on this floor
     - `UNIT_NUMBERS_DUPLICATE` — unit numbers must be unique
   - Behavior:
-    - Creates the submitted units in the specified building.
+    - Creates the submitted units in the specified floor.
 
 #### Revoke All Sessions
 
