@@ -21,10 +21,10 @@ const (
 )
 
 type Unit struct {
+	unitNumber string
 	ID         int64
 	BuildingID int64
 	FloorID    int64
-	unitNumber string
 	Caption    *string
 	Status     UnitStatus
 	HasParking bool
