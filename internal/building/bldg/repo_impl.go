@@ -137,8 +137,7 @@ SELECT
     
 	u.unit_number,
     u.caption,
-    u.status,
-    u.has_parking
+    u.status
 FROM buildings b
 LEFT JOIN floors f 
     ON f.building_id = b.id
@@ -178,7 +177,6 @@ func (r *buildingRepository) GetDetail(ctx context.Context, id int64) (*building
 			&row.UnitNumber,
 			&row.UnitCaption,
 			&row.UnitStatus,
-			&row.UnitHasParking,
 		); err != nil {
 			return nil, err
 		}

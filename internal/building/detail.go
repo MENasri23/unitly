@@ -4,17 +4,16 @@ import (
 	"github.com/google/uuid"
 )
 
-type UnitDetail struct {
+type UnitSummary struct {
 	UnitNumber string
 	Caption    *string
 	Status     UnitStatus
-	HasParking bool
 }
 
 type FloorDetail struct {
 	FloorNumber int16
 	Caption     *string
-	Units       []UnitDetail
+	Units       []UnitSummary
 }
 
 type BuildingDetail struct {

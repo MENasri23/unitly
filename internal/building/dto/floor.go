@@ -12,7 +12,7 @@ func MapFloorDetailToDTO(f *building.FloorDetail) FloorDTO {
 	return FloorDTO{
 		FloorNumber: f.FloorNumber,
 		Caption:     f.Caption,
-		Units:       MapUnitDetailsToDTOs(f.Units),
+		Units:       MapUnitSummariesToDTOs(f.Units),
 	}
 }
 
@@ -26,7 +26,7 @@ func MapFloorDetailsToDTOs(floors []building.FloorDetail) []FloorDTO {
 		result[i] = FloorDTO{
 			FloorNumber: f.FloorNumber,
 			Caption:     f.Caption,
-			Units:       MapUnitDetailsToDTOs(f.Units),
+			Units:       MapUnitSummariesToDTOs(f.Units),
 		}
 	}
 	return result

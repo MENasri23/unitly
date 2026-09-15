@@ -9,6 +9,12 @@ type UnitDTO struct {
 	HasParking bool                `json:"has_parking"`
 }
 
+type UnitSummaryDTO struct {
+	UnitNumber string              `json:"unit_number"`
+	Caption    *string             `json:"caption"`
+	Status     building.UnitStatus `json:"status"`
+}
+
 func MapUnitToDTO(u *building.Unit) UnitDTO {
 	return UnitDTO{
 		UnitNumber: u.UnitNumber(),
@@ -35,16 +41,15 @@ func MapUnitsToUnitDTOs(units []building.Unit) []UnitDTO {
 	return result
 }
 
-func MapUnitDetailToDTO(u *building.UnitDetail) UnitDTO {
+func MapUnitSummaryToDTO(u *building.UnitSummary) UnitDTO {
 	return UnitDTO{
 		UnitNumber: u.UnitNumber,
 		Caption:    u.Caption,
 		Status:     u.Status,
-		HasParking: u.HasParking,
 	}
 }
 
-func MapUnitDetailsToDTOs(units []building.UnitDetail) []UnitDTO {
+func MapUnitSummariesToDTOs(units []building.UnitSummary) []UnitDTO {
 	if len(units) == 0 {
 		return nil
 	}
@@ -55,7 +60,6 @@ func MapUnitDetailsToDTOs(units []building.UnitDetail) []UnitDTO {
 			UnitNumber: u.UnitNumber,
 			Caption:    u.Caption,
 			Status:     u.Status,
-			HasParking: u.HasParking,
 		}
 	}
 	return result

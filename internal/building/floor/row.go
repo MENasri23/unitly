@@ -13,17 +13,15 @@ type FloorUnitRow struct {
 	UnitNumber     sql.NullString
 	UnitCaption    sql.NullString
 	UnitStatus     sql.NullString
-	UnitHasParking sql.NullBool
 }
 
-func (r *FloorUnitRow) ToUnitDetail() (building.UnitDetail, bool) {
+func (r *FloorUnitRow) ToUnitDetail() (building.UnitSummary, bool) {
 	if !r.UnitNumber.Valid {
-		return building.UnitDetail{}, false
+		return building.UnitSummary{}, false
 	}
-	return building.UnitDetail{
+	return building.UnitSummary{
 		UnitNumber: r.UnitNumber.String,
 		Caption:    db.NullString(r.UnitCaption),
 		Status:     building.UnitStatus(r.UnitStatus.String),
-		HasParking: db.Bool(r.UnitHasParking),
 	}, true
 }
