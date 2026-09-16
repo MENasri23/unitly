@@ -6,13 +6,15 @@ import (
 	"unitly/internal/domain"
 )
 
-var ErrFloorNotFound = domain.NewNotFoundError("floor")
-var ErrFloorNumberTaken = domain.NewError("FLOOR_NUMBER_EXISTS", "a floor with this number already exists in this building")
-var ErrFloorCaptionTaken = domain.NewError("FLOOR_CAPTION_EXISTS", "a floor with this caption already exists in this building")
-var ErrFloorNumberDuplicate = domain.NewError("FLOOR_NUMBERS_DUPLICATE", "floor numbers must be unique")
-var ErrFloorCaptionDuplicate = domain.NewError("FLOOR_CAPTIONS_DUPLICATE", "floor captions must be unique if provided, otherwise null")
-var ErrNoFloorsProvided = domain.NewError("FLOORS_REQUIRED", "at least one floor is required")
-var ErrFloorHasUnits = domain.NewConflictError("floor_has_units")
+var (
+	ErrFloorNotFound         = domain.NewNotFoundError("floor")
+	ErrFloorNumberTaken      = domain.NewError("FLOOR_NUMBER_EXISTS", "a floor with this number already exists in this building")
+	ErrFloorCaptionTaken     = domain.NewError("FLOOR_CAPTION_EXISTS", "a floor with this caption already exists in this building")
+	ErrFloorNumberDuplicate  = domain.NewError("FLOOR_NUMBERS_DUPLICATE", "floor numbers must be unique")
+	ErrFloorCaptionDuplicate = domain.NewError("FLOOR_CAPTIONS_DUPLICATE", "floor captions must be unique if provided, otherwise null")
+	ErrNoFloorsProvided      = domain.NewError("FLOORS_REQUIRED", "at least one floor is required")
+	ErrFloorHasUnits         = domain.NewConflictError("floor_has_units")
+)
 
 type Floor struct {
 	ID         int64

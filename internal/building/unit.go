@@ -7,17 +7,21 @@ import (
 	"unitly/internal/domain"
 )
 
-var ErrUnitNotFound = domain.NewNotFoundError("unit")
-var ErrUnitNumberTaken = domain.NewError("UNIT_NUMBER_EXISTS", "a unit with this number already exists on this floor")
-var ErrUnitNumbersDuplicate = domain.NewError("UNIT_NUMBERS_DUPLICATE", "unit numbers must be unique")
-var ErrUnitNumberInvalid = domain.NewError("INVALID_UNIT_NUMBER", "unit number must be between 1 and 20 characters long")
-var ErrNoUnitsProvided = domain.NewError("UNITS_REQUIRED", "at least one unit is required")
+var (
+	ErrUnitNotFound         = domain.NewNotFoundError("unit")
+	ErrUnitNumberTaken      = domain.NewError("UNIT_NUMBER_EXISTS", "a unit with this number already exists on this floor")
+	ErrUnitNumbersDuplicate = domain.NewError("UNIT_NUMBERS_DUPLICATE", "unit numbers must be unique")
+	ErrUnitNumberInvalid    = domain.NewError("INVALID_UNIT_NUMBER", "unit number must be between 1 and 20 characters long")
+	ErrNoUnitsProvided      = domain.NewError("UNITS_REQUIRED", "at least one unit is required")
+)
 
 type UnitStatus string
 
 const (
 	UnitStatusVacant   UnitStatus = "vacant"
 	UnitStatusOccupied UnitStatus = "occupied"
+
+	maxUnitNumberLen = 20
 )
 
 type Unit struct {
@@ -40,7 +44,7 @@ func (u *Unit) IsSoftDeleted() bool {
 
 func (u *Unit) SetUnitNumber(num string) error {
 	un := strings.TrimSpace(num)
-	if un == "" || len(un) > 20 {
+	if un == "" || len(un) > maxUnitNumberLen {
 		return ErrUnitNumberInvalid
 	}
 	u.unitNumber = un
