@@ -656,6 +656,28 @@ The HTTP API is mounted at `/api/v1`.
   - Behavior:
     - Creates the submitted units in the specified floor.
 
+  #### Delete Unit
+  - Method: `DELETE`
+  - Path: `/api/v1/buildings/{buildingGUID}/floors/{floorNumber}/units/{unitNumber}`
+  - Authentication: `Bearer <access-token>`
+  - Required role: `Admin`
+  - Success response:
+    - Status: `204 No Content`
+    - Response body: _(empty)_
+  - Validation:
+    - `buildingGUID` must be a valid UUID.
+    - `floorNumber` must be a valid floor number.
+    - `unitNumber` must be a valid unit number.
+    - The authenticated user must have an active membership in the building.
+    - The user must have the `Admin` role.
+  - Errors:
+    - `BAD_REQUEST` — invalid building ID, floor number, or unit number
+    - `UNIT_NOT_FOUND` — unit does not exist on the specified floor
+    - `FORBIDDEN` — user cannot manage the building or is not an admin
+    - `VERSION_CONFLICT` — version mismatch during delete
+  - Behavior:
+    - Soft-deletes the specified unit from the floor.
+
 #### Revoke All Sessions
 
 - Method: `DELETE`
