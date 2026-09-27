@@ -85,7 +85,7 @@ func (c *BuildingController) Routes(r chi.Router) {
 	units := unit.NewUnitController(c.buildings)
 	floors := floor.NewFloorController(c.buildings, units)
 
-	r.Route("/buildings", func(r chi.Router) {
+	r.Route("/v1/buildings", func(r chi.Router) {
 		r.Use(c.authMW)
 		r.Post("/", c.create)
 		r.Get("/", c.listMine)

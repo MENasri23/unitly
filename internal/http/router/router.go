@@ -63,17 +63,19 @@ func New(p Params) *chi.Mux {
 	r.Use(middleware.Timeout(requestTimeout))
 	r.Use(middleware.RequestSize(maxReadBytes))
 
-	r.Route("/api/v1", func(r chi.Router) {
-		Register(
-			r, 
-			p.Auth, 
-			p.Building,
-			p.Profile, 
-			p.Session,
-		)
-		r.Group(func(r chi.Router) {
-			r.Use(p.AuthMiddleware.RequireAuth, p.AuthMiddleware.RequireUser)
-			r.Get("/healthcheck", controller.HealthCheck)
+	r.Route("/api", func(r chi.Router) {
+		Register(r, p.Building)
+		r.Route("/v1", func(r chi.Router) {
+			Register(
+				r,
+				p.Auth,
+				p.Profile,
+				p.Session,
+			)
+			r.Group(func(r chi.Router) {
+				r.Use(p.AuthMiddleware.RequireAuth, p.AuthMiddleware.RequireUser)
+				r.Get("/healthcheck", controller.HealthCheck)
+			})
 		})
 	})
 
