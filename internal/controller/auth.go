@@ -42,7 +42,7 @@ func NewAuthController(
 }
 
 func (c *AuthController) Routes(r chi.Router) {
-	r.Route("/auth", func(r chi.Router) {
+	r.Route("/v1/auth", func(r chi.Router) {
 		r.Route("/by-otp", func(r chi.Router) {
 			r.Post("/request", c.RequestAuthByOTP)
 			r.Post("/verify", c.VerifyAuthByOTP)
